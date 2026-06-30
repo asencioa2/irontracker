@@ -1352,10 +1352,19 @@ async function buildToolsCheckin(){
 // AI FEATURES
 // ============================================================
 async function callClaude(messages,systemPrompt,imageBase64=null){
-  const userContent=imageBase64?[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:imageBase64}},{type:'text',text:messages[messages.length-1].content}]:messages[messages.length-1].content;
-  const body={model:'claude-sonnet-4-6',max_tokens:1000,system:systemPrompt,messages:imageBase64?[...messages.slice(0,-1),{role:'user',content:userContent}]:messages};
-  const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  const data=await res.json();return data.content?.map(b=>b.text||'').join('')||'';
+  try{
+    const res=await fetch('/api/claude',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages,system:systemPrompt,imageBase64})
+    });
+    const data=await res.json();
+    if(!res.ok){throw new Error(data.error||'AI request failed');}
+    return data.text||'';
+  }catch(err){
+    console.error('callClaude error:',err);
+    throw err;
+  }
 }
 
 function switchFoodTab(tab){
