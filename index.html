@@ -164,7 +164,6 @@
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-ghost" onclick="openAddExerciseModal()">+ Add exercise</button>
       <button class="btn btn-ghost" onclick="openPRModal()">🏆 PRs</button>
-      <button class="btn btn-ghost" onclick="openCoachModal()">🤖 AI Coach</button>
       <button class="btn btn-primary" onclick="finishWorkout()">Finish & save</button>
     </div>
   </div>
@@ -177,7 +176,6 @@
   <div style="margin-bottom:20px">
     <div style="font-size:20px;font-weight:800;letter-spacing:-0.02em;margin-bottom:12px">Nutrition log</div>
     <div class="nutr-hd-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <button class="btn btn-ghost btn-sm" onclick="openMealSuggest()">🍽️ Suggest meal</button>
       <input type="date" id="nutr-date" style="width:160px;flex:1;min-width:130px" onchange="loadNutritionForDate()">
       <button class="btn btn-primary" onclick="openFoodModal()">+ Add food</button>
     </div>
@@ -327,40 +325,15 @@
 <div class="modal-overlay" id="food-modal">
   <div class="modal" style="width:480px">
     <div class="modal-hd"><div class="modal-title">Add food entry</div><button class="modal-close" onclick="closeModal('food-modal')">×</button></div>
-    <div style="display:flex;gap:6px;margin-bottom:20px">
-      <button class="food-tab-btn active" id="ftab-photo" onclick="switchFoodTab('photo')">📷 Scan photo</button>
-      <button class="food-tab-btn" id="ftab-manual" onclick="switchFoodTab('manual')">✏️ Manual entry</button>
+    <div class="form-group"><label>Food name</label><input type="text" id="f-name" placeholder="e.g. Grilled chicken breast"></div>
+    <div class="form-group"><label>Meal</label><select id="f-meal"><option>Pre-workout</option><option>Post-workout</option><option>Breakfast</option><option>Lunch</option><option>Snack</option><option>Dinner</option><option>Evening</option></select></div>
+    <div class="grid-2">
+      <div class="form-group"><label>Calories</label><input type="number" id="f-cal" placeholder="0"></div>
+      <div class="form-group"><label>Protein (g)</label><input type="number" id="f-pro" placeholder="0"></div>
+      <div class="form-group"><label>Carbs (g)</label><input type="number" id="f-carb" placeholder="0"></div>
+      <div class="form-group"><label>Fat (g)</label><input type="number" id="f-fat" placeholder="0"></div>
     </div>
-    <div id="food-tab-photo">
-      <div id="photo-dropzone" onclick="document.getElementById('food-img-input').click()" style="border:2px dashed var(--border2);border-radius:var(--radius);padding:32px;text-align:center;cursor:pointer;transition:border 0.15s;margin-bottom:16px">
-        <div style="font-size:28px;margin-bottom:8px">📷</div>
-        <div style="font-size:13px;font-weight:600;color:var(--text2)">Click to upload a food photo</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px">or drag & drop — JPG, PNG, WEBP</div>
-      </div>
-      <input type="file" id="food-img-input" accept="image/*" style="display:none" onchange="handleFoodPhoto(event)">
-      <img id="food-preview" src="" alt="" style="display:none;width:100%;border-radius:var(--radius);margin-bottom:16px;max-height:200px;object-fit:cover">
-      <div id="ai-scan-status" style="display:none"><div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface2);border-radius:var(--radius);margin-bottom:16px"><div class="ai-spinner"></div><div style="font-size:13px;color:var(--text2)" id="ai-scan-msg">Analyzing your food...</div></div></div>
-      <div id="ai-scan-result" style="display:none">
-        <div style="background:var(--accent-dim);border:1px solid rgba(201,168,76,0.25);border-radius:var(--radius);padding:14px;margin-bottom:16px">
-          <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">AI detected</div>
-          <div style="font-size:15px;font-weight:700;color:var(--text)" id="ai-food-name-display"></div>
-          <div style="font-size:12px;color:var(--text2);margin-top:4px" id="ai-food-macro-display"></div>
-        </div>
-        <div class="form-group"><label>Meal</label><select id="f-meal-photo"><option>Pre-workout</option><option>Post-workout</option><option>Breakfast</option><option>Lunch</option><option>Snack</option><option>Dinner</option><option>Evening</option></select></div>
-        <div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1" onclick="confirmAIFood()">Add this food</button><button class="btn btn-ghost" onclick="switchFoodTab('manual')">Edit manually</button></div>
-      </div>
-    </div>
-    <div id="food-tab-manual" style="display:none">
-      <div class="form-group"><label>Food name</label><input type="text" id="f-name" placeholder="e.g. Grilled chicken breast"></div>
-      <div class="form-group"><label>Meal</label><select id="f-meal"><option>Pre-workout</option><option>Post-workout</option><option>Breakfast</option><option>Lunch</option><option>Snack</option><option>Dinner</option><option>Evening</option></select></div>
-      <div class="grid-2">
-        <div class="form-group"><label>Calories</label><input type="number" id="f-cal" placeholder="0"></div>
-        <div class="form-group"><label>Protein (g)</label><input type="number" id="f-pro" placeholder="0"></div>
-        <div class="form-group"><label>Carbs (g)</label><input type="number" id="f-carb" placeholder="0"></div>
-        <div class="form-group"><label>Fat (g)</label><input type="number" id="f-fat" placeholder="0"></div>
-      </div>
-      <button class="btn btn-primary btn-full" onclick="addFood()">Add entry</button>
-    </div>
+    <button class="btn btn-primary btn-full" onclick="addFood()">Add entry</button>
   </div>
 </div>
 
@@ -417,23 +390,6 @@
   <div class="modal"><div class="modal-hd"><div class="modal-title">🏆 Personal records</div><button class="modal-close" onclick="closeModal('pr-modal')">×</button></div><div id="pr-modal-content"></div></div>
 </div>
 
-<div class="modal-overlay" id="coach-modal">
-  <div class="modal" style="width:520px"><div class="modal-hd"><div class="modal-title">🤖 AI Workout Coach</div><button class="modal-close" onclick="closeModal('coach-modal')">×</button></div>
-    <div id="coach-loading" style="display:none;text-align:center;padding:32px"><div class="ai-spinner" style="margin:0 auto 12px"></div><div style="font-size:13px;color:var(--text2)">Analyzing your workout data...</div></div>
-    <div id="coach-content" style="font-size:14px;line-height:1.7;color:var(--text2)"><div style="text-align:center;padding:24px;color:var(--text3)">Finish a workout to get AI coach feedback.</div></div>
-    <div id="coach-actions" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-      <div class="form-group"><label>Ask your coach</label><div style="display:flex;gap:8px"><input type="text" id="coach-question" placeholder="e.g. Should I increase my bench weight?"><button class="btn btn-primary btn-sm" onclick="askCoach()">Ask</button></div></div>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="meal-suggest-modal">
-  <div class="modal" style="width:500px"><div class="modal-hd"><div class="modal-title">🍽️ Smart meal suggestions</div><button class="modal-close" onclick="closeModal('meal-suggest-modal')">×</button></div>
-    <div id="meal-suggest-loading" style="display:none;text-align:center;padding:32px"><div class="ai-spinner" style="margin:0 auto 12px"></div><div style="font-size:13px;color:var(--text2)">Finding best meals for your remaining macros...</div></div>
-    <div id="meal-suggest-content" style="font-size:14px;line-height:1.7;color:var(--text2)"></div>
-  </div>
-</div>
-
 <div class="toast" id="toast"><span class="toast-dot"></span><span id="toast-msg"></span></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -453,8 +409,6 @@ let userProfile = {};
 let weightChart = null, volumeChart = null;
 let currentWorkoutDay = null;
 let workoutSets = {};
-let coachHistory = [];
-let aiFoodData = null;
 let timerDuration = 90, timerRemaining = 90, timerInterval = null, timerRunning = false;
 let current1RM = null;
 
@@ -1191,13 +1145,7 @@ async function loadNutritionForDate(){
 
 function openFoodModal(){
   ['f-name','f-cal','f-pro','f-carb','f-fat'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  aiFoodData=null;
-  document.getElementById('food-preview').style.display='none';
-  document.getElementById('photo-dropzone').style.display='block';
-  document.getElementById('ai-scan-status').style.display='none';
-  document.getElementById('ai-scan-result').style.display='none';
-  document.getElementById('food-img-input').value='';
-  switchFoodTab('photo');openModal('food-modal');
+  openModal('food-modal');
 }
 
 async function addFood(){
@@ -1349,97 +1297,10 @@ async function buildToolsCheckin(){
 }
 
 // ============================================================
-// AI FEATURES
-// ============================================================
-async function callClaude(messages,systemPrompt,imageBase64=null){
-  try{
-    const res=await fetch('/api/claude',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({messages,system:systemPrompt,imageBase64})
-    });
-    const data=await res.json();
-    if(!res.ok){throw new Error(data.error||'AI request failed');}
-    return data.text||'';
-  }catch(err){
-    console.error('callClaude error:',err);
-    throw err;
-  }
-}
-
-function switchFoodTab(tab){
-  document.getElementById('food-tab-photo').style.display=tab==='photo'?'block':'none';document.getElementById('food-tab-manual').style.display=tab==='manual'?'block':'none';
-  document.getElementById('ftab-photo').classList.toggle('active',tab==='photo');document.getElementById('ftab-manual').classList.toggle('active',tab==='manual');
-}
-
-function handleFoodPhoto(event){
-  const file=event.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=async(e)=>{
-    const dataUrl=e.target.result;const base64=dataUrl.split(',')[1];
-    document.getElementById('food-preview').src=dataUrl;document.getElementById('food-preview').style.display='block';document.getElementById('photo-dropzone').style.display='none';document.getElementById('ai-scan-status').style.display='block';document.getElementById('ai-scan-result').style.display='none';document.getElementById('ai-scan-msg').textContent='Identifying food...';
-    try{
-      const reply=await callClaude([{role:'user',content:'What food is in this image? Return ONLY JSON with keys: name,cal,pro,carb,fat'}],'You are a nutrition AI. Return ONLY a raw JSON object, no markdown.',base64);
-      const clean=reply.replace(/```json|```/g,'').trim();aiFoodData=JSON.parse(clean);
-      document.getElementById('ai-scan-status').style.display='none';document.getElementById('ai-scan-result').style.display='block';
-      document.getElementById('ai-food-name-display').textContent=aiFoodData.name;document.getElementById('ai-food-macro-display').textContent=`${aiFoodData.cal} kcal - ${aiFoodData.pro}g protein - ${aiFoodData.carb}g carbs - ${aiFoodData.fat}g fat`;
-      document.getElementById('f-name').value=aiFoodData.name;document.getElementById('f-cal').value=aiFoodData.cal;document.getElementById('f-pro').value=aiFoodData.pro;document.getElementById('f-carb').value=aiFoodData.carb;document.getElementById('f-fat').value=aiFoodData.fat;
-    }catch(err){document.getElementById('ai-scan-status').style.display='none';switchFoodTab('manual');toast('Could not identify food -- try manual entry');}
-  };reader.readAsDataURL(file);
-}
-
-async function confirmAIFood(){
-  if(!aiFoodData)return;const meal=document.getElementById('f-meal-photo').value;const dateStr=document.getElementById('nutr-date')?.value||today();
-  await sb.from('nutrition_logs').insert({user_id:currentUser.id,date:dateStr,food_name:aiFoodData.name,meal,cal:aiFoodData.cal,protein:aiFoodData.pro,carbs:aiFoodData.carb,fat:aiFoodData.fat});
-  closeModal('food-modal');await loadNutritionForDate();await loadNutritionTotals(today());toast(`Added: ${aiFoodData.name}`);aiFoodData=null;
-}
-
-async function openCoachModal(){
-  openModal('coach-modal');const{data:logs}=await sb.from('workout_logs').select('*').eq('user_id',currentUser.id).order('date',{ascending:false}).limit(6);
-  if(!logs?.length){document.getElementById('coach-content').innerHTML='<div style="text-align:center;padding:24px;color:var(--text3)">Finish a workout to get AI coach feedback.</div>';return;}
-  document.getElementById('coach-loading').style.display='block';document.getElementById('coach-content').innerHTML='';document.getElementById('coach-actions').style.display='none';
-  const{data:prs}=await sb.from('personal_records').select('*').eq('user_id',currentUser.id);
-  const{data:weights}=await sb.from('weight_logs').select('*').eq('user_id',currentUser.id).order('date',{ascending:false}).limit(7);
-  const context=`Athlete: ${userProfile.name||'Allen'}. Goal weight: ${userProfile.goal_weight||'not set'} lbs. Recent workouts: ${JSON.stringify(logs)}. PRs: ${JSON.stringify(prs)}. Recent weight: ${JSON.stringify(weights)}.`;
-  coachHistory=[{role:'user',content:'Analyze this athlete\'s recent data. Give specific coaching feedback referencing actual numbers. Cover: what\'s working, what needs improvement, one recommendation. Use **bold** for headers.'}];
-  try{
-    const reply=await callClaude(coachHistory,`You are an elite personal trainer. ${context}. Be direct and specific.`);
-    coachHistory.push({role:'assistant',content:reply});document.getElementById('coach-loading').style.display='none';document.getElementById('coach-content').innerHTML=formatAIText(reply);document.getElementById('coach-actions').style.display='block';
-  }catch(e){document.getElementById('coach-loading').style.display='none';document.getElementById('coach-content').innerHTML='<div style="color:var(--red)">Could not connect to AI coach.</div>';}
-}
-
-async function askCoach(){
-  const q=document.getElementById('coach-question').value.trim();if(!q)return;document.getElementById('coach-question').value='';coachHistory.push({role:'user',content:q});
-  const prev=document.getElementById('coach-content').innerHTML;document.getElementById('coach-content').innerHTML=prev+`<div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:6px;font-size:13px;color:var(--text3)">You: ${q}</div><div style="display:flex;align-items:center;gap:8px;margin-top:8px"><div class="ai-spinner"></div></div>`;
-  try{
-    const reply=await callClaude(coachHistory,`You are an elite personal trainer for ${userProfile.name||'Allen'}. Be concise and specific.`);
-    coachHistory.push({role:'assistant',content:reply});document.getElementById('coach-content').innerHTML=prev+`<div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:6px;font-size:13px;color:var(--text3)">You: ${q}</div><div style="margin-top:8px">${formatAIText(reply)}</div>`;
-  }catch(e){document.getElementById('coach-content').innerHTML=prev+'<div style="color:var(--red);margin-top:8px">Error contacting coach.</div>';}
-}
-
-async function openMealSuggest(){
-  openModal('meal-suggest-modal');document.getElementById('meal-suggest-loading').style.display='block';document.getElementById('meal-suggest-content').innerHTML='';
-  const dateStr=document.getElementById('nutr-date')?.value||today();const{data:meals}=await sb.from('nutrition_logs').select('cal,protein,carbs,fat').eq('user_id',currentUser.id).eq('date',dateStr);
-  const t=(meals||[]).reduce((a,m)=>({cal:a.cal+m.cal,pro:a.pro+m.protein,carb:a.carb+m.carbs,fat:a.fat+m.fat}),{cal:0,pro:0,carb:0,fat:0});
-  const mac={cal:userProfile.macro_cal||2200,pro:userProfile.macro_pro||190,carb:userProfile.macro_carb||210,fat:userProfile.macro_fat||65};
-  const rem={cal:mac.cal-t.cal,pro:mac.pro-t.pro,carb:mac.carb-t.carb,fat:mac.fat-t.fat};
-  const{data:todayLog}=await sb.from('workout_logs').select('id').eq('user_id',currentUser.id).eq('date',today()).limit(1);
-  const isTraining=!!(todayLog&&todayLog.length);
-  try{
-    const reply=await callClaude([{role:'user',content:`Eaten so far: ${t.cal}kcal, ${t.pro}g protein, ${t.carb}g carbs, ${t.fat}g fat. Remaining: ${rem.cal}kcal, ${rem.pro}g protein. It is ${isTraining?'a training day':'a rest day'}. Suggest 2-3 specific meals to fill remaining macros.`}],'You are a sports nutritionist. Give practical specific suggestions with portions. Use **bold** for meal names.');
-    document.getElementById('meal-suggest-loading').style.display='none';document.getElementById('meal-suggest-content').innerHTML=formatAIText(reply);
-  }catch(e){document.getElementById('meal-suggest-loading').style.display='none';document.getElementById('meal-suggest-content').innerHTML='<div style="color:var(--red)">Could not generate suggestions.</div>';}
-}
-
-function formatAIText(text){return text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>').replace(/^/,'<p>').replace(/$/,'</p>');}
-
-// ============================================================
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded',()=>{
   initAuth();updateTimerDisplay();
-  const dz=document.getElementById('photo-dropzone');
-  if(dz){dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover');});dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dragover');const file=e.dataTransfer.files[0];if(file&&file.type.startsWith('image/')){const dt=new DataTransfer();dt.items.add(file);document.getElementById('food-img-input').files=dt.files;handleFoodPhoto({target:document.getElementById('food-img-input')});}});}
   const nd=document.getElementById('nutr-date');if(nd)nd.value=today();
 });
 </script>

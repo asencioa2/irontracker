@@ -151,22 +151,12 @@ canvas{width:100%!important;}
 .toast.show{transform:translateY(0);opacity:1;}
 .toast-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);}
 
-/* FOOD TABS */
-.food-tab-btn{flex:1;padding:8px;border-radius:var(--radius);font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);transition:all 0.15s;text-transform:uppercase;letter-spacing:0.03em;}
-.food-tab-btn.active{background:var(--accent-dim);color:var(--accent);border-color:rgba(201,168,76,0.3);}
-
-/* AI SPINNER */
+/* AI SPINNER (used by app loading screen) */
 .ai-spinner{width:20px;height:20px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
 /* WATER */
 .prog-fill-blue{background:linear-gradient(90deg,var(--blue),#7ec8f7);}
-
-/* COACH */
-#coach-content p,#meal-suggest-content p{margin-bottom:10px;}
-#coach-content strong,#meal-suggest-content strong{color:var(--accent);font-weight:700;}
-#coach-content ul,#meal-suggest-content ul{padding-left:18px;margin-bottom:10px;}
-#coach-content li,#meal-suggest-content li{margin-bottom:4px;}
 
 /* PB TAG */
 .pb-tag{font-size:10px;background:var(--amber-dim);color:var(--amber);padding:2px 6px;border-radius:3px;font-weight:700;margin-left:6px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.04em;}
@@ -177,9 +167,6 @@ canvas{width:100%!important;}
 .loading-logo-icon{width:40px;height:40px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#080c14;}
 .loading-logo span{color:var(--accent);}
 .loading-sub{font-size:12px;color:var(--text3);font-family:var(--mono);}
-
-/* DRAG DROP */
-#photo-dropzone:hover,#photo-dropzone.dragover{border-color:var(--accent);background:var(--accent-dim2);}
 
 /* PHOTO GRID */
 .progress-photo-item{position:relative;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);aspect-ratio:3/4;}
