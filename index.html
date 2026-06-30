@@ -320,6 +320,7 @@
       <button class="btn btn-primary" onclick="saveMacros()">Save targets</button>
     </div>
   </div>
+
   <div class="card mt-20">
     <div class="section-title" style="margin-bottom:16px">Account</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Signed in as <span id="settings-email" style="color:var(--accent);font-family:var(--mono)"></span></div>
@@ -339,15 +340,76 @@
 <div class="modal-overlay" id="food-modal">
   <div class="modal" style="width:480px">
     <div class="modal-hd"><div class="modal-title">Add food entry</div><button class="modal-close" onclick="closeModal('food-modal')">×</button></div>
-    <div class="form-group"><label>Food name</label><input type="text" id="f-name" placeholder="e.g. Grilled chicken breast"></div>
-    <div class="form-group"><label>Meal</label><select id="f-meal"><option>Pre-workout</option><option>Post-workout</option><option>Breakfast</option><option>Lunch</option><option>Snack</option><option>Dinner</option><option>Evening</option></select></div>
-    <div class="grid-2">
-      <div class="form-group"><label>Calories</label><input type="number" id="f-cal" placeholder="0"></div>
-      <div class="form-group"><label>Protein (g)</label><input type="number" id="f-pro" placeholder="0"></div>
-      <div class="form-group"><label>Carbs (g)</label><input type="number" id="f-carb" placeholder="0"></div>
-      <div class="form-group"><label>Fat (g)</label><input type="number" id="f-fat" placeholder="0"></div>
+
+    <!-- Tabs -->
+    <div style="display:flex;gap:6px;margin-bottom:18px">
+      <button class="food-tab-btn active" id="ftab-scan" onclick="switchFoodTab('scan')">📷 Scan barcode</button>
+      <button class="food-tab-btn" id="ftab-manual" onclick="switchFoodTab('manual')">✏️ Manual entry</button>
     </div>
-    <button class="btn btn-primary btn-full" onclick="addFood()">Add entry</button>
+
+    <!-- SCAN TAB -->
+    <div id="food-tab-scan">
+      <!-- Scanner viewfinder -->
+      <div id="barcode-scanner-wrap" style="display:none;position:relative;width:100%;border-radius:var(--radius);overflow:hidden;background:#000;margin-bottom:16px">
+        <video id="barcode-video" autoplay playsinline muted style="width:100%;display:block;max-height:240px;object-fit:cover"></video>
+        <canvas id="barcode-canvas" style="display:none"></canvas>
+        <!-- Aim guide overlay -->
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+          <div style="width:70%;height:40%;border:2px solid var(--accent);border-radius:6px;box-shadow:0 0 0 9999px rgba(0,0,0,0.35)"></div>
+        </div>
+        <div style="position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,255,255,0.7)">Hold barcode inside the box</div>
+        <button onclick="stopBarcodeScanner()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);border:none;color:#fff;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">Stop</button>
+      </div>
+
+      <!-- Start button / status -->
+      <div id="barcode-start-area">
+        <button class="btn btn-primary btn-full" onclick="startBarcodeScanner()" style="margin-bottom:12px">
+          📷 Open camera to scan
+        </button>
+        <div style="text-align:center;font-size:12px;color:var(--text3)">or enter a barcode number manually:</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input type="text" id="barcode-manual-input" placeholder="e.g. 0123456789012" inputmode="numeric" style="flex:1">
+          <button class="btn btn-ghost" onclick="lookupBarcode(document.getElementById('barcode-manual-input').value.trim())">Look up</button>
+        </div>
+      </div>
+
+      <!-- Status messages -->
+      <div id="barcode-status" style="display:none;padding:12px;background:var(--surface2);border-radius:var(--radius);margin-top:12px;font-size:13px;color:var(--text2);text-align:center"></div>
+
+      <!-- Result preview -->
+      <div id="barcode-result" style="display:none;margin-top:12px">
+        <div style="background:var(--accent-dim);border:1px solid rgba(201,168,76,0.25);border-radius:var(--radius);padding:14px;margin-bottom:14px">
+          <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Found product</div>
+          <div style="font-size:15px;font-weight:700;color:var(--text)" id="barcode-product-name"></div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px" id="barcode-product-macros"></div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px" id="barcode-product-serving"></div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px" id="barcode-product-source"></div>
+        </div>
+        <div class="form-group"><label>Meal</label>
+          <select id="f-meal-scan">
+            <option>Pre-workout</option><option>Post-workout</option><option>Breakfast</option>
+            <option>Lunch</option><option>Snack</option><option>Dinner</option><option>Evening</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" style="flex:1" onclick="confirmBarcodeFood()">Add this food</button>
+          <button class="btn btn-ghost" onclick="switchFoodTab('manual')">Edit manually</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MANUAL TAB -->
+    <div id="food-tab-manual" style="display:none">
+      <div class="form-group"><label>Food name</label><input type="text" id="f-name" placeholder="e.g. Grilled chicken breast"></div>
+      <div class="form-group"><label>Meal</label><select id="f-meal"><option>Pre-workout</option><option>Post-workout</option><option>Breakfast</option><option>Lunch</option><option>Snack</option><option>Dinner</option><option>Evening</option></select></div>
+      <div class="grid-2">
+        <div class="form-group"><label>Calories</label><input type="number" id="f-cal" placeholder="0"></div>
+        <div class="form-group"><label>Protein (g)</label><input type="number" id="f-pro" placeholder="0"></div>
+        <div class="form-group"><label>Carbs (g)</label><input type="number" id="f-carb" placeholder="0"></div>
+        <div class="form-group"><label>Fat (g)</label><input type="number" id="f-fat" placeholder="0"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="addFood()">Add entry</button>
+    </div>
   </div>
 </div>
 
@@ -803,19 +865,6 @@ function showPage(id){
   else if(id==='settings')initSettingsPage();
 }
 
-function initSettingsPage(){
-  var f=function(i,v){var e=document.getElementById(i);if(e&&v!=null)e.value=v;};
-  f('set-name',userProfile.name);
-  f('set-height',userProfile.height_in);
-  f('set-start-weight',userProfile.start_weight);
-  f('set-goal-weight',userProfile.goal_weight);
-  f('set-gym',userProfile.gym);
-  f('set-cal',userProfile.macro_cal||2200);
-  f('set-pro',userProfile.macro_pro||190);
-  f('set-carb',userProfile.macro_carb||210);
-  f('set-fat',userProfile.macro_fat||65);
-  var se=document.getElementById('settings-email');if(se&&currentUser)se.textContent=currentUser.email;
-}
 
 // ============================================================
 // DASHBOARD
@@ -1488,11 +1537,6 @@ async function loadNutritionForDate(){
   tbody.innerHTML=meals.map(m=>`<tr><td style="color:var(--text)">${m.food_name}</td><td><span class="badge badge-blue">${m.meal||''}</span></td><td class="text-mono">${m.cal}</td><td class="text-mono">${m.protein}g</td><td class="text-mono">${m.carbs}g</td><td class="text-mono">${m.fat}g</td><td><button class="btn btn-danger btn-sm" onclick="deleteFood('${m.id}')">x</button></td></tr>`).join('');
 }
 
-function openFoodModal(){
-  ['f-name','f-cal','f-pro','f-carb','f-fat'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  openModal('food-modal');
-}
-
 async function addFood(){
   const name=document.getElementById('f-name').value.trim();if(!name)return;
   const dateStr=document.getElementById('nutr-date')?.value||today();
@@ -1651,6 +1695,167 @@ async function buildToolsCheckin(){
   const weekPRs=(prs.data||[]).filter(p=>p.date>=weekStart);
   const el=document.getElementById('tools-checkin-content');if(!el)return;
   el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px"><div class="card-sm"><div class="stat-label">Sessions</div><div style="font-size:22px;font-weight:700;font-family:var(--mono)">${uniqueDays.length}<span style="font-size:13px;color:var(--text2)">/5</span></div></div><div class="card-sm"><div class="stat-label">Volume</div><div style="font-size:22px;font-weight:700;font-family:var(--mono)">${totalVol>0?(totalVol/1000).toFixed(1)+'k':'0'}<span style="font-size:13px;color:var(--text2)"> lbs</span></div></div><div class="card-sm"><div class="stat-label">Weight change</div><div style="font-size:22px;font-weight:700;font-family:var(--mono);color:${wc<=0?'var(--accent)':'var(--red)'}">${wc!==null?(wc>0?'+':'')+wc:'--'}<span style="font-size:13px"> lbs</span></div></div><div class="card-sm"><div class="stat-label">New PRs</div><div style="font-size:22px;font-weight:700;font-family:var(--mono);color:var(--amber)">${weekPRs.length}</div></div></div>${weekPRs.length?'<div style="font-size:12px;color:var(--text2)"><strong style="color:var(--amber)">PRs this week:</strong> '+weekPRs.map(p=>`${p.exercise} -- ${p.weight_lbs}lbs x ${p.reps}`).join(', ')+'</div>':''}`;
+}
+
+function initSettingsPage(){
+  const f=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
+  f('set-name',userProfile.name);f('set-height',userProfile.height_in);
+  f('set-start-weight',userProfile.start_weight);f('set-goal-weight',userProfile.goal_weight);
+  f('set-gym',userProfile.gym);f('set-cal',userProfile.macro_cal||2200);
+  f('set-pro',userProfile.macro_pro||190);f('set-carb',userProfile.macro_carb||210);
+  f('set-fat',userProfile.macro_fat||65);
+  const se=document.getElementById('settings-email');if(se)se.textContent=currentUser?.email||'';
+  // Show USDA key status
+  const key=getUsdaKey();
+  const inp=document.getElementById('set-usda-key');
+  const status=document.getElementById('usda-key-status');
+  if(key&&inp){inp.value=key;if(status){status.textContent='✓ Key saved';status.style.color='var(--accent)';}}
+}
+
+// ============================================================
+// BARCODE SCANNER + USDA LOOKUP
+// ============================================================
+let barcodeStream=null;
+let barcodeAnimFrame=null;
+let barcodeFoundData=null;
+let barcodeScanning=false;
+
+function switchFoodTab(tab){
+  document.getElementById('food-tab-scan').style.display=tab==='scan'?'block':'none';
+  document.getElementById('food-tab-manual').style.display=tab==='manual'?'block':'none';
+  document.getElementById('ftab-scan').classList.toggle('active',tab==='scan');
+  document.getElementById('ftab-manual').classList.toggle('active',tab==='manual');
+  if(tab!=='scan')stopBarcodeScanner();
+}
+
+function openFoodModal(){
+  ['f-name','f-cal','f-pro','f-carb','f-fat'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  barcodeFoundData=null;
+  document.getElementById('barcode-result').style.display='none';
+  document.getElementById('barcode-status').style.display='none';
+  document.getElementById('barcode-scanner-wrap').style.display='none';
+  document.getElementById('barcode-start-area').style.display='block';
+  document.getElementById('barcode-manual-input').value='';
+  switchFoodTab('scan');
+  openModal('food-modal');
+}
+
+async function startBarcodeScanner(){
+  const status=document.getElementById('barcode-status');
+  try{
+    barcodeStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
+    const video=document.getElementById('barcode-video');
+    video.srcObject=barcodeStream;
+    await video.play();
+    document.getElementById('barcode-scanner-wrap').style.display='block';
+    document.getElementById('barcode-start-area').style.display='none';
+    status.style.display='none';
+    barcodeScanning=true;
+    scanLoop();
+  }catch(err){
+    status.textContent='Camera access denied. Use the manual barcode entry below instead.';
+    status.style.display='block';
+  }
+}
+
+function stopBarcodeScanner(){
+  barcodeScanning=false;
+  if(barcodeAnimFrame)cancelAnimationFrame(barcodeAnimFrame);
+  if(barcodeStream){barcodeStream.getTracks().forEach(t=>t.stop());barcodeStream=null;}
+  document.getElementById('barcode-scanner-wrap').style.display='none';
+  document.getElementById('barcode-start-area').style.display='block';
+}
+
+async function scanLoop(){
+  if(!barcodeScanning)return;
+  const video=document.getElementById('barcode-video');
+  const canvas=document.getElementById('barcode-canvas');
+  if(video.readyState===video.HAVE_ENOUGH_DATA){
+    canvas.width=video.videoWidth;
+    canvas.height=video.videoHeight;
+    const ctx=canvas.getContext('2d');
+    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+    // Use BarcodeDetector API (native, no library needed — supported on Android Chrome, iOS 17+)
+    if('BarcodeDetector' in window){
+      try{
+        const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39']});
+        const barcodes=await detector.detect(canvas);
+        if(barcodes.length>0){
+          const code=barcodes[0].rawValue;
+          stopBarcodeScanner();
+          await lookupBarcode(code);
+          return;
+        }
+      }catch(e){}
+    }else{
+      // BarcodeDetector not supported — show fallback
+      stopBarcodeScanner();
+      const status=document.getElementById('barcode-status');
+      status.innerHTML='Your browser doesn\'t support live scanning. Enter the barcode number manually below — it\'s printed under the barcode on the packaging.';
+      status.style.display='block';
+      document.getElementById('barcode-start-area').style.display='block';
+      return;
+    }
+  }
+  barcodeAnimFrame=requestAnimationFrame(scanLoop);
+}
+
+async function lookupBarcode(barcode){
+  if(!barcode){toast('Enter a barcode number');return;}
+  barcode=barcode.replace(/\D/g,'');
+  if(barcode.length<6){toast('Barcode too short — check the number');return;}
+  const status=document.getElementById('barcode-status');
+  const result=document.getElementById('barcode-result');
+  status.innerHTML='<span class="ai-spinner" style="display:inline-block;margin-right:8px;vertical-align:middle"></span>Looking up barcode '+barcode+'...';
+  status.style.display='block';
+  result.style.display='none';
+
+  try{
+    const res=await fetch(`/api/food-lookup?barcode=${barcode}`);
+    const food=await res.json();
+    if(!res.ok||food.error){
+      status.innerHTML='Product not found. Try entering details manually.';
+      status.style.display='block';
+      return;
+    }
+    status.style.display='none';
+    barcodeFoundData=food;
+    document.getElementById('barcode-product-name').textContent=food.name;
+    document.getElementById('barcode-product-macros').textContent=`${food.cal} kcal · ${food.protein}g protein · ${food.carbs}g carbs · ${food.fat}g fat`;
+    document.getElementById('barcode-product-serving').textContent=food.serving?`Per serving: ${food.serving}`:'';
+    document.getElementById('barcode-product-source').textContent='Source: '+food.source;
+    document.getElementById('f-name').value=food.name;
+    document.getElementById('f-cal').value=food.cal;
+    document.getElementById('f-pro').value=food.protein;
+    document.getElementById('f-carb').value=food.carbs;
+    document.getElementById('f-fat').value=food.fat;
+    result.style.display='block';
+  }catch(e){
+    status.innerHTML='Lookup failed — check your connection and try again.';
+    status.style.display='block';
+  }
+}
+
+async function confirmBarcodeFood(){
+  if(!barcodeFoundData)return;
+  const meal=document.getElementById('f-meal-scan').value;
+  const dateStr=document.getElementById('nutr-date')?.value||today();
+  const{error}=await sb.from('nutrition_logs').insert({
+    user_id:currentUser.id,date:dateStr,
+    food_name:barcodeFoundData.name,meal,
+    cal:barcodeFoundData.cal,protein:barcodeFoundData.protein,
+    carbs:barcodeFoundData.carbs,fat:barcodeFoundData.fat
+  });
+  if(!error){
+    closeModal('food-modal');
+    stopBarcodeScanner();
+    await loadNutritionForDate();
+    await loadNutritionTotals(today());
+    toast(`Added: ${barcodeFoundData.name}`);
+    barcodeFoundData=null;
+  }else{
+    toast('Error saving: '+error.message);
+  }
 }
 
 // ============================================================
