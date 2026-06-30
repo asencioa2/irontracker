@@ -151,6 +151,16 @@ canvas{width:100%!important;}
 .toast.show{transform:translateY(0);opacity:1;}
 .toast-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);}
 
+/* MODAL TABS (used for browse/manual toggle) */
+.food-tab-btn{flex:1;padding:8px;border-radius:var(--radius);font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);transition:all 0.15s;text-transform:uppercase;letter-spacing:0.03em;}
+.food-tab-btn.active{background:var(--accent-dim);color:var(--accent);border-color:rgba(201,168,76,0.3);}
+
+/* EXERCISE DB LIST */
+.ex-db-item{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;transition:all 0.15s;}
+.ex-db-item:hover{border-color:var(--accent);background:var(--accent-dim2);}
+.ex-db-item-name{font-size:13px;color:var(--text);}
+.ex-db-item-add{font-size:11px;color:var(--accent);font-weight:700;}
+
 /* AI SPINNER (used by app loading screen) */
 .ai-spinner{width:20px;height:20px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;}
 @keyframes spin{to{transform:rotate(360deg);}}

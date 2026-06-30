@@ -122,9 +122,9 @@
   </div>
   <div class="grid-2" style="margin-bottom:20px">
     <div class="card">
-      <div class="section-hd"><div class="section-title">Weekly activity</div><div class="badge badge-green" id="dash-week-badge">Week 1</div></div>
+      <div class="section-hd"><div class="section-title">Split progress</div><div class="badge badge-green" id="dash-week-badge">Day 1</div></div>
       <div class="day-strip" id="dash-week-strip"></div>
-      <div style="font-size:12px;color:var(--text3)">Days trained this calendar week (split rotates regardless of weekday)</div>
+      <div style="font-size:12px;color:var(--text3)">Your last 7 logged sessions, in order</div>
     </div>
     <div class="card">
       <div class="section-hd"><div class="section-title">Today's nutrition</div><button class="btn btn-ghost btn-sm" onclick="showPage('nutrition')">Log food</button></div>
@@ -162,6 +162,7 @@
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
     <div><div style="font-size:20px;font-weight:800;letter-spacing:-0.02em">Workout log</div><div style="font-size:13px;color:var(--text2);margin-top:4px" id="workout-day-label"></div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost" onclick="logRestDay()">😴 Rest day</button>
       <button class="btn btn-ghost" onclick="openAddExerciseModal()">+ Add exercise</button>
       <button class="btn btn-ghost" onclick="openPRModal()">🏆 PRs</button>
       <button class="btn btn-primary" onclick="finishWorkout()">Finish & save</button>
@@ -370,18 +371,36 @@
 </div>
 
 <div class="modal-overlay" id="add-exercise-modal">
-  <div class="modal">
-    <div class="modal-hd"><div class="modal-title">+ Add custom exercise</div><button class="modal-close" onclick="closeModal('add-exercise-modal')">×</button></div>
+  <div class="modal" style="width:480px">
+    <div class="modal-hd"><div class="modal-title">+ Add exercise</div><button class="modal-close" onclick="closeModal('add-exercise-modal')">×</button></div>
     <div style="font-size:12px;color:var(--text3);margin-bottom:16px" id="add-ex-day-label">Adding to today's workout</div>
-    <div class="form-group"><label>Exercise name</label><input type="text" id="custom-ex-name" placeholder="e.g. Cable Crunches"></div>
-    <div class="grid-3">
-      <div class="form-group"><label>Sets</label><input type="number" id="custom-ex-sets" placeholder="3" value="3"></div>
-      <div class="form-group"><label>Target reps</label><input type="text" id="custom-ex-reps" placeholder="10-12" value="10-12"></div>
-      <div class="form-group"><label>&nbsp;</label></div>
+
+    <div style="display:flex;gap:6px;margin-bottom:16px">
+      <button class="food-tab-btn active" id="ex-tab-browse" onclick="switchExerciseTab('browse')">📚 Browse library</button>
+      <button class="food-tab-btn" id="ex-tab-manual" onclick="switchExerciseTab('manual')">✏️ Custom name</button>
     </div>
-    <button class="btn btn-primary btn-full" onclick="addCustomExercise()">Add to workout</button>
+
+    <div id="ex-tab-browse-content">
+      <div class="form-group"><label>Muscle group</label>
+        <select id="ex-db-category" onchange="renderExerciseDbList()">
+          <option value="">All groups</option>
+        </select>
+      </div>
+      <div class="form-group"><input type="text" id="ex-db-search" placeholder="Search exercises..." oninput="renderExerciseDbList()"></div>
+      <div id="ex-db-list" style="display:flex;flex-direction:column;gap:4px;max-height:240px;overflow-y:auto;margin-bottom:8px"></div>
+    </div>
+
+    <div id="ex-tab-manual-content" style="display:none">
+      <div class="form-group"><label>Exercise name</label><input type="text" id="custom-ex-name" placeholder="e.g. Cable Crunches"></div>
+      <div class="grid-2">
+        <div class="form-group"><label>Sets</label><input type="number" id="custom-ex-sets" placeholder="3" value="3"></div>
+        <div class="form-group"><label>Target reps</label><input type="text" id="custom-ex-reps" placeholder="10-12" value="10-12"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="addCustomExercise()">Add to workout</button>
+    </div>
+
     <div class="sep" style="height:1px;background:var(--border);margin:18px 0"></div>
-    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Your custom exercises for this day</div>
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Exercises currently in this day</div>
     <div id="custom-ex-list" style="display:flex;flex-direction:column;gap:6px"></div>
   </div>
 </div>
@@ -411,6 +430,28 @@ let currentWorkoutDay = null;
 let workoutSets = {};
 let timerDuration = 90, timerRemaining = 90, timerInterval = null, timerRunning = false;
 let current1RM = null;
+
+// SPLIT PRESETS — each is an ordered array of workout days (rotates regardless of weekday)
+// EXERCISE DATABASE — browsable library, categorized by muscle group
+const EXERCISE_DATABASE = {
+  'Chest':['Barbell Bench Press','Incline Barbell Press','Decline Barbell Press','Incline Dumbbell Press','Decline Dumbbell Press','Flat Dumbbell Press','Cable Chest Fly','Pec Deck Machine','Dumbbell Fly','Push-ups','Dips (Chest Focus)','Cable Crossover','Machine Chest Press','Landmine Press'],
+  'Back':['Deadlift','Barbell Row','Pendlay Row','Seated Cable Row','Single-Arm Dumbbell Row','T-Bar Row','Lat Pulldown','Weighted Pull-ups','Pull-ups','Chin-ups','Face Pulls','Straight-Arm Pulldown','Rack Pulls','Hyperextensions','Meadows Row'],
+  'Shoulders':['Barbell Overhead Press','Dumbbell Shoulder Press','Arnold Press','Lateral Raises','Front Raises','Rear Delt Fly','Cable Lateral Raise','Cable Upright Row','Barbell Upright Row','Machine Shoulder Press','Landmine Press','Pike Push-ups'],
+  'Biceps':['Barbell Curl','Dumbbell Curl','Hammer Curl','Preacher Curl','Cable Curl','Concentration Curl','Incline Dumbbell Curl','EZ-Bar Curl','Spider Curl','21s'],
+  'Triceps':['Close-Grip Bench Press','Tricep Rope Pushdown','Overhead Tricep Extension','Skull Crushers','Dips (Tricep Focus)','Cable Tricep Kickback','Diamond Push-ups','Single-Arm Overhead Extension'],
+  'Quads':['Barbell Back Squat','Front Squat','Leg Press','Leg Extension','Walking Lunges','Bulgarian Split Squat','Hack Squat','Goblet Squat','Step-ups','Sissy Squat'],
+  'Hamstrings/Glutes':['Romanian Deadlift','Seated Leg Curl','Lying Leg Curl','Hip Thrust','Glute Bridge','Good Mornings','Single-Leg RDL','Cable Pull-Through','Glute Kickback'],
+  'Calves':['Standing Calf Raises','Seated Calf Raises','Leg Press Calf Raise','Donkey Calf Raise'],
+  'Core/Abs':['Plank','Hanging Leg Raises','Ab Wheel Rollout','Cable Crunch','Russian Twists','Bicycle Crunches','Hanging Knee Raises','Sit-ups','Side Plank','Dead Bug','Pallof Press'],
+  'Full Body/HIIT':['Kettlebell Swings','Box Jumps','Battle Ropes','Burpees','Sled Push','Sled Pull','Wall Balls','Thrusters','Clean and Press',"Farmer's Carry",'Rowing Machine','Assault Bike']
+};
+
+const EXERCISE_DB_DEFAULT_TARGETS = {
+  'Chest':{sets:3,reps:'10-12'},'Back':{sets:4,reps:'8-10'},'Shoulders':{sets:3,reps:'10-12'},
+  'Biceps':{sets:3,reps:'10-12'},'Triceps':{sets:3,reps:'10-12'},'Quads':{sets:4,reps:'8-12'},
+  'Hamstrings/Glutes':{sets:3,reps:'10-12'},'Calves':{sets:4,reps:'15-20'},'Core/Abs':{sets:3,reps:'12-15'},
+  'Full Body/HIIT':{sets:5,reps:'40 sec'}
+};
 
 // SPLIT PRESETS — each is an ordered array of workout days (rotates regardless of weekday)
 const SPLIT_PRESETS = {
@@ -541,10 +582,18 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 async function initAuth(){
   loading(true,'Checking session...');
   const {data:{session}}=await sb.auth.getSession();
-  if(session){await onSignedIn(session.user);}
+  if(session){await onSignedIn(session.user,true);}
   else{loading(false);showAuthScreen();}
-  sb.auth.onAuthStateChange(async(_,session)=>{
-    if(session){await onSignedIn(session.user);}else{showAuthScreen();}
+  sb.auth.onAuthStateChange(async(event,session)=>{
+    // Ignore token refresh / tab refocus events if we're already signed in as this user
+    if(event==='TOKEN_REFRESHED'||event==='INITIAL_SESSION')return;
+    if(session){
+      if(currentUser&&currentUser.id===session.user.id)return; // already signed in, no need to reload
+      await onSignedIn(session.user,true);
+    }else{
+      currentUser=null;
+      showAuthScreen();
+    }
   });
 }
 
@@ -592,9 +641,9 @@ async function forgotPassword(){
 
 async function signOut(){await sb.auth.signOut();showAuthScreen();}
 
-async function onSignedIn(user){
+async function onSignedIn(user,showFullLoading){
   currentUser=user;
-  loading(true,'Loading your data...');
+  if(showFullLoading)loading(true,'Loading your data...');
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app').style.display='block';
   document.getElementById('nav-user-email').textContent=user.email;
@@ -703,10 +752,11 @@ async function refreshDashboard(){
   const nextDay=split.days[nextIdx];
   document.getElementById('dash-day-label').textContent=nextDay?`Up next: Day ${nextIdx+1} — ${nextDay.name}`:'Ready to train';
 
-  const[weights,logs,prs]=await Promise.all([
+  const[weights,logs,prs,restDays]=await Promise.all([
     sb.from('weight_logs').select('*').eq('user_id',currentUser.id).order('date').limit(30),
     sb.from('workout_logs').select('*').eq('user_id',currentUser.id).order('date'),
     sb.from('personal_records').select('*').eq('user_id',currentUser.id),
+    sb.from('rest_days').select('date').eq('user_id',currentUser.id).order('date'),
   ]);
 
   // Weight stat
@@ -727,16 +777,15 @@ async function refreshDashboard(){
   document.getElementById('stat-weekly-sub').textContent=`${Math.max(0,5-uniqueDays.length)} remaining this week`;
 
   // Streak & total
-  const streak=calcStreak(logs.data||[]);
+  const streak=calcStreak(logs.data||[],restDays.data||[]);
   document.getElementById('stat-streak').innerHTML=`${streak}<span class="stat-unit">days</span>`;
   document.getElementById('stat-total').textContent=[...new Set((logs.data||[]).map(l=>l.date))].length;
 
-  // Week badge
-  const startDate=userProfile.start_date||today();
-  const daysSince=Math.floor((new Date()-new Date(startDate))/86400000);
-  document.getElementById('dash-week-badge').textContent=`Week ${Math.ceil((daysSince+1)/7)}`;
+  // Split progress badge — shows the next upcoming day in the rotation
+  const nextIdx2=await getNextSplitIndex();
+  document.getElementById('dash-week-badge').textContent=`Day ${nextIdx2+1} next`;
 
-  buildWeekStrip('dash-week-strip',null,logs.data||[],true);
+  buildSplitProgressStrip(logs.data||[]);
   await loadNutritionTotals(today());
   renderWaterOz(weights.data||[]);
   buildStreakGrid(logs.data||[]);
@@ -748,34 +797,39 @@ function getWeekStart(){
   d.setDate(diff);return d.toISOString().split('T')[0];
 }
 
-function calcStreak(logs){
+function calcStreak(logs,restDays){
   if(!logs.length)return 0;
   const done=new Set(logs.map(l=>l.date));
-  // Count consecutive calendar days with a logged workout, walking backward from today (allows today to be unlogged yet)
+  const rested=new Set((restDays||[]).map(r=>r.date));
   let streak=0;const d=new Date();
   for(let i=0;i<60;i++){
     const ds=d.toISOString().split('T')[0];
     if(done.has(ds)){streak++;d.setDate(d.getDate()-1);}
+    else if(rested.has(ds)){d.setDate(d.getDate()-1);continue;} // rest day doesn't break streak
     else if(i===0){d.setDate(d.getDate()-1);continue;}
     else break;
   }
   return streak;
 }
 
-function buildWeekStrip(containerId,activeDow,logs,readonly=false){
-  const done=new Set(logs.map(l=>l.date));
-  const container=document.getElementById(containerId);
+function buildSplitProgressStrip(logs){
+  const container=document.getElementById('dash-week-strip');
   if(!container)return;
   container.innerHTML='';
-  const days=[{dow:1,label:'Mon'},{dow:2,label:'Tue'},{dow:3,label:'Wed'},{dow:4,label:'Thu'},{dow:5,label:'Fri'},{dow:6,label:'Sat'},{dow:0,label:'Sun'}];
-  const weekStart=getWeekStart();
-  const weekDates={};
-  for(let i=0;i<7;i++){const d=new Date(weekStart);d.setDate(d.getDate()+i);weekDates[d.getDay()]=d.toISOString().split('T')[0];}
-  days.forEach(({dow,label})=>{
-    const dateStr=weekDates[dow];const isDone=done.has(dateStr);
+  const split=getActiveSplit();
+  // Sort logs ascending by date, take the last 7 sessions
+  const sorted=[...logs].sort((a,b)=>a.date.localeCompare(b.date));
+  const recent=sorted.slice(-7);
+  if(!recent.length){
+    container.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 0">No sessions logged yet — finish your first workout to see progress here.</div>';
+    return;
+  }
+  recent.forEach(log=>{
+    const dayInfo=split.days[log.split_index];
     const div=document.createElement('div');
-    div.className='day-pill'+(isDone?' completed':'');
-    div.innerHTML=`<div style="font-size:10px;font-weight:700">${label}</div><div style="font-size:10px;margin-top:2px;color:var(--text3)">${isDone?'✓':'—'}</div>`;
+    div.className='day-pill completed';
+    const label=dayInfo?`Day ${log.split_index+1}`:log.day_name||'Workout';
+    div.innerHTML=`<div style="font-size:10px;font-weight:700">${label}</div><div style="font-size:9px;margin-top:2px;color:var(--text3)">${log.date.slice(5)}</div>`;
     container.appendChild(div);
   });
 }
@@ -905,6 +959,27 @@ async function getCustomExercises(dow){
   return data||[];
 }
 
+async function getHiddenPresetExercises(splitKey,dow){
+  const{data}=await sb.from('hidden_exercises').select('exercise_name').eq('user_id',currentUser.id).eq('split_key',splitKey).eq('dow',dow);
+  return new Set((data||[]).map(h=>h.exercise_name));
+}
+
+async function hidePresetExercise(exName){
+  const splitKey=userProfile.active_split||'iron24_5day';
+  await sb.from('hidden_exercises').insert({user_id:currentUser.id,split_key:splitKey,dow:currentWorkoutDay,exercise_name:exName});
+  toast('Removed: '+exName);
+  renderCustomExerciseList();
+  renderWorkoutContent();
+}
+
+async function unhidePresetExercise(exName){
+  const splitKey=userProfile.active_split||'iron24_5day';
+  await sb.from('hidden_exercises').delete().eq('user_id',currentUser.id).eq('split_key',splitKey).eq('dow',currentWorkoutDay).eq('exercise_name',exName);
+  toast('Restored: '+exName);
+  renderCustomExerciseList();
+  renderWorkoutContent();
+}
+
 function openAddExerciseModal(){
   const split=getActiveSplit();
   const idx=currentWorkoutDay;
@@ -913,18 +988,78 @@ function openAddExerciseModal(){
   document.getElementById('custom-ex-name').value='';
   document.getElementById('custom-ex-sets').value='3';
   document.getElementById('custom-ex-reps').value='10-12';
+  document.getElementById('ex-db-search').value='';
+  populateExerciseDbCategories();
+  renderExerciseDbList();
   renderCustomExerciseList();
+  switchExerciseTab('browse');
   openModal('add-exercise-modal');
 }
 
-async function renderCustomExerciseList(){
-  const list=await getCustomExercises(currentWorkoutDay);
-  const el=document.getElementById('custom-ex-list');
-  if(!list.length){el.innerHTML='<div style="font-size:12px;color:var(--text3)">No custom exercises added yet for this day.</div>';return;}
-  el.innerHTML=list.map(ex=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:8px 12px">
-    <div><div style="font-size:13px;color:var(--text)">${ex.name}</div><div style="font-size:11px;color:var(--text3)">${ex.sets} × ${ex.target_reps}</div></div>
-    <button class="btn btn-danger btn-sm" onclick="deleteCustomExercise('${ex.id}')">×</button>
+function switchExerciseTab(tab){
+  document.getElementById('ex-tab-browse-content').style.display=tab==='browse'?'block':'none';
+  document.getElementById('ex-tab-manual-content').style.display=tab==='manual'?'block':'none';
+  document.getElementById('ex-tab-browse').classList.toggle('active',tab==='browse');
+  document.getElementById('ex-tab-manual').classList.toggle('active',tab==='manual');
+}
+
+function populateExerciseDbCategories(){
+  const sel=document.getElementById('ex-db-category');
+  sel.innerHTML='<option value="">All groups</option>'+Object.keys(EXERCISE_DATABASE).map(cat=>`<option value="${cat}">${cat}</option>`).join('');
+}
+
+function renderExerciseDbList(){
+  const category=document.getElementById('ex-db-category').value;
+  const search=document.getElementById('ex-db-search').value.trim().toLowerCase();
+  const list=document.getElementById('ex-db-list');
+  let items=[];
+  const cats=category?[category]:Object.keys(EXERCISE_DATABASE);
+  cats.forEach(cat=>{
+    EXERCISE_DATABASE[cat].forEach(name=>{
+      if(!search||name.toLowerCase().includes(search)){items.push({name,cat});}
+    });
+  });
+  if(!items.length){list.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px">No exercises match your search.</div>';return;}
+  list.innerHTML=items.map(({name,cat})=>`<div class="ex-db-item" onclick="addFromDatabase('${name.replace(/'/g,"\\'")}','${cat}')">
+    <span class="ex-db-item-name">${name}</span><span class="ex-db-item-add">+ Add</span>
   </div>`).join('');
+}
+
+async function addFromDatabase(name,category){
+  const defaults=EXERCISE_DB_DEFAULT_TARGETS[category]||{sets:3,reps:'10-12'};
+  await sb.from('custom_exercises').insert({user_id:currentUser.id,dow:currentWorkoutDay,name,sets:defaults.sets,target_reps:defaults.reps});
+  toast('Added: '+name);
+  renderCustomExerciseList();
+  renderWorkoutContent();
+}
+
+async function renderCustomExerciseList(){
+  const split=getActiveSplit();
+  const sched=split.days[currentWorkoutDay];
+  const splitKey=userProfile.active_split||'iron24_5day';
+  const customList=await getCustomExercises(currentWorkoutDay);
+  const hiddenSet=await getHiddenPresetExercises(splitKey,currentWorkoutDay);
+  const el=document.getElementById('custom-ex-list');
+
+  let html='';
+  if(sched){
+    sched.exercises.forEach(ex=>{
+      const isHidden=hiddenSet.has(ex.name);
+      html+=`<div class="ex-db-item" style="cursor:default;${isHidden?'opacity:0.5':''}">
+        <div><div class="ex-db-item-name">${ex.name}${isHidden?' <span style="color:var(--text3)">(removed)</span>':''}</div><div style="font-size:11px;color:var(--text3)">${ex.sets} × ${ex.target} · Preset</div></div>
+        ${isHidden
+          ?`<button class="btn btn-ghost btn-sm" onclick="unhidePresetExercise('${ex.name.replace(/'/g,"\\'")}')">Restore</button>`
+          :`<button class="btn btn-danger btn-sm" onclick="hidePresetExercise('${ex.name.replace(/'/g,"\\'")}')">Remove</button>`}
+      </div>`;
+    });
+  }
+  customList.forEach(ex=>{
+    html+=`<div class="ex-db-item" style="cursor:default">
+      <div><div class="ex-db-item-name">${ex.name}</div><div style="font-size:11px;color:var(--text3)">${ex.sets} × ${ex.target_reps} · Added by you</div></div>
+      <button class="btn btn-danger btn-sm" onclick="deleteCustomExercise('${ex.id}')">×</button>
+    </div>`;
+  });
+  el.innerHTML=html||'<div style="font-size:12px;color:var(--text3)">No exercises in this day yet.</div>';
 }
 
 async function addCustomExercise(){
@@ -1002,14 +1137,18 @@ async function renderWorkoutContent(){
   const label=document.getElementById('workout-day-label');
   const content=document.getElementById('workout-content');
   const customExercises=await getCustomExercises(currentWorkoutDay);
+  const splitKey=userProfile.active_split||'iron24_5day';
+  const hiddenSet=await getHiddenPresetExercises(splitKey,currentWorkoutDay);
 
-  if(!sched&&!customExercises.length){
+  const visiblePresetExercises=sched?sched.exercises.filter(e=>!hiddenSet.has(e.name)):[];
+
+  if(!visiblePresetExercises.length&&!customExercises.length){
     if(label)label.textContent='No workout configured';
-    if(content)content.innerHTML='<div class="card" style="text-align:center;padding:40px"><div class="text-muted fs-13">Pick a split or add a custom exercise to get started.</div></div>';
+    if(content)content.innerHTML='<div class="card" style="text-align:center;padding:40px"><div class="text-muted fs-13">Pick a split or add a custom exercise to get started.</div><button class="btn btn-primary" style="margin-top:16px" onclick="openAddExerciseModal()">+ Add exercise</button></div>';
     return;
   }
 
-  const baseExercises=sched?sched.exercises.map(e=>({name:e.name,target:e.target,sets:e.sets,isCustom:false})):[];
+  const baseExercises=visiblePresetExercises.map(e=>({name:e.name,target:e.target,sets:e.sets,isCustom:false}));
   const customMapped=customExercises.map(c=>({name:c.name,target:c.target_reps,sets:c.sets,isCustom:true,id:c.id}));
   const allExercises=[...baseExercises,...customMapped];
 
@@ -1111,6 +1250,14 @@ async function finishWorkout(){
   localStorage.removeItem(`it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`);
   toast(`\u2705 ${dayName} saved! Next up: Day ${((currentWorkoutDay+1)%split.days.length)+1}`);
   initWorkoutPage();
+}
+
+async function logRestDay(){
+  const{data:existing}=await sb.from('rest_days').select('id').eq('user_id',currentUser.id).eq('date',today()).limit(1);
+  if(existing&&existing.length){toast('Already logged today as a rest day');return;}
+  await sb.from('rest_days').insert({user_id:currentUser.id,date:today()});
+  toast('\ud83d\ude34 Rest day logged \u2014 your split stays on Day '+(currentWorkoutDay+1)+' for next time');
+  refreshDashboard();
 }
 
 async function openPRModal(){
@@ -1302,6 +1449,13 @@ async function buildToolsCheckin(){
 document.addEventListener('DOMContentLoaded',()=>{
   initAuth();updateTimerDisplay();
   const nd=document.getElementById('nutr-date');if(nd)nd.value=today();
+});
+
+// Safety net: if user is signed in and tab regains focus, ensure loading screen isn't stuck
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&currentUser){
+    loading(false);
+  }
 });
 </script>
 </body>
