@@ -175,10 +175,17 @@
 <!-- NUTRITION -->
 <div id="page-nutrition" class="page">
   <div style="margin-bottom:20px">
-    <div style="font-size:20px;font-weight:800;letter-spacing:-0.02em;margin-bottom:12px">Nutrition log</div>
-    <div class="nutr-hd-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <input type="date" id="nutr-date" style="width:160px;flex:1;min-width:130px" onchange="loadNutritionForDate()">
-      <button class="btn btn-primary" onclick="openFoodModal()">+ Add food</button>
+    <div style="font-size:20px;font-weight:800;letter-spacing:-0.02em;margin-bottom:14px">Nutrition log</div>
+    <!-- Date navigator -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <button class="btn btn-ghost btn-sm" onclick="shiftNutrDate(-1)" style="padding:8px 14px;flex-shrink:0">‹</button>
+      <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;text-align:center;cursor:pointer;position:relative" onclick="document.getElementById('nutr-date').showPicker?document.getElementById('nutr-date').showPicker():document.getElementById('nutr-date').click()">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">Date</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text)" id="nutr-date-display">Today</div>
+        <input type="date" id="nutr-date" onchange="loadNutritionForDate()" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none">
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="shiftNutrDate(1)" style="padding:8px 14px;flex-shrink:0">›</button>
+      <button class="btn btn-primary" onclick="openFoodModal()" style="flex-shrink:0">+ Add food</button>
     </div>
   </div>
   <div class="grid-4" style="margin-bottom:20px">
@@ -345,7 +352,14 @@
 
 <div class="modal-overlay" id="weight-modal">
   <div class="modal"><div class="modal-hd"><div class="modal-title">Log body weight</div><button class="modal-close" onclick="closeModal('weight-modal')">×</button></div>
-    <div class="form-group"><label>Date</label><input type="date" id="w-date"></div>
+    <div class="form-group">
+      <label>Date</label>
+      <div style="position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between" onclick="document.getElementById('w-date').showPicker?document.getElementById('w-date').showPicker():document.getElementById('w-date').click()">
+        <span style="font-size:14px;color:var(--text)" id="w-date-display">Today</span>
+        <span style="font-size:16px;color:var(--text3)">📅</span>
+        <input type="date" id="w-date" onchange="updateWDateDisplay()" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none">
+      </div>
+    </div>
     <div class="form-group"><label>Weight (lbs)</label><input type="number" id="w-weight" step="0.1" placeholder="e.g. 185.5"></div>
     <div class="form-group"><label>Notes (optional)</label><input type="text" id="w-notes" placeholder="e.g. After morning workout"></div>
     <button class="btn btn-primary btn-full" onclick="saveWeight()">Save weight</button>
@@ -354,7 +368,14 @@
 
 <div class="modal-overlay" id="measure-modal">
   <div class="modal"><div class="modal-hd"><div class="modal-title">Log body measurements (inches)</div><button class="modal-close" onclick="closeModal('measure-modal')">×</button></div>
-    <div class="form-group"><label>Date</label><input type="date" id="m-date"></div>
+    <div class="form-group">
+      <label>Date</label>
+      <div style="position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between" onclick="document.getElementById('m-date').showPicker?document.getElementById('m-date').showPicker():document.getElementById('m-date').click()">
+        <span style="font-size:14px;color:var(--text)" id="m-date-display">Today</span>
+        <span style="font-size:16px;color:var(--text3)">📅</span>
+        <input type="date" id="m-date" onchange="updateMDateDisplay()" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none">
+      </div>
+    </div>
     <div class="grid-2">
       <div class="form-group"><label>Neck</label><input type="number" id="m-neck" step="0.1" placeholder="0.0"></div>
       <div class="form-group"><label>Chest</label><input type="number" id="m-chest" step="0.1" placeholder="0.0"></div>
@@ -1356,15 +1377,51 @@ async function openPRModal(){
 // ============================================================
 // NUTRITION PAGE
 // ============================================================
+function formatDateDisplay(dateStr){
+  // Format YYYY-MM-DD nicely, showing "Today" or "Yesterday" when applicable
+  const t=today();
+  const yest=new Date();yest.setDate(yest.getDate()-1);
+  const yesterStr=yest.toISOString().split('T')[0];
+  if(dateStr===t)return 'Today — '+new Date(dateStr+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  if(dateStr===yesterStr)return 'Yesterday — '+new Date(dateStr+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  return new Date(dateStr+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+}
+
+function shiftNutrDate(delta){
+  const el=document.getElementById('nutr-date');
+  const current=el.value||today();
+  const d=new Date(current+'T12:00:00');
+  d.setDate(d.getDate()+delta);
+  el.value=d.toISOString().split('T')[0];
+  loadNutritionForDate();
+}
+
+function updateWDateDisplay(){
+  const v=document.getElementById('w-date').value;
+  const el=document.getElementById('w-date-display');
+  if(el&&v)el.textContent=formatDateDisplay(v);
+}
+
+function updateMDateDisplay(){
+  const v=document.getElementById('m-date').value;
+  const el=document.getElementById('m-date-display');
+  if(el&&v)el.textContent=formatDateDisplay(v);
+}
+
 async function initNutritionPage(){
   const d=document.getElementById('nutr-date');
   if(!d.value)d.value=today();
+  const disp=document.getElementById('nutr-date-display');
+  if(disp)disp.textContent=formatDateDisplay(d.value);
   await loadNutritionForDate();
   buildQuickMeals();
 }
 
 async function loadNutritionForDate(){
   const dateStr=document.getElementById('nutr-date')?.value||today();
+  // Update the display label when date changes
+  const disp=document.getElementById('nutr-date-display');
+  if(disp)disp.textContent=formatDateDisplay(dateStr);
   const{data}=await sb.from('nutrition_logs').select('*').eq('user_id',currentUser.id).eq('date',dateStr);
   const meals=data||[];
   const t=meals.reduce((a,m)=>({cal:a.cal+m.cal,pro:a.pro+m.protein,carb:a.carb+m.carbs,fat:a.fat+m.fat}),{cal:0,pro:0,carb:0,fat:0});
@@ -1444,14 +1501,26 @@ function buildMeasureTable(measures){
   }).join('');
 }
 
-function openWeightModal(){document.getElementById('w-date').value=today();document.getElementById('w-weight').value='';document.getElementById('w-notes').value='';openModal('weight-modal');}
+function openWeightModal(){
+  const t=today();
+  document.getElementById('w-date').value=t;
+  const wd=document.getElementById('w-date-display');if(wd)wd.textContent=formatDateDisplay(t);
+  document.getElementById('w-weight').value='';
+  document.getElementById('w-notes').value='';
+  openModal('weight-modal');
+}
 async function saveWeight(){
   const w=parseFloat(document.getElementById('w-weight').value);const d=document.getElementById('w-date').value;if(!w||!d)return;
   await sb.from('weight_logs').upsert({user_id:currentUser.id,date:d,weight_lbs:w,notes:document.getElementById('w-notes').value},{onConflict:'user_id,date'});
   closeModal('weight-modal');toast(`Weight logged: ${w} lbs`);initProgressPage();refreshDashboard();
 }
 
-function openMeasureModal(){document.getElementById('m-date').value=today();openModal('measure-modal');}
+function openMeasureModal(){
+  const t=today();
+  document.getElementById('m-date').value=t;
+  const md=document.getElementById('m-date-display');if(md)md.textContent=formatDateDisplay(t);
+  openModal('measure-modal');
+}
 async function saveMeasurements(){
   const entry={user_id:currentUser.id,date:document.getElementById('m-date').value,neck_in:parseFloat(document.getElementById('m-neck').value)||null,chest_in:parseFloat(document.getElementById('m-chest').value)||null,waist_in:parseFloat(document.getElementById('m-waist').value)||null,hips_in:parseFloat(document.getElementById('m-hips').value)||null,arms_in:parseFloat(document.getElementById('m-arms').value)||null,thighs_in:parseFloat(document.getElementById('m-thighs').value)||null};
   await sb.from('measurements').insert(entry);closeModal('measure-modal');toast('Measurements saved');initProgressPage();
