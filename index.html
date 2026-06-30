@@ -104,7 +104,6 @@
 </nav>
 
 
-
 <!-- DASHBOARD -->
 <div id="page-dashboard" class="page active">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
@@ -174,11 +173,11 @@
 
 <!-- NUTRITION -->
 <div id="page-nutrition" class="page">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-    <div style="font-size:20px;font-weight:800;letter-spacing:-0.02em">Nutrition log</div>
-    <div style="display:flex;gap:8px;align-items:center">
+  <div style="margin-bottom:20px">
+    <div style="font-size:20px;font-weight:800;letter-spacing:-0.02em;margin-bottom:12px">Nutrition log</div>
+    <div class="nutr-hd-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <button class="btn btn-ghost btn-sm" onclick="openMealSuggest()">🍽️ Suggest meal</button>
-      <input type="date" id="nutr-date" style="width:160px" onchange="loadNutritionForDate()">
+      <input type="date" id="nutr-date" style="width:160px;flex:1;min-width:130px" onchange="loadNutritionForDate()">
       <button class="btn btn-primary" onclick="openFoodModal()">+ Add food</button>
     </div>
   </div>
@@ -190,8 +189,8 @@
   </div>
   <div class="card" style="margin-bottom:20px">
     <div class="section-hd"><div class="section-title">Food entries</div></div>
-    <div class="table-scroll"><table class="table"><thead><tr><th>Food</th><th>Meal</th><th>Cals</th><th>Protein</th><th>Carbs</th><th>Fat</th><th></th></tr></thead>
-    <tbody id="food-table-body"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">No food logged yet</td></tr></tbody></table></div>
+    <table class="table"><thead><tr><th>Food</th><th>Meal</th><th>Cals</th><th>Protein</th><th>Carbs</th><th>Fat</th><th></th></tr></thead>
+    <tbody id="food-table-body"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">No food logged yet</td></tr></tbody></table>
   </div>
   <div class="card">
     <div class="section-hd"><div class="section-title">Quick add — meal plan</div></div>
@@ -212,12 +211,12 @@
   <div class="card" style="margin-bottom:20px">
     <div class="section-hd"><div class="section-title">Personal records 🏆</div></div>
     <div class="table-scroll"><table class="table"><thead><tr><th>Exercise</th><th>Best weight</th><th>Reps</th><th>Est. 1RM</th><th>Date</th></tr></thead>
-    <tbody id="pr-table-body"><tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">Complete workouts to track PRs automatically</td></tr></tbody></table>
+    <tbody id="pr-table-body"><tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">Complete workouts to track PRs automatically</td></tr></tbody></table></div>
   </div>
   <div class="card" style="margin-bottom:20px">
     <div class="section-hd"><div class="section-title">Body measurements</div><button class="btn btn-ghost btn-sm" onclick="openMeasureModal()">+ Log measurements</button></div>
-    <table class="table"><thead><tr><th>Date</th><th>Neck</th><th>Chest</th><th>Waist</th><th>Arms</th><th>Thighs</th><th>Est. BF%</th></tr></thead>
-    <tbody id="measure-table-body"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">No measurements logged yet</td></tr></tbody></table>
+    <div class="table-scroll"><table class="table"><thead><tr><th>Date</th><th>Neck</th><th>Chest</th><th>Waist</th><th>Arms</th><th>Thighs</th><th>Est. BF%</th></tr></thead>
+    <tbody id="measure-table-body"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">No measurements logged yet</td></tr></tbody></table></div>
   </div>
   <div class="card">
     <div class="section-hd"><div class="section-title">📸 Progress photos</div><button class="btn btn-primary btn-sm" onclick="document.getElementById('photo-progress-input').click()">+ Add photo</button></div>
@@ -554,17 +553,6 @@ async function onSignedIn(user){
 // ============================================================
 // PROFILE / SETTINGS
 // ============================================================
-function initSettingsPage(){
-  // Re-populate settings form with current profile data
-  const f=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
-  f('set-name',userProfile.name);f('set-height',userProfile.height_in);
-  f('set-start-weight',userProfile.start_weight);f('set-goal-weight',userProfile.goal_weight);
-  f('set-gym',userProfile.gym);f('set-cal',userProfile.macro_cal||2200);
-  f('set-pro',userProfile.macro_pro||190);f('set-carb',userProfile.macro_carb||210);
-  f('set-fat',userProfile.macro_fat||65);
-  const se=document.getElementById('settings-email');if(se)se.textContent=currentUser?.email||'';
-}
-
 async function loadProfile(){
   const{data}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
   if(data){
@@ -619,11 +607,12 @@ function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.mobile-nav-btn').forEach(b=>b.classList.remove('active'));
-  const pageEl=document.getElementById('page-'+id);
-  if(!pageEl){console.error('Page not found:',id);return;}
-  pageEl.classList.add('active');
-  const dt=document.querySelector('[data-page="'+id+'"]');if(dt)dt.classList.add('active');
-  const mb=document.querySelector('[data-mob="'+id+'"]');if(mb)mb.classList.add('active');
+  var pg=document.getElementById('page-'+id);
+  if(!pg)return;
+  pg.style.display='block';
+  pg.classList.add('active');
+  var dt=document.querySelector('[data-page="'+id+'"]');if(dt)dt.classList.add('active');
+  var mb=document.querySelector('[data-mob="'+id+'"]');if(mb)mb.classList.add('active');
   window.scrollTo({top:0,behavior:'smooth'});
   if(id==='dashboard')refreshDashboard();
   else if(id==='workout')initWorkoutPage();
@@ -631,6 +620,20 @@ function showPage(id){
   else if(id==='nutrition')initNutritionPage();
   else if(id==='tools'){buildToolsCheckin();updateTimerDisplay();}
   else if(id==='settings')initSettingsPage();
+}
+
+function initSettingsPage(){
+  var f=function(i,v){var e=document.getElementById(i);if(e&&v!=null)e.value=v;};
+  f('set-name',userProfile.name);
+  f('set-height',userProfile.height_in);
+  f('set-start-weight',userProfile.start_weight);
+  f('set-goal-weight',userProfile.goal_weight);
+  f('set-gym',userProfile.gym);
+  f('set-cal',userProfile.macro_cal||2200);
+  f('set-pro',userProfile.macro_pro||190);
+  f('set-carb',userProfile.macro_carb||210);
+  f('set-fat',userProfile.macro_fat||65);
+  var se=document.getElementById('settings-email');if(se&&currentUser)se.textContent=currentUser.email;
 }
 
 // ============================================================
