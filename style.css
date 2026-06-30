@@ -198,21 +198,24 @@ canvas{width:100%!important;}
 
 /* ===================== RESPONSIVE ===================== */
 @media(max-width:700px){
+  /* Prevent horizontal scroll globally */
+  html,body{overflow-x:hidden;width:100%;}
+
   /* Hide desktop nav, show mobile nav */
   .nav{display:none;}
   .mobile-nav{display:flex;}
   .mobile-header{display:flex;}
 
   /* Layout */
-  .main{padding-top:0;padding-bottom:72px;}
-  .page{padding:16px 14px;}
+  .main{padding-top:0;padding-bottom:80px;overflow-x:hidden;}
+  .page{padding:16px 14px;max-width:100%;box-sizing:border-box;width:100%;}
 
-  /* Grids */
+  /* Grids — ALL collapse to 1 col */
   .grid-4{grid-template-columns:1fr 1fr;}
   .grid-3,.grid-2{grid-template-columns:1fr;}
 
   /* Stat cards */
-  .stat-value{font-size:22px;}
+  .stat-value{font-size:20px;}
   .stat-card{padding:14px;}
 
   /* Cards */
@@ -220,25 +223,25 @@ canvas{width:100%!important;}
   .card-sm{padding:12px;}
 
   /* Exercise log */
-  .exercise-row-log{grid-template-columns:1fr 56px 56px 56px 32px;gap:4px;padding:8px 0;}
+  .exercise-row-log{grid-template-columns:1fr 52px 52px 52px 30px;gap:3px;padding:8px 0;}
   .ex-name{font-size:12px;}
-  .ex-input{font-size:12px;padding:5px 4px;}
+  .ex-input{font-size:12px;padding:5px 3px;}
   .ex-col-hd{font-size:9px;}
 
   /* Day strip */
-  .day-strip{gap:4px;}
+  .day-strip{gap:3px;}
   .day-pill{padding:8px 2px;font-size:9px;letter-spacing:0;}
 
   /* Streak */
   .streak-dot{width:12px;height:12px;}
 
   /* Buttons */
-  .btn{padding:8px 14px;font-size:11px;}
+  .btn{padding:8px 12px;font-size:11px;}
   .btn-sm{padding:5px 10px;font-size:10px;}
 
   /* Modals — slide up from bottom */
   .modal-overlay{align-items:flex-end;}
-  .modal{width:100%!important;max-width:100%!important;border-radius:var(--radius-lg) var(--radius-lg) 0 0;max-height:90vh;}
+  .modal{width:100%!important;max-width:100%!important;border-radius:var(--radius-lg) var(--radius-lg) 0 0;max-height:90vh;box-sizing:border-box;}
 
   /* Auth */
   .auth-screen{padding:16px;padding-top:48px;align-items:flex-start;}
@@ -250,15 +253,20 @@ canvas{width:100%!important;}
   /* Timer */
   #timer-display{font-size:52px;}
 
-  /* Tools grid */
-  #page-tools .grid-2{grid-template-columns:1fr;}
-
   /* Progress photos */
   #progress-photos-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));}
 
-  /* Scrollable tables on small screens */
-  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  .table{min-width:500px;}
+  /* Scrollable tables */
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;}
+  .table{min-width:480px;}
+
+  /* Nutrition header — stack vertically */
+  .nutr-hd{flex-direction:column;align-items:stretch!important;}
+  .nutr-hd>div:first-child{margin-bottom:8px;}
+  .nutr-hd .btn,.nutr-hd input[type="date"]{width:100%;box-sizing:border-box;}
+
+  /* Section headings */
+  .section-hd{flex-wrap:wrap;gap:8px;}
 }
 .mt-8{margin-top:8px;}.mt-16{margin-top:16px;}.mt-20{margin-top:20px;}
 .flex{display:flex;}.items-center{align-items:center;}.justify-between{justify-content:justify-between;}
