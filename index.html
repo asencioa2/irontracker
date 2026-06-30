@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>IronTracker — Your Personal Fitness OS</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
@@ -189,8 +189,8 @@
   </div>
   <div class="card" style="margin-bottom:20px">
     <div class="section-hd"><div class="section-title">Food entries</div></div>
-    <table class="table"><thead><tr><th>Food</th><th>Meal</th><th>Cals</th><th>Protein</th><th>Carbs</th><th>Fat</th><th></th></tr></thead>
-    <tbody id="food-table-body"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">No food logged yet</td></tr></tbody></table>
+    <div class="table-scroll"><table class="table"><thead><tr><th>Food</th><th>Meal</th><th>Cals</th><th>Protein</th><th>Carbs</th><th>Fat</th><th></th></tr></thead>
+    <tbody id="food-table-body"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">No food logged yet</td></tr></tbody></table></div>
   </div>
   <div class="card">
     <div class="section-hd"><div class="section-title">Quick add — meal plan</div></div>
@@ -1256,26 +1256,33 @@ async function renderWorkoutContent(){
     }
   }
 
-  let html=`<div class="card"><div class="section-hd"><div class="section-title">${sched?sched.name:'Custom workout'}</div>${sched&&sched.focus?`<span class="badge badge-blue">${sched.focus}</span>`:''}</div>
-  <div style="display:grid;grid-template-columns:1fr 80px 80px 80px 40px;gap:8px;align-items:center;padding:6px 0 10px;border-bottom:1px solid var(--border)">
-    <div class="ex-col-hd">Exercise</div><div class="ex-col-hd">Weight</div><div class="ex-col-hd">Reps</div><div class="ex-col-hd">Sets done</div><div></div>
-  </div>`;
+  let html=`<div class="card"><div class="section-hd"><div class="section-title">${sched?sched.name:'Custom workout'}</div>${sched&&sched.focus?`<span class="badge badge-blue">${sched.focus}</span>`:''}</div></div>`;
   allExercises.forEach((ex,i)=>{
     const saved=workoutSets[i]||{};
     const pr=prMap[ex.name];
     const lastTime=lastSeenMap[ex.name];
     const prTag=pr?`<span class="pb-tag">PR: ${pr.weight_lbs}lbs\xd7${pr.reps}</span>`:'';
     const customTag=ex.isCustom?`<span class="badge badge-amber" style="margin-left:6px">Custom</span>`:'';
-    const lastTimeTag=lastTime?`<span style="font-size:10px;color:var(--blue);margin-left:6px;font-family:var(--mono)">Last: ${lastTime.w}lbs\xd7${lastTime.r}</span>`:'';
+    const lastTimeTag=lastTime?`<span style="font-size:10px;color:var(--blue);font-family:var(--mono);display:block;margin-top:2px">Last: ${lastTime.w}lbs\xd7${lastTime.r}</span>`:'';
     const deleteBtn=ex.isCustom
-      ?`<button class="btn btn-danger btn-sm" onclick="deleteCustomExercise('${ex.id}')" title="Remove custom exercise" style="margin-left:4px">\ud83d\uddd1</button>`
-      :`<button class="btn btn-danger btn-sm" onclick="hidePresetExercise('${ex.name.replace(/'/g,"\\'")}')" title="Remove from this workout" style="margin-left:4px">\ud83d\uddd1</button>`;
-    html+=`<div class="exercise-row-log">
-      <div class="ex-name">${ex.name}${prTag}${customTag}<div style="font-size:11px;color:var(--text3);margin-top:2px">${ex.sets} × ${ex.target}${lastTimeTag}</div></div>
-      <input class="ex-input" type="number" id="ex-w-${i}" placeholder="${lastTime?lastTime.w:'lbs'}" value="${saved.w||''}" onchange="saveSet(${i},'${ex.name.replace(/'/g,"\\'")}')" step="2.5">
-      <input class="ex-input" type="number" id="ex-r-${i}" placeholder="${lastTime?lastTime.r:'reps'}" value="${saved.r||''}" onchange="saveSet(${i},'${ex.name.replace(/'/g,"\\'")}')">
-      <input class="ex-input" type="number" id="ex-s-${i}" placeholder="/${ex.sets}" value="${saved.s||''}" onchange="saveSet(${i},'${ex.name.replace(/'/g,"\\'")}')" max="${ex.sets}">
-      <div style="display:flex;gap:2px"><button class="btn btn-ghost btn-sm" onclick="checkPR(${i},'${ex.name.replace(/'/g,"\\'")}')">&#10003;</button>${deleteBtn}</div>
+      ?`<button class="btn btn-danger btn-sm" onclick="deleteCustomExercise('${ex.id}')" title="Remove">🗑</button>`
+      :`<button class="btn btn-danger btn-sm" onclick="hidePresetExercise('${ex.name.replace(/'/g,"\\'")}')" title="Remove">🗑</button>`;
+    html+=`<div class="card" style="margin-bottom:10px;padding:14px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div class="ex-name" style="flex:1;padding-right:8px">${ex.name}${prTag}${customTag}
+          <div style="font-size:11px;color:var(--text3);font-weight:400;margin-top:2px">${ex.sets} × ${ex.target}${lastTimeTag}</div>
+        </div>
+        ${deleteBtn}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end">
+        <div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Weight</div>
+          <input class="ex-input" type="number" inputmode="decimal" id="ex-w-${i}" placeholder="${lastTime?lastTime.w:'lbs'}" value="${saved.w||''}" onchange="saveSet(${i},'${ex.name.replace(/'/g,"\\'")}')" step="2.5" style="width:100%"></div>
+        <div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Reps</div>
+          <input class="ex-input" type="number" inputmode="numeric" id="ex-r-${i}" placeholder="${lastTime?lastTime.r:'reps'}" value="${saved.r||''}" onchange="saveSet(${i},'${ex.name.replace(/'/g,"\\'")}\`)" style="width:100%"></div>
+        <div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Sets</div>
+          <input class="ex-input" type="number" inputmode="numeric" id="ex-s-${i}" placeholder="/${ex.sets}" value="${saved.s||''}" onchange="saveSet(${i},'${ex.name.replace(/'/g,"\\'")}')" max="${ex.sets}" style="width:100%"></div>
+        <div style="padding-bottom:0"><button class="btn btn-ghost btn-sm" style="height:42px;padding:0 12px" onclick="checkPR(${i},'${ex.name.replace(/'/g,"\\'")}')">✓</button></div>
+      </div>
     </div>`;
   });
   const savedNotes=localStorage.getItem(`it_notes_${currentUser.id}_${currentWorkoutDay}_${today()}`)||'';

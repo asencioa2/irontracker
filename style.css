@@ -113,10 +113,13 @@ select option{background:var(--surface2);}
 .day-pill.completed{border-color:var(--accent2);background:var(--accent-dim);color:var(--accent);}
 
 /* EXERCISE LOG */
-.exercise-row-log{display:grid;grid-template-columns:1fr 80px 80px 80px 40px;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
+/* MOBILE EXERCISE ROW — stack layout so nothing overflows */
+.exercise-row-log{display:grid;grid-template-columns:1fr 80px 80px 80px 72px;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
 .exercise-row-log:last-child{border-bottom:none;}
 .ex-name{font-size:13px;color:var(--text);font-weight:500;}
-.ex-input{font-family:var(--mono);font-size:13px;text-align:center;padding:6px 8px;}
+/* Bump input font to 16px — prevents iOS auto-zoom on focus */
+.ex-input{font-family:var(--mono);font-size:16px;text-align:center;padding:6px 4px;}
+input,select,textarea{font-size:16px;}
 .ex-col-hd{font-size:10px;color:var(--text3);text-align:center;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;}
 
 /* CHART */
@@ -208,10 +211,11 @@ canvas{width:100%!important;}
   .stat-card{padding:14px;}
   .card{padding:14px;}
   .card-sm{padding:12px;}
-  .exercise-row-log{grid-template-columns:1fr 52px 52px 52px 30px;gap:3px;padding:8px 0;}
-  .ex-name{font-size:12px;}
-  .ex-input{font-size:12px;padding:5px 3px;}
-  .ex-col-hd{font-size:9px;}
+  /* Exercise rows — stacked card layout so nothing clips off screen */
+  .exercise-row-log{display:block;padding:12px 0;border-bottom:1px solid var(--border);}
+  .ex-col-hd{display:none;}
+  .ex-name{font-size:13px;margin-bottom:8px;display:block;}
+  .ex-input{font-size:16px;padding:8px 6px;width:100%;}
   .day-strip{gap:3px;}
   .day-pill{padding:8px 2px;font-size:9px;letter-spacing:0;}
   .streak-dot{width:11px;height:11px;}
@@ -224,13 +228,17 @@ canvas{width:100%!important;}
   .toast{bottom:76px !important;left:12px;right:12px;justify-content:center;}
   #timer-display{font-size:48px;}
   #progress-photos-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));}
-  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;}
-  .table-scroll .table{min-width:480px;}
   .section-hd{flex-wrap:wrap;gap:8px;}
   .nutr-hd-row{flex-direction:column !important;align-items:stretch !important;gap:8px !important;}
   .nutr-hd-row .btn,.nutr-hd-row input[type="date"]{width:100% !important;box-sizing:border-box;}
-}
-.mt-8{margin-top:8px;}.mt-16{margin-top:16px;}.mt-20{margin-top:20px;}
+  /* Ensure all inputs in modals are full width and large enough to not trigger iOS zoom */
+  .modal input,.modal select,.modal textarea{width:100% !important;font-size:16px !important;box-sizing:border-box;}
+  /* Log weight date picker full width */
+  input[type="date"]{width:100% !important;box-sizing:border-box;}
+  /* Fix food entries table to not clip columns */
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;display:block;}
+  .table-scroll .table{min-width:480px;}
+}.mt-8{margin-top:8px;}.mt-16{margin-top:16px;}.mt-20{margin-top:20px;}
 .flex{display:flex;}.items-center{align-items:center;}.justify-between{justify-content:justify-between;}
 .text-accent{color:var(--accent);}.text-mono{font-family:var(--mono);}
 .text-muted{color:var(--text2);}.text-dim{color:var(--text3);}
