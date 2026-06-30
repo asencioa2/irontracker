@@ -163,6 +163,7 @@
     <div><div style="font-size:20px;font-weight:800;letter-spacing:-0.02em">Workout log</div><div style="font-size:13px;color:var(--text2);margin-top:4px" id="workout-day-label"></div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-ghost" onclick="logRestDay()">😴 Rest day</button>
+      <button class="btn btn-ghost" onclick="copyLastWorkout()">📋 Copy last</button>
       <button class="btn btn-ghost" onclick="openAddExerciseModal()">+ Add exercise</button>
       <button class="btn btn-ghost" onclick="openPRModal()">🏆 PRs</button>
       <button class="btn btn-primary" onclick="finishWorkout()">Finish & save</button>
@@ -1332,6 +1333,61 @@ async function checkPR(i,exName){
     await sb.from('personal_records').upsert({user_id:currentUser.id,exercise:exName,weight_lbs:w,reps:r,estimated_orm:orm,date:today()},{onConflict:'user_id,exercise'});
     toast(`\ud83c\udfc6 New PR on ${exName}: ${w}lbs \xd7 ${r}`);renderWorkoutContent();
   }else{toast('Set logged \u2014 keep chasing that PR!');}
+}
+
+async function copyLastWorkout(){
+  // Find the most recent log for this same split day (not today)
+  const{data:logs}=await sb.from('workout_logs')
+    .select('sets_data,date,day_name')
+    .eq('user_id',currentUser.id)
+    .eq('split_index',currentWorkoutDay)
+    .neq('date',today())
+    .order('date',{ascending:false})
+    .limit(1);
+
+  if(!logs||!logs.length){
+    toast('No previous session found for this day yet');
+    return;
+  }
+
+  const prev=logs[0];
+  const prevSets=prev.sets_data||{};
+  const prevDate=prev.date;
+  const count=Object.keys(prevSets).length;
+  if(!count){toast('Previous session had no logged sets');return;}
+
+  // Merge into current workoutSets — only copy weight/reps/sets for exercises that exist in current layout
+  // Identify exercises by name (stored in sets_data entries as .name)
+  const nameToIdx={};
+  const split=getActiveSplit();
+  const sched=split.days[currentWorkoutDay];
+  if(sched){sched.exercises.forEach((ex,i)=>{nameToIdx[ex.name]=i;});}
+
+  let copied=0;
+  Object.values(prevSets).forEach(entry=>{
+    if(!entry||!entry.name||!entry.w)return;
+    const idx=nameToIdx[entry.name];
+    if(idx===undefined)return;
+    workoutSets[idx]={w:entry.w,r:entry.r,s:entry.s,name:entry.name};
+    // Fill the visible input fields if they're currently rendered
+    const wEl=document.getElementById('ex-w-'+idx);
+    const rEl=document.getElementById('ex-r-'+idx);
+    const sEl=document.getElementById('ex-s-'+idx);
+    if(wEl)wEl.value=entry.w;
+    if(rEl)rEl.value=entry.r;
+    if(sEl)sEl.value=entry.s;
+    copied++;
+  });
+
+  // Save to localStorage so it persists
+  const sessionKey=`it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`;
+  localStorage.setItem(sessionKey,JSON.stringify(workoutSets));
+
+  if(copied>0){
+    toast(`📋 Copied ${copied} exercise${copied>1?'s':''} from ${formatDateDisplay(prevDate)}`);
+  }else{
+    toast('No matching exercises found to copy');
+  }
 }
 
 async function finishWorkout(){
