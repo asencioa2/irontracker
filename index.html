@@ -161,7 +161,8 @@
 <div id="page-workout" class="page">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
     <div><div style="font-size:20px;font-weight:800;letter-spacing:-0.02em">Workout log</div><div style="font-size:13px;color:var(--text2);margin-top:4px" id="workout-day-label"></div></div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost" onclick="openAddExerciseModal()">+ Add exercise</button>
       <button class="btn btn-ghost" onclick="openPRModal()">🏆 PRs</button>
       <button class="btn btn-ghost" onclick="openCoachModal()">🤖 AI Coach</button>
       <button class="btn btn-primary" onclick="finishWorkout()">Finish & save</button>
@@ -387,6 +388,23 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="add-exercise-modal">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title">+ Add custom exercise</div><button class="modal-close" onclick="closeModal('add-exercise-modal')">×</button></div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:16px" id="add-ex-day-label">Adding to today's workout</div>
+    <div class="form-group"><label>Exercise name</label><input type="text" id="custom-ex-name" placeholder="e.g. Cable Crunches"></div>
+    <div class="grid-3">
+      <div class="form-group"><label>Sets</label><input type="number" id="custom-ex-sets" placeholder="3" value="3"></div>
+      <div class="form-group"><label>Target reps</label><input type="text" id="custom-ex-reps" placeholder="10-12" value="10-12"></div>
+      <div class="form-group"><label>&nbsp;</label></div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="addCustomExercise()">Add to workout</button>
+    <div class="sep" style="height:1px;background:var(--border);margin:18px 0"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Your custom exercises for this day</div>
+    <div id="custom-ex-list" style="display:flex;flex-direction:column;gap:6px"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="pr-modal">
   <div class="modal"><div class="modal-hd"><div class="modal-title">🏆 Personal records</div><button class="modal-close" onclick="closeModal('pr-modal')">×</button></div><div id="pr-modal-content"></div></div>
 </div>
@@ -604,12 +622,11 @@ async function saveMacros(){
 // NAVIGATION
 // ============================================================
 function showPage(id){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>{p.classList.remove('active');p.style.display='';});
   document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.mobile-nav-btn').forEach(b=>b.classList.remove('active'));
   var pg=document.getElementById('page-'+id);
   if(!pg)return;
-  pg.style.display='block';
   pg.classList.add('active');
   var dt=document.querySelector('[data-page="'+id+'"]');if(dt)dt.classList.add('active');
   var mb=document.querySelector('[data-mob="'+id+'"]');if(mb)mb.classList.add('active');
@@ -815,6 +832,54 @@ function buildWeeklyCheckin(logs,weights,prs){
 }
 
 // ============================================================
+// CUSTOM EXERCISES
+// ============================================================
+async function getCustomExercises(dow){
+  const{data}=await sb.from('custom_exercises').select('*').eq('user_id',currentUser.id).eq('dow',dow).order('created_at');
+  return data||[];
+}
+
+function openAddExerciseModal(){
+  const dow=currentWorkoutDay;
+  const dayName=SCHEDULE[dow]?DAY_NAMES[dow]+' — '+SCHEDULE[dow].name:DAY_NAMES[dow];
+  document.getElementById('add-ex-day-label').textContent='Adding to: '+dayName;
+  document.getElementById('custom-ex-name').value='';
+  document.getElementById('custom-ex-sets').value='3';
+  document.getElementById('custom-ex-reps').value='10-12';
+  renderCustomExerciseList();
+  openModal('add-exercise-modal');
+}
+
+async function renderCustomExerciseList(){
+  const list=await getCustomExercises(currentWorkoutDay);
+  const el=document.getElementById('custom-ex-list');
+  if(!list.length){el.innerHTML='<div style="font-size:12px;color:var(--text3)">No custom exercises added yet for this day.</div>';return;}
+  el.innerHTML=list.map(ex=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:8px 12px">
+    <div><div style="font-size:13px;color:var(--text)">${ex.name}</div><div style="font-size:11px;color:var(--text3)">${ex.sets} × ${ex.target_reps}</div></div>
+    <button class="btn btn-danger btn-sm" onclick="deleteCustomExercise('${ex.id}')">×</button>
+  </div>`).join('');
+}
+
+async function addCustomExercise(){
+  const name=document.getElementById('custom-ex-name').value.trim();
+  if(!name){toast('Enter an exercise name');return;}
+  const sets=parseInt(document.getElementById('custom-ex-sets').value)||3;
+  const reps=document.getElementById('custom-ex-reps').value.trim()||'10-12';
+  await sb.from('custom_exercises').insert({user_id:currentUser.id,dow:currentWorkoutDay,name,sets,target_reps:reps});
+  document.getElementById('custom-ex-name').value='';
+  toast('Exercise added: '+name);
+  renderCustomExerciseList();
+  renderWorkoutContent();
+}
+
+async function deleteCustomExercise(id){
+  await sb.from('custom_exercises').delete().eq('id',id).eq('user_id',currentUser.id);
+  toast('Exercise removed');
+  renderCustomExerciseList();
+  renderWorkoutContent();
+}
+
+// ============================================================
 // WORKOUT PAGE
 // ============================================================
 async function initWorkoutPage(){
@@ -837,12 +902,20 @@ async function renderWorkoutContent(){
   const sched=SCHEDULE[currentWorkoutDay];
   const label=document.getElementById('workout-day-label');
   const content=document.getElementById('workout-content');
-  if(!sched){
+  const customExercises=await getCustomExercises(currentWorkoutDay);
+
+  if(!sched&&!customExercises.length){
     if(label)label.textContent='Rest & recovery day';
-    if(content)content.innerHTML=`<div class="card" style="text-align:center;padding:40px"><div style="font-size:32px;margin-bottom:12px">🧘</div><div style="font-size:16px;font-weight:600;margin-bottom:8px">Rest day</div><div class="text-muted fs-13">Take a walk, stretch, and use Iron 24's recovery amenities.</div></div>`;
+    if(content)content.innerHTML=`<div class="card" style="text-align:center;padding:40px"><div style="font-size:32px;margin-bottom:12px">🧘</div><div style="font-size:16px;font-weight:600;margin-bottom:8px">Rest day</div><div class="text-muted fs-13">Take a walk, stretch, and use Iron 24's recovery amenities.</div><button class="btn btn-primary" style="margin-top:16px" onclick="openAddExerciseModal()">+ Log a workout anyway</button></div>`;
     return;
   }
-  if(label)label.textContent=`${DAY_NAMES[currentWorkoutDay]} — ${sched.name} · ${sched.focus}`;
+
+  // Build a combined exercise list: schedule + custom (custom flagged with isCustom + id)
+  const baseExercises=sched?sched.exercises.map(e=>({name:e.name,target:e.target,sets:e.sets,isCustom:false})):[];
+  const customMapped=customExercises.map(c=>({name:c.name,target:c.target_reps,sets:c.sets,isCustom:true,id:c.id}));
+  const allExercises=[...baseExercises,...customMapped];
+
+  if(label)label.textContent=sched?`${DAY_NAMES[currentWorkoutDay]} — ${sched.name} · ${sched.focus}`:`${DAY_NAMES[currentWorkoutDay]} — Custom workout`;
 
   // Load today's saved session from localStorage (fast, syncs to DB on finish)
   const sessionKey=`it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`;
@@ -852,20 +925,22 @@ async function renderWorkoutContent(){
   const{data:prs}=await sb.from('personal_records').select('*').eq('user_id',currentUser.id);
   const prMap={};(prs||[]).forEach(p=>{prMap[p.exercise]=p;});
 
-  let html=`<div class="card"><div class="section-hd"><div class="section-title">${sched.name}</div><span class="badge badge-blue">${sched.focus}</span></div>
+  let html=`<div class="card"><div class="section-hd"><div class="section-title">${sched?sched.name:'Custom workout'}</div>${sched?`<span class="badge badge-blue">${sched.focus}</span>`:''}</div>
   <div style="display:grid;grid-template-columns:1fr 80px 80px 80px 40px;gap:8px;align-items:center;padding:6px 0 10px;border-bottom:1px solid var(--border)">
     <div class="ex-col-hd">Exercise</div><div class="ex-col-hd">Weight</div><div class="ex-col-hd">Reps</div><div class="ex-col-hd">Sets done</div><div></div>
   </div>`;
-  sched.exercises.forEach((ex,i)=>{
+  allExercises.forEach((ex,i)=>{
     const saved=workoutSets[i]||{};
     const pr=prMap[ex.name];
     const prTag=pr?`<span class="pb-tag">PR: ${pr.weight_lbs}lbs\xd7${pr.reps}</span>`:'';
+    const customTag=ex.isCustom?`<span class="badge badge-amber" style="margin-left:6px">Custom</span>`:'';
+    const deleteBtn=ex.isCustom?`<button class="btn btn-danger btn-sm" onclick="deleteCustomExercise('${ex.id}')" title="Remove custom exercise" style="margin-left:4px">🗑</button>`:'';
     html+=`<div class="exercise-row-log">
-      <div class="ex-name">${ex.name}${prTag}<div style="font-size:11px;color:var(--text3);margin-top:2px">${ex.target}</div></div>
+      <div class="ex-name">${ex.name}${prTag}${customTag}<div style="font-size:11px;color:var(--text3);margin-top:2px">${ex.sets} × ${ex.target}</div></div>
       <input class="ex-input" type="number" id="ex-w-${i}" placeholder="lbs" value="${saved.w||''}" onchange="saveSet(${i})" step="2.5">
       <input class="ex-input" type="number" id="ex-r-${i}" placeholder="reps" value="${saved.r||''}" onchange="saveSet(${i})">
       <input class="ex-input" type="number" id="ex-s-${i}" placeholder="/${ex.sets}" value="${saved.s||''}" onchange="saveSet(${i})" max="${ex.sets}">
-      <button class="btn btn-ghost btn-sm" onclick="checkPR(${i},'${ex.name.replace(/'/g,"\\'")}')">&#10003;</button>
+      <div style="display:flex;gap:2px"><button class="btn btn-ghost btn-sm" onclick="checkPR(${i},'${ex.name.replace(/'/g,"\\'")}')">&#10003;</button>${deleteBtn}</div>
     </div>`;
   });
   const savedNotes=localStorage.getItem(`it_notes_${currentUser.id}_${currentWorkoutDay}_${today()}`)||'';
