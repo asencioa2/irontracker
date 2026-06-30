@@ -317,6 +317,11 @@
     <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Signed in as <span id="settings-email" style="color:var(--accent);font-family:var(--mono)"></span></div>
     <button class="btn btn-danger" onclick="signOut()">Sign out</button>
   </div>
+  <div class="card mt-20" style="border-color:rgba(224,92,92,0.3)">
+    <div class="section-title" style="margin-bottom:8px;color:var(--red)">Danger zone</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Permanently delete your account and all data — workouts, nutrition logs, weights, PRs, measurements, photos. This cannot be undone.</div>
+    <button class="btn btn-danger" onclick="openDeleteAccountModal()">Delete account</button>
+  </div>
 </div>
 
 </div><!-- end main -->
@@ -359,6 +364,15 @@
       <div class="form-group"><label>Thighs</label><input type="number" id="m-thighs" step="0.1" placeholder="0.0"></div>
     </div>
     <button class="btn btn-primary btn-full" onclick="saveMeasurements()">Save measurements</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="delete-account-modal">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title" style="color:var(--red)">\u26a0\ufe0f Delete account</div><button class="modal-close" onclick="closeModal('delete-account-modal')">×</button></div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">This permanently deletes your account and <strong>all</strong> associated data: workout logs, nutrition entries, weight history, personal records, measurements, custom exercises, and progress photos. This action cannot be undone.</div>
+    <div class="form-group"><label>Type DELETE to confirm</label><input type="text" id="delete-confirm-input" placeholder="DELETE"></div>
+    <button class="btn btn-danger btn-full" onclick="confirmDeleteAccount()">Permanently delete my account</button>
   </div>
 </div>
 
@@ -641,6 +655,48 @@ async function forgotPassword(){
 
 async function signOut(){await sb.auth.signOut();showAuthScreen();}
 
+function openDeleteAccountModal(){
+  document.getElementById('delete-confirm-input').value='';
+  openModal('delete-account-modal');
+}
+
+async function confirmDeleteAccount(){
+  const confirmText=document.getElementById('delete-confirm-input').value.trim();
+  if(confirmText!=='DELETE'){toast('Type DELETE exactly to confirm');return;}
+  const uid=currentUser.id;
+  loading(true,'Deleting your account...');
+  try{
+    // Delete all app data first (tables without cascading FKs to auth.users get cleaned explicitly)
+    await Promise.all([
+      sb.from('workout_logs').delete().eq('user_id',uid),
+      sb.from('nutrition_logs').delete().eq('user_id',uid),
+      sb.from('weight_logs').delete().eq('user_id',uid),
+      sb.from('personal_records').delete().eq('user_id',uid),
+      sb.from('measurements').delete().eq('user_id',uid),
+      sb.from('custom_exercises').delete().eq('user_id',uid),
+      sb.from('hidden_exercises').delete().eq('user_id',uid),
+      sb.from('rest_days').delete().eq('user_id',uid),
+      sb.from('profiles').delete().eq('id',uid),
+    ]);
+    // Remove locally cached data for this user
+    Object.keys(localStorage).forEach(k=>{if(k.includes(uid))localStorage.removeItem(k);});
+    // Attempt to delete the actual auth account via RPC (requires the delete_own_account() function in Supabase)
+    const{error:rpcError}=await sb.rpc('delete_own_account');
+    if(rpcError){
+      console.warn('Auth account deletion RPC failed (data was still wiped):',rpcError);
+      toast('Your data was deleted. Signing you out — contact support to fully remove your login.');
+    }else{
+      toast('Account deleted.');
+    }
+    await sb.auth.signOut();
+    showAuthScreen();
+    closeModal('delete-account-modal');
+  }catch(err){
+    toast('Error deleting account: '+err.message);
+  }
+  loading(false);
+}
+
 async function onSignedIn(user,showFullLoading){
   currentUser=user;
   if(showFullLoading)loading(true,'Loading your data...');
@@ -785,7 +841,7 @@ async function refreshDashboard(){
   const nextIdx2=await getNextSplitIndex();
   document.getElementById('dash-week-badge').textContent=`Day ${nextIdx2+1} next`;
 
-  buildSplitProgressStrip(logs.data||[]);
+  buildSplitProgressStrip(logs.data||[],restDays.data||[]);
   await loadNutritionTotals(today());
   renderWaterOz(weights.data||[]);
   buildStreakGrid(logs.data||[]);
@@ -812,24 +868,41 @@ function calcStreak(logs,restDays){
   return streak;
 }
 
-function buildSplitProgressStrip(logs){
+function buildSplitProgressStrip(logs,restDays){
   const container=document.getElementById('dash-week-strip');
   if(!container)return;
   container.innerHTML='';
   const split=getActiveSplit();
-  // Sort logs ascending by date, take the last 7 sessions
-  const sorted=[...logs].sort((a,b)=>a.date.localeCompare(b.date));
-  const recent=sorted.slice(-7);
+
+  // Merge workout logs and rest days into one timeline, deduped by date (latest log per date wins)
+  const byDate={};
+  logs.forEach(log=>{byDate[log.date]={type:'workout',log};});
+  (restDays||[]).forEach(r=>{if(!byDate[r.date])byDate[r.date]={type:'rest',date:r.date};});
+
+  const entries=Object.values(byDate).sort((a,b)=>{
+    const da=a.type==='workout'?a.log.date:a.date;
+    const db=b.type==='workout'?b.log.date:b.date;
+    return da.localeCompare(db);
+  });
+  const recent=entries.slice(-7);
+
   if(!recent.length){
     container.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 0">No sessions logged yet — finish your first workout to see progress here.</div>';
     return;
   }
-  recent.forEach(log=>{
-    const dayInfo=split.days[log.split_index];
+  recent.forEach(entry=>{
     const div=document.createElement('div');
-    div.className='day-pill completed';
-    const label=dayInfo?`Day ${log.split_index+1}`:log.day_name||'Workout';
-    div.innerHTML=`<div style="font-size:10px;font-weight:700">${label}</div><div style="font-size:9px;margin-top:2px;color:var(--text3)">${log.date.slice(5)}</div>`;
+    if(entry.type==='rest'){
+      div.className='day-pill rest';
+      div.innerHTML=`<div style="font-size:10px;font-weight:700">\ud83d\ude34 Rest</div><div style="font-size:9px;margin-top:2px;color:var(--text3)">${entry.date.slice(5)}</div>`;
+    }else{
+      const log=entry.log;
+      const dayInfo=split.days[log.split_index];
+      const label=dayInfo?dayInfo.name:(log.day_name||'Workout');
+      div.className='day-pill completed';
+      div.innerHTML=`<div style="font-size:10px;font-weight:700">${label.split(' ')[0]}</div><div style="font-size:9px;margin-top:2px;color:var(--text3)">${log.date.slice(5)}</div>`;
+      div.title=`${label} — ${log.date}`;
+    }
     container.appendChild(div);
   });
 }
@@ -965,6 +1038,7 @@ async function getHiddenPresetExercises(splitKey,dow){
 }
 
 async function hidePresetExercise(exName){
+  if(!confirm(`Remove "${exName}" from this day's workout? You can restore it anytime from the + Add exercise menu.`))return;
   const splitKey=userProfile.active_split||'iron24_5day';
   await sb.from('hidden_exercises').insert({user_id:currentUser.id,split_key:splitKey,dow:currentWorkoutDay,exercise_name:exName});
   toast('Removed: '+exName);
@@ -1034,6 +1108,8 @@ async function addFromDatabase(name,category){
 }
 
 async function renderCustomExerciseList(){
+  const el0=document.getElementById('custom-ex-list');
+  if(!el0)return; // modal not open, nothing to render into
   const split=getActiveSplit();
   const sched=split.days[currentWorkoutDay];
   const splitKey=userProfile.active_split||'iron24_5day';
@@ -1191,7 +1267,9 @@ async function renderWorkoutContent(){
     const prTag=pr?`<span class="pb-tag">PR: ${pr.weight_lbs}lbs\xd7${pr.reps}</span>`:'';
     const customTag=ex.isCustom?`<span class="badge badge-amber" style="margin-left:6px">Custom</span>`:'';
     const lastTimeTag=lastTime?`<span style="font-size:10px;color:var(--blue);margin-left:6px;font-family:var(--mono)">Last: ${lastTime.w}lbs\xd7${lastTime.r}</span>`:'';
-    const deleteBtn=ex.isCustom?`<button class="btn btn-danger btn-sm" onclick="deleteCustomExercise('${ex.id}')" title="Remove custom exercise" style="margin-left:4px">🗑</button>`:'';
+    const deleteBtn=ex.isCustom
+      ?`<button class="btn btn-danger btn-sm" onclick="deleteCustomExercise('${ex.id}')" title="Remove custom exercise" style="margin-left:4px">\ud83d\uddd1</button>`
+      :`<button class="btn btn-danger btn-sm" onclick="hidePresetExercise('${ex.name.replace(/'/g,"\\'")}')" title="Remove from this workout" style="margin-left:4px">\ud83d\uddd1</button>`;
     html+=`<div class="exercise-row-log">
       <div class="ex-name">${ex.name}${prTag}${customTag}<div style="font-size:11px;color:var(--text3);margin-top:2px">${ex.sets} × ${ex.target}${lastTimeTag}</div></div>
       <input class="ex-input" type="number" id="ex-w-${i}" placeholder="${lastTime?lastTime.w:'lbs'}" value="${saved.w||''}" onchange="saveSet(${i},'${ex.name.replace(/'/g,"\\'")}')" step="2.5">
