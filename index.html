@@ -350,12 +350,17 @@
 
     <!-- SCAN TAB -->
     <div id="food-tab-scan">
-      <!-- Photo capture — most reliable approach on iOS -->
+      <!-- Live Camera Scanner approach -->
       <div id="barcode-start-area">
-        <label for="barcode-photo-input" class="btn btn-primary btn-full" style="justify-content:center;cursor:pointer;margin-bottom:12px">
-          📷 Take photo of barcode
-        </label>
-        <input type="file" id="barcode-photo-input" accept="image/*" capture="environment" style="display:none" onchange="handleBarcodePhoto(event)">
+        <button class="btn btn-primary btn-full" type="button" onclick="startBarcodeScanner()" style="justify-content:center;margin-bottom:12px">
+          📷 Start Barcode Scanner
+        </button>
+        
+        <div id="barcode-scanner-container" style="display:none;margin-bottom:12px;">
+          <video id="barcode-video" width="100%" height="250" style="border:1px solid var(--border);border-radius:var(--radius);background:#000;object-fit:cover;"></video>
+          <div id="barcode-cam-status" style="font-size: 13px; color: var(--accent); margin-top: 8px; font-weight: 600; text-align: center;">Waiting for camera...</div>
+          <button class="btn btn-ghost btn-sm btn-full" type="button" onclick="stopBarcodeScanner()" style="margin-top:8px;">Cancel Scanner</button>
+        </div>
 
         <div style="text-align:center;font-size:12px;color:var(--text3);margin-bottom:10px">— or enter barcode number directly —</div>
         <div style="display:flex;gap:8px">
@@ -521,7 +526,6 @@ let workoutSets = {};
 let timerDuration = 90, timerRemaining = 90, timerInterval = null, timerRunning = false;
 let current1RM = null;
 
-// SPLIT PRESETS — each is an ordered array of workout days (rotates regardless of weekday)
 // EXERCISE DATABASE — browsable library, categorized by muscle group
 const EXERCISE_DATABASE = {
   'Chest':['Barbell Bench Press','Incline Barbell Press','Decline Barbell Press','Incline Dumbbell Press','Decline Dumbbell Press','Flat Dumbbell Press','Cable Chest Fly','Pec Deck Machine','Dumbbell Fly','Push-ups','Dips (Chest Focus)','Cable Crossover','Machine Chest Press','Landmine Press'],
@@ -664,7 +668,12 @@ function todayDOW(){return new Date().getDay();}
 function toast(msg){const t=document.getElementById('toast');document.getElementById('toast-msg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
 function loading(show,msg='Loading...'){const o=document.getElementById('loading-overlay');document.getElementById('loading-msg').textContent=msg;o.style.display=show?'flex':'none';}
 function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+  if (id === 'food-modal') {
+    stopBarcodeScanner();
+  }
+}
 
 // ============================================================
 // AUTH
@@ -1304,10 +1313,6 @@ async function renderWorkoutContent(){
   const{data:recentLogs}=await sb.from('workout_logs').select('date,sets_data').eq('user_id',currentUser.id).neq('date',today()).order('date',{ascending:false}).limit(20);
   const lastSeenMap={}; // name -> {w,r,date}
   if(recentLogs&&recentLogs.length){
-    // We need exercise NAME -> index mapping per historical log, but sets_data is keyed by index only.
-    // Since splits can change index order over time, match by scanning all recent logs' sets_data values
-    // against the highest weight logged with reps>0 for THIS exercise name by checking exercise name stored separately.
-    // Simplify: store exercise name inside sets_data going forward (see saveSet update below).
     for(const log of recentLogs){
       const sd=log.sets_data||{};
       for(const idx in sd){
@@ -1377,7 +1382,6 @@ async function checkPR(i,exName){
 }
 
 async function copyLastWorkout(){
-  // Find the most recent log for this same split day (not today)
   const{data:logs}=await sb.from('workout_logs')
     .select('sets_data,date,day_name')
     .eq('user_id',currentUser.id)
@@ -1397,8 +1401,6 @@ async function copyLastWorkout(){
   const count=Object.keys(prevSets).length;
   if(!count){toast('Previous session had no logged sets');return;}
 
-  // Merge into current workoutSets — only copy weight/reps/sets for exercises that exist in current layout
-  // Identify exercises by name (stored in sets_data entries as .name)
   const nameToIdx={};
   const split=getActiveSplit();
   const sched=split.days[currentWorkoutDay];
@@ -1410,7 +1412,6 @@ async function copyLastWorkout(){
     const idx=nameToIdx[entry.name];
     if(idx===undefined)return;
     workoutSets[idx]={w:entry.w,r:entry.r,s:entry.s,name:entry.name};
-    // Fill the visible input fields if they're currently rendered
     const wEl=document.getElementById('ex-w-'+idx);
     const rEl=document.getElementById('ex-r-'+idx);
     const sEl=document.getElementById('ex-s-'+idx);
@@ -1420,7 +1421,6 @@ async function copyLastWorkout(){
     copied++;
   });
 
-  // Save to localStorage so it persists
   const sessionKey=`it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`;
   localStorage.setItem(sessionKey,JSON.stringify(workoutSets));
 
@@ -1475,7 +1475,6 @@ async function openPRModal(){
 // NUTRITION PAGE
 // ============================================================
 function formatDateDisplay(dateStr){
-  // Format YYYY-MM-DD nicely, showing "Today" or "Yesterday" when applicable
   const t=today();
   const yest=new Date();yest.setDate(yest.getDate()-1);
   const yesterStr=yest.toISOString().split('T')[0];
@@ -1516,7 +1515,6 @@ async function initNutritionPage(){
 
 async function loadNutritionForDate(){
   const dateStr=document.getElementById('nutr-date')?.value||today();
-  // Update the display label when date changes
   const disp=document.getElementById('nutr-date-display');
   if(disp)disp.textContent=formatDateDisplay(dateStr);
   const{data}=await sb.from('nutrition_logs').select('*').eq('user_id',currentUser.id).eq('date',dateStr);
@@ -1697,17 +1695,13 @@ function initSettingsPage(){
   f('set-pro',userProfile.macro_pro||190);f('set-carb',userProfile.macro_carb||210);
   f('set-fat',userProfile.macro_fat||65);
   const se=document.getElementById('settings-email');if(se)se.textContent=currentUser?.email||'';
-  // Show USDA key status
-  const key=getUsdaKey();
-  const inp=document.getElementById('set-usda-key');
-  const status=document.getElementById('usda-key-status');
-  if(key&&inp){inp.value=key;if(status){status.textContent='✓ Key saved';status.style.color='var(--accent)';}}
 }
 
 // ============================================================
-// BARCODE SCANNER + USDA LOOKUP
+// BARCODE SCANNER + OPENFOODFACTS LOOKUP
 // ============================================================
 let barcodeFoundData=null;
+let codeReader=null;
 
 function switchFoodTab(tab){
   document.getElementById('food-tab-scan').style.display=tab==='scan'?'block':'none';
@@ -1722,84 +1716,68 @@ function openFoodModal(){
   document.getElementById('barcode-result').style.display='none';
   document.getElementById('barcode-status').style.display='none';
   document.getElementById('barcode-manual-input').value='';
-  const photoInput=document.getElementById('barcode-photo-input');
-  if(photoInput)photoInput.value='';
+  
   switchFoodTab('scan');
   openModal('food-modal');
 }
 
-async function handleBarcodePhoto(event){
-  const file=event.target.files[0];
-  if(!file)return;
-  const status=document.getElementById('barcode-status');
-  status.innerHTML='<span class="ai-spinner" style="display:inline-block;margin-right:8px;vertical-align:middle"></span>Reading barcode from photo...';
-  status.style.display='block';
+function startBarcodeScanner() {
+  const container = document.getElementById('barcode-scanner-container');
+  const status = document.getElementById('barcode-cam-status');
+  
+  container.style.display = 'block';
+  status.innerText = 'Starting camera...';
   document.getElementById('barcode-result').style.display='none';
-
-  try{
-    // Draw image to canvas and decode using ZXing
-    const img=new Image();
-    const url=URL.createObjectURL(file);
-    img.onload=async()=>{
-      URL.revokeObjectURL(url);
-      try{
-        const canvas=document.createElement('canvas');
-        // Scale down large images for faster processing
-        const maxDim=1200;
-        const scale=Math.min(1,maxDim/Math.max(img.width,img.height));
-        canvas.width=img.width*scale;
-        canvas.height=img.height*scale;
-        const ctx=canvas.getContext('2d');
-        ctx.drawImage(img,0,0,canvas.width,canvas.height);
-
-        if(typeof ZXing==='undefined'){
-          // ZXing not loaded — fall back to asking for manual entry
-          status.innerHTML='Barcode decoder not loaded. Enter the barcode number manually below.';
-          return;
-        }
-        const hints=new Map();
-        const formats=[
-          ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,
-          ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,
-          ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,
-        ];
-        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,formats);
-        hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-        const reader=new ZXing.MultiFormatReader();
-        reader.setHints(hints);
-
-        // Try decoding the full image first, then try cropped regions
-        const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
-        const luminance=new ZXing.RGBLuminanceSource(imageData.data,canvas.width,canvas.height);
-        const binaryBitmap=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminance));
-        let result=null;
-        try{result=reader.decode(binaryBitmap);}catch(e){}
-
-        if(!result){
-          status.innerHTML='Could not read barcode from photo. Tips: make sure the barcode fills most of the photo, good lighting, held flat. Or type the number below.';
-          return;
-        }
-        status.style.display='none';
-        await lookupBarcode(result.getText());
-      }catch(decodeErr){
-        status.innerHTML='Could not read the barcode. Make sure it\'s flat, well-lit, and fills the photo. Or type the number below.';
-        console.error('Decode error:',decodeErr);
-      }
-    };
-    img.onerror=()=>{status.innerHTML='Could not load the photo. Try again.';};
-    img.src=url;
-  }catch(err){
-    status.innerHTML='Error processing photo. Try again or enter barcode manually.';
+  document.getElementById('barcode-status').style.display='none';
+  
+  if (!codeReader) {
+    codeReader = new ZXing.BrowserMultiFormatReader();
   }
-  // Reset input so same photo can be retaken
-  event.target.value='';
+
+  codeReader.listVideoInputDevices().then(videoInputDevices => {
+    if (videoInputDevices.length === 0) {
+      status.innerText = 'No camera found.';
+      return;
+    }
+
+    let selectedDeviceId = videoInputDevices[0].deviceId;
+    const backCamera = videoInputDevices.find(device => 
+      device.label.toLowerCase().includes('back') || 
+      device.label.toLowerCase().includes('rear')
+    );
+    if (backCamera) {
+      selectedDeviceId = backCamera.deviceId;
+    }
+
+    codeReader.decodeFromVideoDevice(selectedDeviceId, 'barcode-video', (result, err) => {
+      if (result) {
+        status.innerText = `Scanned: ${result.text}. Looking up food...`;
+        codeReader.reset(); // Stop camera feed
+        container.style.display = 'none'; // hide camera
+        lookupBarcode(result.text);
+      }
+      if (err && !(err instanceof ZXing.NotFoundException)) {
+        console.error(err);
+      }
+    });
+  }).catch(err => {
+    console.error(err);
+    status.innerText = 'Camera access denied. Check browser permissions.';
+  });
 }
 
+function stopBarcodeScanner() {
+  if (codeReader) {
+    codeReader.reset();
+  }
+  document.getElementById('barcode-scanner-container').style.display = 'none';
+}
 
 async function lookupBarcode(barcode){
   if(!barcode){toast('Enter a barcode number');return;}
   barcode=barcode.replace(/\D/g,'');
   if(barcode.length<6){toast('Barcode too short — check the number');return;}
+  
   const status=document.getElementById('barcode-status');
   const result=document.getElementById('barcode-result');
   status.innerHTML='<span class="ai-spinner" style="display:inline-block;margin-right:8px;vertical-align:middle"></span>Looking up barcode '+barcode+'...';
@@ -1807,25 +1785,38 @@ async function lookupBarcode(barcode){
   result.style.display='none';
 
   try{
-    const res=await fetch(`/api/food-lookup?barcode=${barcode}`);
-    const food=await res.json();
-    if(!res.ok||food.error){
-      status.innerHTML='Product not found. Try entering details manually.';
+    const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+    const data = await res.json();
+    
+    if (data.status === 1 && data.product) {
+      const p = data.product;
+      const nut = p.nutriments || {};
+      
+      barcodeFoundData = {
+        name: p.product_name || 'Unknown Food',
+        cal: Math.round(nut['energy-kcal_100g'] || nut['energy-kcal'] || 0),
+        protein: Math.round(nut.proteins_100g || nut.proteins || 0),
+        carbs: Math.round(nut.carbohydrates_100g || nut.carbohydrates || 0),
+        fat: Math.round(nut.fat_100g || nut.fat || 0)
+      };
+      
+      status.style.display='none';
+      document.getElementById('barcode-product-name').textContent=barcodeFoundData.name;
+      document.getElementById('barcode-product-macros').textContent=`${barcodeFoundData.cal} kcal · ${barcodeFoundData.protein}g protein · ${barcodeFoundData.carbs}g carbs · ${barcodeFoundData.fat}g fat`;
+      document.getElementById('barcode-product-serving').textContent=p.serving_size?`Per serving: ${p.serving_size}`:'';
+      document.getElementById('barcode-product-source').textContent='Source: OpenFoodFacts';
+      
+      document.getElementById('f-name').value=barcodeFoundData.name;
+      document.getElementById('f-cal').value=barcodeFoundData.cal;
+      document.getElementById('f-pro').value=barcodeFoundData.protein;
+      document.getElementById('f-carb').value=barcodeFoundData.carbs;
+      document.getElementById('f-fat').value=barcodeFoundData.fat;
+      
+      result.style.display='block';
+    } else {
+      status.innerHTML='Product not found in database. Try entering details manually.';
       status.style.display='block';
-      return;
     }
-    status.style.display='none';
-    barcodeFoundData=food;
-    document.getElementById('barcode-product-name').textContent=food.name;
-    document.getElementById('barcode-product-macros').textContent=`${food.cal} kcal · ${food.protein}g protein · ${food.carbs}g carbs · ${food.fat}g fat`;
-    document.getElementById('barcode-product-serving').textContent=food.serving?`Per serving: ${food.serving}`:'';
-    document.getElementById('barcode-product-source').textContent='Source: '+food.source;
-    document.getElementById('f-name').value=food.name;
-    document.getElementById('f-cal').value=food.cal;
-    document.getElementById('f-pro').value=food.protein;
-    document.getElementById('f-carb').value=food.carbs;
-    document.getElementById('f-fat').value=food.fat;
-    result.style.display='block';
   }catch(e){
     status.innerHTML='Lookup failed — check your connection and try again.';
     status.style.display='block';
