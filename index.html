@@ -353,6 +353,7 @@
       <!-- Scanner viewfinder -->
       <div id="barcode-scanner-wrap" style="display:none;margin-bottom:16px">
         <div id="barcode-reader" style="border-radius:var(--radius);overflow:hidden"></div>
+        <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">Hold the barcode steady inside the frame • Good lighting helps • Keep 6–12 inches away</div>
         <button onclick="stopBarcodeScanner()" class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px">Stop camera</button>
       </div>
 
@@ -1741,33 +1742,40 @@ async function startBarcodeScanner(){
   document.getElementById('barcode-start-area').style.display='none';
   barcodeScanning=true;
   try{
-    if(typeof Html5Qrcode==='undefined')throw new Error('Scanner library not loaded');
-    zxingReader=new Html5Qrcode('barcode-reader');
+    if(typeof Html5Qrcode==='undefined')throw new Error('Scanner library not loaded — try refreshing the page');
+    zxingReader=new Html5Qrcode('barcode-reader',{verbose:false});
     await zxingReader.start(
       {facingMode:'environment'},
-      {fps:10,qrbox:{width:260,height:120},aspectRatio:1.5,
-       formatsToSupport:[
-         Html5QrcodeSupportedFormats.EAN_13,
-         Html5QrcodeSupportedFormats.EAN_8,
-         Html5QrcodeSupportedFormats.UPC_A,
-         Html5QrcodeSupportedFormats.UPC_E,
-         Html5QrcodeSupportedFormats.CODE_128,
-         Html5QrcodeSupportedFormats.CODE_39,
-       ]
+      {
+        fps:15,
+        // Large scan region — covers most of the viewfinder
+        // iOS needs a bigger region to reliably decode linear barcodes
+        qrbox:(viewfinderWidth,viewfinderHeight)=>({
+          width:Math.min(viewfinderWidth-40,300),
+          height:Math.min(viewfinderHeight-80,150)
+        }),
+        aspectRatio:1.7,
+        // Do NOT pass formatsToSupport — let the library auto-detect all barcode types
+        // Passing enum values causes silent failures on iOS Safari
+        disableFlip:false,
+        rememberLastUsedCamera:true,
       },
       async(decodedText)=>{
         await stopBarcodeScanner();
         await lookupBarcode(decodedText);
       },
-      ()=>{} // suppress frame-level errors
+      ()=>{} // suppress per-frame decode errors — these fire constantly and are normal
     );
   }catch(err){
     document.getElementById('barcode-scanner-wrap').style.display='none';
     document.getElementById('barcode-start-area').style.display='block';
-    if(err.name==='NotAllowedError'||String(err).includes('Permission')){
-      status.innerHTML='Camera permission denied. Go to your browser settings and allow camera access for this site, then try again.';
+    const msg=String(err.message||err);
+    if(err.name==='NotAllowedError'||msg.includes('Permission')||msg.includes('permission')){
+      status.innerHTML='Camera permission denied. In Safari, go to Settings \u2192 Safari \u2192 Camera and set it to Allow, then reload the page.';
+    }else if(msg.includes('not loaded')){
+      status.innerHTML='Scanner failed to load. Try refreshing the page — or enter the barcode number manually below.';
     }else{
-      status.innerHTML='Could not start camera. Type the barcode number below instead.';
+      status.innerHTML='Could not start camera. Enter the barcode number manually below instead.';
       console.error('Scanner error:',err);
     }
     status.style.display='block';
