@@ -6,6 +6,7 @@
 <title>IronTracker — Your Personal Fitness OS</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -350,15 +351,9 @@
     <!-- SCAN TAB -->
     <div id="food-tab-scan">
       <!-- Scanner viewfinder -->
-      <div id="barcode-scanner-wrap" style="display:none;position:relative;width:100%;border-radius:var(--radius);overflow:hidden;background:#000;margin-bottom:16px">
-        <video id="barcode-video" autoplay playsinline muted style="width:100%;display:block;max-height:240px;object-fit:cover"></video>
-        <canvas id="barcode-canvas" style="display:none"></canvas>
-        <!-- Aim guide overlay -->
-        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
-          <div style="width:70%;height:40%;border:2px solid var(--accent);border-radius:6px;box-shadow:0 0 0 9999px rgba(0,0,0,0.35)"></div>
-        </div>
-        <div style="position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,255,255,0.7)">Hold barcode inside the box</div>
-        <button onclick="stopBarcodeScanner()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);border:none;color:#fff;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">Stop</button>
+      <div id="barcode-scanner-wrap" style="display:none;margin-bottom:16px">
+        <div id="barcode-reader" style="border-radius:var(--radius);overflow:hidden"></div>
+        <button onclick="stopBarcodeScanner()" class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px">Stop camera</button>
       </div>
 
       <!-- Start button / status -->
@@ -1715,10 +1710,9 @@ function initSettingsPage(){
 // ============================================================
 // BARCODE SCANNER + USDA LOOKUP
 // ============================================================
-let barcodeStream=null;
-let barcodeAnimFrame=null;
 let barcodeFoundData=null;
 let barcodeScanning=false;
+let zxingReader=null;
 
 function switchFoodTab(tab){
   document.getElementById('food-tab-scan').style.display=tab==='scan'?'block':'none';
@@ -1742,63 +1736,60 @@ function openFoodModal(){
 
 async function startBarcodeScanner(){
   const status=document.getElementById('barcode-status');
+  status.style.display='none';
+  document.getElementById('barcode-scanner-wrap').style.display='block';
+  document.getElementById('barcode-start-area').style.display='none';
+  barcodeScanning=true;
   try{
-    barcodeStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
-    const video=document.getElementById('barcode-video');
-    video.srcObject=barcodeStream;
-    await video.play();
-    document.getElementById('barcode-scanner-wrap').style.display='block';
-    document.getElementById('barcode-start-area').style.display='none';
-    status.style.display='none';
-    barcodeScanning=true;
-    scanLoop();
+    if(typeof Html5Qrcode==='undefined')throw new Error('Scanner library not loaded');
+    zxingReader=new Html5Qrcode('barcode-reader');
+    await zxingReader.start(
+      {facingMode:'environment'},
+      {fps:10,qrbox:{width:260,height:120},aspectRatio:1.5,
+       formatsToSupport:[
+         Html5QrcodeSupportedFormats.EAN_13,
+         Html5QrcodeSupportedFormats.EAN_8,
+         Html5QrcodeSupportedFormats.UPC_A,
+         Html5QrcodeSupportedFormats.UPC_E,
+         Html5QrcodeSupportedFormats.CODE_128,
+         Html5QrcodeSupportedFormats.CODE_39,
+       ]
+      },
+      async(decodedText)=>{
+        await stopBarcodeScanner();
+        await lookupBarcode(decodedText);
+      },
+      ()=>{} // suppress frame-level errors
+    );
   }catch(err){
-    status.textContent='Camera access denied. Use the manual barcode entry below instead.';
-    status.style.display='block';
-  }
-}
-
-function stopBarcodeScanner(){
-  barcodeScanning=false;
-  if(barcodeAnimFrame)cancelAnimationFrame(barcodeAnimFrame);
-  if(barcodeStream){barcodeStream.getTracks().forEach(t=>t.stop());barcodeStream=null;}
-  document.getElementById('barcode-scanner-wrap').style.display='none';
-  document.getElementById('barcode-start-area').style.display='block';
-}
-
-async function scanLoop(){
-  if(!barcodeScanning)return;
-  const video=document.getElementById('barcode-video');
-  const canvas=document.getElementById('barcode-canvas');
-  if(video.readyState===video.HAVE_ENOUGH_DATA){
-    canvas.width=video.videoWidth;
-    canvas.height=video.videoHeight;
-    const ctx=canvas.getContext('2d');
-    ctx.drawImage(video,0,0,canvas.width,canvas.height);
-    // Use BarcodeDetector API (native, no library needed — supported on Android Chrome, iOS 17+)
-    if('BarcodeDetector' in window){
-      try{
-        const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39']});
-        const barcodes=await detector.detect(canvas);
-        if(barcodes.length>0){
-          const code=barcodes[0].rawValue;
-          stopBarcodeScanner();
-          await lookupBarcode(code);
-          return;
-        }
-      }catch(e){}
+    document.getElementById('barcode-scanner-wrap').style.display='none';
+    document.getElementById('barcode-start-area').style.display='block';
+    if(err.name==='NotAllowedError'||String(err).includes('Permission')){
+      status.innerHTML='Camera permission denied. Go to your browser settings and allow camera access for this site, then try again.';
     }else{
-      // BarcodeDetector not supported — show fallback
-      stopBarcodeScanner();
-      const status=document.getElementById('barcode-status');
-      status.innerHTML='Your browser doesn\'t support live scanning. Enter the barcode number manually below — it\'s printed under the barcode on the packaging.';
-      status.style.display='block';
-      document.getElementById('barcode-start-area').style.display='block';
-      return;
+      status.innerHTML='Could not start camera. Type the barcode number below instead.';
+      console.error('Scanner error:',err);
     }
+    status.style.display='block';
+    barcodeScanning=false;
   }
-  barcodeAnimFrame=requestAnimationFrame(scanLoop);
 }
+
+async function stopBarcodeScanner(){
+  barcodeScanning=false;
+  if(zxingReader){
+    try{
+      if(zxingReader.isScanning)await zxingReader.stop();
+      zxingReader.clear();
+    }catch(e){}
+    zxingReader=null;
+  }
+  const wrap=document.getElementById('barcode-scanner-wrap');
+  const start=document.getElementById('barcode-start-area');
+  if(wrap)wrap.style.display='none';
+  if(start)start.style.display='block';
+}
+
 
 async function lookupBarcode(barcode){
   if(!barcode){toast('Enter a barcode number');return;}
