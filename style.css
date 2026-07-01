@@ -9,6 +9,11 @@
   --font:'Syne',sans-serif;--mono:'JetBrains Mono',monospace;
   --radius:10px;--radius-lg:14px;
 }
+body.light-mode {
+  --bg:#f0f2f7;--surface:#ffffff;--surface2:#e8ebf2;--surface3:#dde1ec;
+  --border:#d0d5e8;--border2:#b8bed6;
+  --text:#0e1420;--text2:#3a4460;--text3:#7a86a8;
+}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
 

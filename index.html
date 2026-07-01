@@ -371,16 +371,71 @@
       </div>
     </div>
     <div class="card">
-      <div class="section-hd"><div class="section-title">📋 Weekly summary</div></div>
-      <div id="tools-checkin-content"><div style="font-size:13px;color:var(--text3);padding:12px 0">Loading...</div></div>
-      <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="buildToolsCheckin()">Refresh</button>
+      <div class="section-hd"><div class="section-title">🍽️ Plate calculator</div></div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Based on a standard 45lb barbell</div>
+      <div class="form-group"><label>Target weight (lbs)</label><input type="number" id="plate-target" placeholder="225" oninput="calcPlates()" inputmode="decimal" step="2.5"></div>
+      <div class="form-group">
+        <label>Bar weight</label>
+        <select id="plate-bar" onchange="calcPlates()">
+          <option value="45">45 lbs (standard)</option>
+          <option value="35">35 lbs (women's)</option>
+          <option value="55">55 lbs (hex/trap)</option>
+          <option value="0">0 (machine / custom)</option>
+        </select>
+      </div>
+      <div id="plate-result" style="display:none">
+        <div style="background:var(--surface2);border-radius:var(--radius);padding:14px;margin-bottom:8px">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Per side</div>
+          <div id="plate-display" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:32px"></div>
+        </div>
+        <div style="font-size:12px;color:var(--text3)" id="plate-total"></div>
+      </div>
+      <div id="plate-error" style="display:none;font-size:13px;color:var(--red);margin-top:8px"></div>
     </div>
+    <div class="card">
+      <div class="section-hd"><div class="section-title">📤 Export data</div></div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:16px">Download your data as a CSV spreadsheet</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-ghost" onclick="exportWorkoutsCSV()">📋 Export workout history</button>
+        <button class="btn btn-ghost" onclick="exportNutritionCSV()">🥗 Export nutrition log</button>
+        <button class="btn btn-ghost" onclick="exportWeightCSV()">⚖️ Export weight history</button>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:20px">
+    <div class="section-hd"><div class="section-title">📋 Weekly summary</div><button class="btn btn-ghost btn-sm" onclick="buildToolsCheckin()">Refresh</button></div>
+    <div id="tools-checkin-content"><div style="font-size:13px;color:var(--text3);padding:12px 0">Loading...</div></div>
   </div>
 </div>
 
 <!-- SETTINGS -->
 <div id="page-settings" class="page">
   <div style="font-size:20px;font-weight:800;letter-spacing:-0.02em;margin-bottom:20px">Settings</div>
+
+  <!-- Appearance -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="section-title" style="margin-bottom:16px">🎨 Appearance</div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:14px;font-weight:600;color:var(--text)">Theme</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">Switch between dark and light mode</div>
+      </div>
+      <button id="theme-toggle-btn" onclick="toggleTheme()" class="btn btn-ghost" style="min-width:100px">☀️ Light mode</button>
+    </div>
+  </div>
+
+  <!-- Workout templates -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="section-hd" style="margin-bottom:14px">
+      <div class="section-title">📋 Workout templates</div>
+      <button class="btn btn-primary btn-sm" onclick="openSaveTemplateModal()">+ Save current</button>
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Save any workout as a reusable template — start it anytime without being locked to your split.</div>
+    <div id="templates-list">
+      <div style="font-size:13px;color:var(--text3)">No templates saved yet. Finish setting up a workout day and save it as a template.</div>
+    </div>
+  </div>
+
   <div class="grid-2">
     <div class="card">
       <div class="section-title" style="margin-bottom:16px">Your profile</div>
@@ -524,6 +579,26 @@
       <div class="form-group"><label>Thighs</label><input type="number" id="m-thighs" step="0.1" placeholder="0.0"></div>
     </div>
     <button class="btn btn-primary btn-full" onclick="saveMeasurements()">Save measurements</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="save-template-modal">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title">💾 Save workout template</div><button class="modal-close" onclick="closeModal('save-template-modal')">×</button></div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px">This saves the current day's exercises as a reusable template.</div>
+    <div class="form-group"><label>Template name</label><input type="text" id="template-name-input" placeholder="e.g. Push day A, Chest focus, Leg day"></div>
+    <button class="btn btn-primary btn-full" onclick="saveWorkoutTemplate()">Save template</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="start-template-modal">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title" id="start-template-title">Start workout</div><button class="modal-close" onclick="closeModal('start-template-modal')">×</button></div>
+    <div id="start-template-exercises" style="margin-bottom:16px;max-height:300px;overflow-y:auto"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="startFromTemplate()">Start this workout</button>
+      <button class="btn btn-danger btn-sm" id="delete-template-btn" onclick="deleteCurrentTemplate()">Delete</button>
+    </div>
   </div>
 </div>
 
@@ -1352,6 +1427,19 @@ async function initWorkoutPageAndLive(){
   const split=getActiveSplit();
   const sched=split.days[currentWorkoutDay];
   if(sched)setLiveStatus(true,sched.name);
+  // Check for pending template
+  const tKey='it_pending_template_'+(currentUser?.id||'');
+  const pending=localStorage.getItem(tKey);
+  if(pending){
+    localStorage.removeItem(tKey);
+    const t=JSON.parse(pending);
+    workoutSets={};
+    const sessionKey=getSessionKey();
+    localStorage.setItem(sessionKey,JSON.stringify(workoutSets));
+    const label=document.getElementById('workout-day-label');
+    if(label)label.textContent=t.name+' (from template)';
+    toast('Template "'+t.name+'" ready — start logging sets!');
+  }
 }
 
 async function initWorkoutPage(){
@@ -1843,6 +1931,11 @@ function initSettingsPage(){
   f('set-pro',userProfile.macro_pro||190);f('set-carb',userProfile.macro_carb||210);
   f('set-fat',userProfile.macro_fat||65);
   const se=document.getElementById('settings-email');if(se)se.textContent=currentUser?.email||'';
+  // Update theme button label to match current state
+  const isLight=document.body.classList.contains('light-mode');
+  const btn=document.getElementById('theme-toggle-btn');
+  if(btn)btn.textContent=isLight?'🌙 Dark mode':'☀️ Light mode';
+  renderTemplatesList();
 }
 
 // ============================================================
@@ -2434,9 +2527,224 @@ async function markNotificationsRead(){
 // Check notifications periodically
 setInterval(checkNotifications,60000);
 
+// ============================================================
+// DARK / LIGHT MODE
+// ============================================================
+function initTheme(){
+  const saved=localStorage.getItem('it_theme')||'dark';
+  applyTheme(saved,false);
+}
+
+function applyTheme(theme,save=true){
+  if(theme==='light'){
+    document.body.classList.add('light-mode');
+  }else{
+    document.body.classList.remove('light-mode');
+  }
+  const btn=document.getElementById('theme-toggle-btn');
+  if(btn)btn.textContent=theme==='light'?'🌙 Dark mode':'☀️ Light mode';
+  if(save)localStorage.setItem('it_theme',theme);
+}
+
+function toggleTheme(){
+  const isLight=document.body.classList.contains('light-mode');
+  applyTheme(isLight?'dark':'light');
+}
+
+// ============================================================
+// PLATE CALCULATOR
+// ============================================================
+const PLATE_SIZES=[{w:45,color:'#4d8fd4'},{w:35,color:'#e05c5c'},{w:25,color:'#c9a84c'},{w:10,color:'#4a9e6b'},{w:5,color:'#8a96b0'},{w:2.5,color:'#e8944a'}];
+
+function calcPlates(){
+  const target=parseFloat(document.getElementById('plate-target')?.value)||0;
+  const barWeight=parseFloat(document.getElementById('plate-bar')?.value)||45;
+  const resultEl=document.getElementById('plate-result');
+  const errorEl=document.getElementById('plate-error');
+  const displayEl=document.getElementById('plate-display');
+  const totalEl=document.getElementById('plate-total');
+
+  if(!target){resultEl.style.display='none';errorEl.style.display='none';return;}
+  if(target<barWeight){
+    resultEl.style.display='none';
+    errorEl.textContent=`Target must be at least ${barWeight} lbs (bar weight)`;
+    errorEl.style.display='block';return;
+  }
+  const perSide=(target-barWeight)/2;
+  if(perSide%1!==0&&perSide%0.5!==0){
+    // Check if achievable with standard plates
+  }
+  errorEl.style.display='none';
+  let remaining=perSide;
+  const plates=[];
+  for(const p of PLATE_SIZES){
+    while(remaining>=p.w){plates.push(p);remaining=Math.round((remaining-p.w)*100)/100;}
+  }
+  if(remaining>0.01){
+    errorEl.textContent=`Can't make exactly ${target} lbs with standard plates. Closest: ${target-remaining*2} lbs`;
+    errorEl.style.display='block';
+    resultEl.style.display='none';return;
+  }
+  displayEl.innerHTML=plates.length
+    ?plates.map(p=>`<div style="background:${p.color};color:#fff;font-size:12px;font-weight:700;padding:6px 10px;border-radius:6px;font-family:var(--mono)">${p.w}</div>`).join('')
+    :'<span style="color:var(--text3);font-size:13px">Bar only</span>';
+  const grouped=plates.reduce((a,p)=>{a[p.w]=(a[p.w]||0)+1;return a;},{});
+  totalEl.textContent='Per side: '+Object.entries(grouped).map(([w,n])=>`${n}×${w}`).join(' + ')+` = ${perSide} lbs`;
+  resultEl.style.display='block';
+}
+
+// ============================================================
+// EXPORT TO CSV
+// ============================================================
+function downloadCSV(filename,rows,headers){
+  const csv=[headers.join(','),...rows.map(r=>headers.map(h=>{
+    const val=r[h]??'';
+    const s=String(val).replace(/"/g,'""');
+    return s.includes(',')||s.includes('"')||s.includes('\n')?`"${s}"`:s;
+  }).join(','))].join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;a.click();
+  URL.revokeObjectURL(url);
+  toast('Downloaded: '+filename);
+}
+
+async function exportWorkoutsCSV(){
+  const{data}=await sb.from('workout_logs').select('*').eq('user_id',currentUser.id).order('date');
+  if(!data?.length){toast('No workout data to export');return;}
+  const rows=[];
+  data.forEach(log=>{
+    const sets=log.sets_data||{};
+    Object.entries(sets).forEach(([exName,exData])=>{
+      if(exData?.sets?.length){
+        exData.sets.forEach((s,i)=>{
+          rows.push({date:log.date,day_name:log.day_name||'',exercise:exName,set_number:i+1,weight_lbs:s.w||'',reps:s.r||'',set_note:s.note||'',session_notes:log.notes||'',volume:log.volume||''});
+        });
+      }
+    });
+    if(!Object.keys(sets).length){
+      rows.push({date:log.date,day_name:log.day_name||'',exercise:'',set_number:'',weight_lbs:'',reps:'',set_note:'',session_notes:log.notes||'',volume:log.volume||''});
+    }
+  });
+  downloadCSV(`irontracker_workouts_${today()}.csv`,rows,['date','day_name','exercise','set_number','weight_lbs','reps','set_note','session_notes','volume']);
+}
+
+async function exportNutritionCSV(){
+  const{data}=await sb.from('nutrition_logs').select('*').eq('user_id',currentUser.id).order('date');
+  if(!data?.length){toast('No nutrition data to export');return;}
+  downloadCSV(`irontracker_nutrition_${today()}.csv`,data.map(r=>({date:r.date,meal:r.meal,food:r.food_name,calories:r.cal,protein_g:r.protein,carbs_g:r.carbs,fat_g:r.fat})),['date','meal','food','calories','protein_g','carbs_g','fat_g']);
+}
+
+async function exportWeightCSV(){
+  const{data}=await sb.from('weight_logs').select('*').eq('user_id',currentUser.id).order('date');
+  if(!data?.length){toast('No weight data to export');return;}
+  downloadCSV(`irontracker_weight_${today()}.csv`,data.map(r=>({date:r.date,weight_lbs:r.weight,notes:r.notes||''})),['date','weight_lbs','notes']);
+}
+
+// ============================================================
+// WORKOUT TEMPLATES
+// ============================================================
+let currentTemplateId=null;
+
+function getTemplates(){
+  const key='it_templates_'+(currentUser?.id||'');
+  return JSON.parse(localStorage.getItem(key)||'[]');
+}
+function saveTemplates(templates){
+  localStorage.setItem('it_templates_'+(currentUser?.id||''),JSON.stringify(templates));
+}
+
+function openSaveTemplateModal(){
+  const split=getActiveSplit();
+  const sched=split.days[currentWorkoutDay];
+  const suggested=sched?sched.name:'My workout';
+  document.getElementById('template-name-input').value=suggested;
+  openModal('save-template-modal');
+}
+
+function saveWorkoutTemplate(){
+  const name=document.getElementById('template-name-input').value.trim();
+  if(!name){toast('Enter a template name');return;}
+  const split=getActiveSplit();
+  const sched=split.days[currentWorkoutDay];
+  const splitKey=userProfile?.active_split||'iron24_5day';
+  const splitDay=currentWorkoutDay;
+  const exercises=sched?sched.exercises.map(e=>({name:e.name,target:e.target,sets:e.sets})):[];
+  const template={
+    id:Date.now().toString(),
+    name,
+    exercises,
+    splitKey,
+    splitDay,
+    created:today()
+  };
+  const templates=getTemplates();
+  templates.unshift(template);
+  saveTemplates(templates);
+  closeModal('save-template-modal');
+  toast('Template saved: '+name);
+  renderTemplatesList();
+}
+
+function renderTemplatesList(){
+  const el=document.getElementById('templates-list');
+  if(!el)return;
+  const templates=getTemplates();
+  if(!templates.length){
+    el.innerHTML='<div style="font-size:13px;color:var(--text3)">No templates saved yet.</div>';
+    return;
+  }
+  el.innerHTML=templates.map(t=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:14px;font-weight:600;color:var(--text)">${t.name}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${t.exercises.length} exercises · Saved ${t.created}</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openStartTemplate('${t.id}')">Start</button>
+    </div>`).join('');
+}
+
+function openStartTemplate(id){
+  const templates=getTemplates();
+  const t=templates.find(x=>x.id===id);
+  if(!t)return;
+  currentTemplateId=id;
+  document.getElementById('start-template-title').textContent=t.name;
+  document.getElementById('start-template-exercises').innerHTML=t.exercises.map(e=>`
+    <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:600;color:var(--text)">${e.name}</div>
+      <div style="font-size:11px;color:var(--text3)">${e.sets} × ${e.target}</div>
+    </div>`).join('');
+  openModal('start-template-modal');
+}
+
+function startFromTemplate(){
+  const templates=getTemplates();
+  const t=templates.find(x=>x.id===currentTemplateId);
+  if(!t){closeModal('start-template-modal');return;}
+  // Navigate to workout page and pre-load the template exercises
+  closeModal('start-template-modal');
+  // Store template as pending for the workout page to pick up
+  localStorage.setItem('it_pending_template_'+(currentUser?.id||''),JSON.stringify(t));
+  showPage('workout');
+  toast('Template loaded — log your sets!');
+}
+
+function deleteCurrentTemplate(){
+  if(!confirm('Delete this template?'))return;
+  const templates=getTemplates().filter(x=>x.id!==currentTemplateId);
+  saveTemplates(templates);
+  closeModal('start-template-modal');
+  renderTemplatesList();
+  toast('Template deleted');
+}
+
+// Load pending template when workout page opens
+
 
 document.addEventListener('DOMContentLoaded',()=>{
   initAuth();updateTimerDisplay();
+  initTheme();
   const nd=document.getElementById('nutr-date');if(nd)nd.value=today();
 });
 
