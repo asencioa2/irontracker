@@ -959,11 +959,13 @@ function showPage(id){
   var mb=document.querySelector('[data-mob="'+id+'"]');if(mb)mb.classList.add('active');
   window.scrollTo({top:0,behavior:'smooth'});
   if(id==='dashboard')refreshDashboard();
-  else if(id==='workout')initWorkoutPage();
+  else if(id==='workout')initWorkoutPageAndLive();
   else if(id==='progress'){initProgressPage();renderProgressPhotos();}
   else if(id==='nutrition')initNutritionPage();
   else if(id==='tools'){buildToolsCheckin();updateTimerDisplay();}
   else if(id==='settings')initSettingsPage();
+  else if(id==='social'){ensureUsername();switchSocialTab('feed');startLivePoll();markNotificationsRead();}
+  if(id!=='social')stopLivePoll();
 }
 
 
@@ -1345,6 +1347,13 @@ async function getNextSplitIndex(){
   return next;
 }
 
+async function initWorkoutPageAndLive(){
+  await initWorkoutPage();
+  const split=getActiveSplit();
+  const sched=split.days[currentWorkoutDay];
+  if(sched)setLiveStatus(true,sched.name);
+}
+
 async function initWorkoutPage(){
   currentWorkoutDay=await getNextSplitIndex();
   await buildSplitStrip();
@@ -1588,6 +1597,9 @@ async function finishWorkout(){
   if(error){toast('Error saving workout: '+error.message);return;}
   localStorage.removeItem(`it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`);
   toast(`\u2705 ${dayName} saved! Next up: Day ${((currentWorkoutDay+1)%split.days.length)+1}`);
+  // Publish to social feed
+  publishWorkoutPost(dayName,workoutSets,totalVolume,notes);
+  setLiveStatus(false,dayName);
   initWorkoutPage();
 }
 
@@ -2040,17 +2052,7 @@ function switchSocialTab(tab){
 }
 
 // ---- showPage hook for social ----
-const _origShowPage=showPage;
-function showPage(id){
-  _origShowPage(id);
-  if(id==='social'){
-    ensureUsername();
-    switchSocialTab('feed');
-    startLivePoll();
-  }else{
-    stopLivePoll();
-  }
-}
+
 
 // ---- Publish workout post when finishing ----
 async function publishWorkoutPost(dayName,setsData,volume,notes){
@@ -2424,27 +2426,10 @@ async function markNotificationsRead(){
 }
 
 // ---- Hook into finishWorkout to publish + set live=false ----
-const _origFinishWorkout=finishWorkout;
-async function finishWorkout(){
-  await _origFinishWorkout();
-  const split=getActiveSplit();
-  const sched=split.days[currentWorkoutDay];
-  const dayName=sched?sched.name:'Workout';
-  const notes=localStorage.getItem(`it_notes_${currentUser.id}_${currentWorkoutDay}_${today()}`)||'';
-  let vol=0;
-  Object.values(workoutSets).forEach(ex=>{if(ex&&ex.sets)ex.sets.forEach(s=>{vol+=(s.w||0)*(s.r||0);});});
-  await publishWorkoutPost(dayName,workoutSets,vol,notes);
-  await setLiveStatus(false,dayName);
-}
+
 
 // Hook into initWorkoutPage to set live=true
-const _origInitWorkout=initWorkoutPage;
-async function initWorkoutPage(){
-  await _origInitWorkout();
-  const split=getActiveSplit();
-  const sched=split.days[currentWorkoutDay];
-  if(sched)await setLiveStatus(true,sched.name);
-}
+
 
 // Check notifications periodically
 setInterval(checkNotifications,60000);
