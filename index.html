@@ -54,6 +54,7 @@
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('dashboard')" data-page="dashboard">Dashboard</button>
     <button class="nav-tab" onclick="showPage('workout')" data-page="workout">Workout</button>
+    <button class="nav-tab" onclick="showPage('social')" data-page="social">Social</button>
     <button class="nav-tab" onclick="showPage('nutrition')" data-page="nutrition">Nutrition</button>
     <button class="nav-tab" onclick="showPage('progress')" data-page="progress">Progress</button>
     <button class="nav-tab" onclick="showPage('tools')" data-page="tools">Tools</button>
@@ -85,6 +86,10 @@
   <button class="mobile-nav-btn" onclick="showPage('workout')" data-mob="workout">
     <svg viewBox="0 0 24 24"><path d="M6.5 6.5h11M6.5 17.5h11M4 12h16M2 9l2 3-2 3M22 9l-2 3 2 3"/></svg>
     Workout
+  </button>
+  <button class="mobile-nav-btn" onclick="showPage('social')" data-mob="social" style="position:relative">
+    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Social<span id="feed-badge" style="display:none;position:absolute;top:4px;right:8px;background:var(--red);color:#fff;font-size:9px;border-radius:99px;padding:1px 5px">●</span>
   </button>
   <button class="mobile-nav-btn" onclick="showPage('nutrition')" data-mob="nutrition">
     <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 4-3 6.5-7 13C8 15.5 5 13 5 9a7 7 0 0 1 7-7z"/></svg>
@@ -235,6 +240,80 @@
 </div>
 
 <!-- TOOLS -->
+
+<!-- SOCIAL FEED -->
+<div id="page-social" class="page">
+  <!-- Username setup prompt (shown if no username set) -->
+  <div id="username-setup-card" style="display:none" class="card" style="margin-bottom:20px">
+    <div style="font-size:16px;font-weight:700;margin-bottom:8px">Set your @username</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Choose a unique username so friends can find you.</div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="username-input" placeholder="e.g. allen_lifts" style="flex:1" maxlength="30">
+      <button class="btn btn-primary" onclick="saveUsername()">Save</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:6px">Letters, numbers, and underscores only</div>
+  </div>
+
+  <!-- Social tabs -->
+  <div style="display:flex;gap:6px;margin-bottom:20px">
+    <button class="food-tab-btn active" id="social-tab-feed" onclick="switchSocialTab('feed')">🏋️ Feed</button>
+    <button class="food-tab-btn" id="social-tab-live" onclick="switchSocialTab('live')">🔴 Live</button>
+    <button class="food-tab-btn" id="social-tab-friends" onclick="switchSocialTab('friends')">👥 Friends</button>
+  </div>
+
+  <!-- FEED TAB -->
+  <div id="social-feed-tab">
+    <div id="social-feed-content">
+      <div style="text-align:center;color:var(--text3);padding:40px;font-size:13px">Loading feed...</div>
+    </div>
+  </div>
+
+  <!-- LIVE TAB -->
+  <div id="social-live-tab" style="display:none">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Friends currently training right now</div>
+    <div id="social-live-content">
+      <div style="text-align:center;color:var(--text3);padding:32px;font-size:13px">No friends training right now</div>
+    </div>
+  </div>
+
+  <!-- FRIENDS TAB -->
+  <div id="social-friends-tab" style="display:none">
+    <!-- Search -->
+    <div class="card" style="margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px">Find friends</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="friend-search-input" placeholder="Search @username or email..." style="flex:1">
+        <button class="btn btn-primary" onclick="searchFriends()">Search</button>
+      </div>
+      <div id="friend-search-results" style="margin-top:12px"></div>
+    </div>
+
+    <!-- Invite link -->
+    <div class="card" style="margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px">Invite a friend</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Share your profile link — they sign up and you auto-connect</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="invite-link" readonly style="flex:1;font-size:12px;color:var(--text3)">
+        <button class="btn btn-ghost" onclick="copyInviteLink()">Copy</button>
+      </div>
+    </div>
+
+    <!-- Pending requests -->
+    <div id="pending-requests-card" style="display:none" class="card" style="margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px">Friend requests</div>
+      <div id="pending-requests-list"></div>
+    </div>
+
+    <!-- Friends list -->
+    <div class="card">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px">Your friends</div>
+      <div id="friends-list-content">
+        <div style="color:var(--text3);font-size:13px">Add friends to see them here</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="page-tools" class="page">
   <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Tools</div>
   <div style="font-size:26px;font-weight:800;letter-spacing:-0.01em;margin-bottom:24px">Training tools</div>
@@ -445,6 +524,17 @@
       <div class="form-group"><label>Thighs</label><input type="number" id="m-thighs" step="0.1" placeholder="0.0"></div>
     </div>
     <button class="btn btn-primary btn-full" onclick="saveMeasurements()">Save measurements</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="comments-modal">
+  <div class="modal" style="width:500px">
+    <div class="modal-hd"><div class="modal-title">Comments</div><button class="modal-close" onclick="closeModal('comments-modal')">x</button></div>
+    <div id="comments-list" style="max-height:320px;overflow-y:auto;margin-bottom:16px"></div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="comment-input" placeholder="Add a comment..." style="flex:1" onkeydown="if(event.key==='Enter')submitComment()">
+      <button class="btn btn-primary btn-sm" onclick="submitComment()">Post</button>
+    </div>
   </div>
 </div>
 
@@ -792,6 +882,16 @@ async function onSignedIn(user,showFullLoading){
   document.getElementById('nav-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   await loadProfile();
   await refreshDashboard();
+  checkNotifications();
+  // Handle invite link — if URL has ?invite=username auto-navigate to social+friends
+  const inviteParam=new URLSearchParams(window.location.search).get('invite');
+  if(inviteParam){
+    document.getElementById('friend-search-input').value=inviteParam;
+    showPage('social');
+    switchSocialTab('friends');
+    searchFriends();
+    window.history.replaceState({},'',window.location.pathname);
+  }
   loading(false);
 }
 
@@ -1882,8 +1982,474 @@ async function confirmBarcodeFood(){
 }
 
 // ============================================================
-// INIT
+// SOCIAL FEED
 // ============================================================
+let currentPostId=null;
+let liveInterval=null;
+let feedPollInterval=null;
+
+// ---- Username ----
+async function ensureUsername(){
+  const{data}=await sb.from('usernames').select('username').eq('user_id',currentUser.id).single();
+  if(data){
+    userProfile.username=data.username;
+    document.getElementById('username-setup-card').style.display='none';
+    setInviteLink(data.username);
+  }else{
+    document.getElementById('username-setup-card').style.display='block';
+  }
+}
+
+async function saveUsername(){
+  const raw=document.getElementById('username-input').value.trim().toLowerCase();
+  if(!raw||!/^[a-z0-9_]{3,30}$/.test(raw)){toast('Username must be 3-30 chars, letters/numbers/underscores only');return;}
+  const{error}=await sb.from('usernames').insert({user_id:currentUser.id,username:raw,display_name:userProfile.name||'Athlete'});
+  if(error){
+    if(error.code==='23505')toast('That username is taken — try another');
+    else toast('Error: '+error.message);
+    return;
+  }
+  userProfile.username=raw;
+  document.getElementById('username-setup-card').style.display='none';
+  setInviteLink(raw);
+  toast('Username @'+raw+' saved!');
+  loadFriendsList();
+}
+
+function setInviteLink(username){
+  const link=window.location.origin+'?invite='+username;
+  const el=document.getElementById('invite-link');
+  if(el)el.value=link;
+}
+
+function copyInviteLink(){
+  const el=document.getElementById('invite-link');
+  if(!el)return;
+  navigator.clipboard.writeText(el.value).then(()=>toast('Invite link copied!')).catch(()=>{el.select();document.execCommand('copy');toast('Link copied!');});
+}
+
+// ---- Social Tab Switching ----
+function switchSocialTab(tab){
+  ['feed','live','friends'].forEach(t=>{
+    document.getElementById('social-'+t+'-tab').style.display=t===tab?'block':'none';
+    document.getElementById('social-tab-'+t).classList.toggle('active',t===tab);
+  });
+  if(tab==='feed')loadSocialFeed();
+  if(tab==='live')loadLiveFeed();
+  if(tab==='friends'){loadFriendsList();loadPendingRequests();}
+}
+
+// ---- showPage hook for social ----
+const _origShowPage=showPage;
+function showPage(id){
+  _origShowPage(id);
+  if(id==='social'){
+    ensureUsername();
+    switchSocialTab('feed');
+    startLivePoll();
+  }else{
+    stopLivePoll();
+  }
+}
+
+// ---- Publish workout post when finishing ----
+async function publishWorkoutPost(dayName,setsData,volume,notes){
+  if(!userProfile.username)return; // no username = private
+  const{data:friends}=await sb.from('friendships').select('requester_id,addressee_id').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`).eq('status','accepted');
+  if(!friends||!friends.length)return;
+  const exerciseCount=Object.keys(setsData||{}).length;
+  const setCount=Object.values(setsData||{}).reduce((t,ex)=>t+(ex.sets?ex.sets.length:0),0);
+  await sb.from('workout_posts').insert({
+    user_id:currentUser.id,
+    username:userProfile.username,
+    display_name:userProfile.name||'Athlete',
+    day_name:dayName,
+    sets_data:setsData,
+    volume:Math.round(volume),
+    exercise_count:exerciseCount,
+    set_count:setCount,
+    notes:notes||null,
+    posted_at:new Date().toISOString()
+  });
+  // Send push notification to friends
+  sendWorkoutNotificationToFriends(friends,'finished');
+}
+
+// ---- Live status ----
+async function setLiveStatus(isLive,dayName){
+  if(!userProfile.username)return;
+  await sb.from('workout_live').upsert({
+    user_id:currentUser.id,
+    username:userProfile.username,
+    display_name:userProfile.name||'Athlete',
+    day_name:dayName||'Workout',
+    is_live:isLive,
+    started_at:isLive?new Date().toISOString():null,
+    updated_at:new Date().toISOString()
+  },{onConflict:'user_id'});
+  if(isLive)sendWorkoutNotificationToFriends(null,'started');
+}
+
+function startLivePoll(){
+  if(feedPollInterval)return;
+  feedPollInterval=setInterval(()=>{
+    const activeTab=document.getElementById('social-live-tab');
+    if(activeTab&&activeTab.style.display!=='none')loadLiveFeed();
+  },30000);
+}
+function stopLivePoll(){if(feedPollInterval){clearInterval(feedPollInterval);feedPollInterval=null;}}
+
+// ---- Load social feed ----
+async function loadSocialFeed(){
+  const el=document.getElementById('social-feed-content');
+  if(!el)return;
+  el.innerHTML='<div style="text-align:center;color:var(--text3);padding:32px"><div class="ai-spinner" style="margin:0 auto 10px"></div>Loading...</div>';
+
+  // Get accepted friends
+  const{data:friendships}=await sb.from('friendships').select('requester_id,addressee_id').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`).eq('status','accepted');
+  const friendIds=(friendships||[]).map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id);
+
+  if(!friendIds.length){
+    el.innerHTML='<div style="text-align:center;color:var(--text3);padding:40px;font-size:13px"><div style="font-size:32px;margin-bottom:12px">👥</div>Add friends to see their workouts here.</div>';
+    return;
+  }
+
+  // Load posts from friends + own posts
+  const allIds=[...friendIds,currentUser.id];
+  const{data:posts}=await sb.from('workout_posts').select('*').in('user_id',allIds).order('posted_at',{ascending:false}).limit(30);
+
+  if(!posts||!posts.length){
+    el.innerHTML='<div style="text-align:center;color:var(--text3);padding:40px;font-size:13px">No workouts posted yet. Finish a workout to share it!</div>';
+    return;
+  }
+
+  // Load likes for visible posts
+  const postIds=posts.map(p=>p.id);
+  const{data:likes}=await sb.from('post_likes').select('*').in('post_id',postIds);
+  const likeMap={};
+  (likes||[]).forEach(l=>{if(!likeMap[l.post_id])likeMap[l.post_id]=[];likeMap[l.post_id].push(l);});
+
+  const{data:commentCounts}=await sb.from('post_comments').select('post_id').in('post_id',postIds);
+  const commentCountMap={};
+  (commentCounts||[]).forEach(c=>{commentCountMap[c.post_id]=(commentCountMap[c.post_id]||0)+1;});
+
+  el.innerHTML=posts.map(p=>renderFeedPost(p,likeMap[p.id]||[],commentCountMap[p.id]||0)).join('');
+}
+
+function renderFeedPost(post,likes,commentCount){
+  const isOwn=post.user_id===currentUser.id;
+  const myLike=likes.find(l=>l.user_id===currentUser.id);
+  const likeCount=likes.length;
+  const posted=new Date(post.posted_at);
+  const timeAgo=getTimeAgo(posted);
+  const vol=post.volume>0?`${(post.volume/1000).toFixed(1)}k lbs`:null;
+  const exercises=post.sets_data?Object.keys(post.sets_data).slice(0,4):[];
+  const moreEx=post.sets_data?Math.max(0,Object.keys(post.sets_data).length-4):0;
+
+  return `<div class="card" style="margin-bottom:14px;padding:16px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--accent)">${(post.display_name||'A')[0].toUpperCase()}</div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text)">${post.display_name||'Athlete'}</div>
+          <div style="font-size:11px;color:var(--text3)">@${post.username} · ${timeAgo}</div>
+        </div>
+      </div>
+      ${isOwn?`<button class="btn btn-danger btn-sm" onclick="deletePost('${post.id}')">Delete</button>`:''}
+    </div>
+
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:12px">
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">🏋️ ${post.day_name}</div>
+      <div style="display:flex;gap:16px;font-size:12px;color:var(--text2);margin-bottom:8px">
+        ${post.set_count?`<span><strong style="color:var(--text)">${post.set_count}</strong> sets</span>`:''}
+        ${post.exercise_count?`<span><strong style="color:var(--text)">${post.exercise_count}</strong> exercises</span>`:''}
+        ${vol?`<span><strong style="color:var(--accent)">${vol}</strong> volume</span>`:''}
+      </div>
+      ${exercises.length?`<div style="font-size:12px;color:var(--text3)">${exercises.map(e=>`<span style="display:inline-block;background:var(--surface3);border-radius:4px;padding:2px 6px;margin:2px">${e}</span>`).join('')}${moreEx?`<span style="color:var(--text3);font-size:11px"> +${moreEx} more</span>`:''}</div>`:''}
+    </div>
+
+    ${post.notes?`<div style="font-size:13px;color:var(--text2);font-style:italic;margin-bottom:12px">"${post.notes}"</div>`:''}
+
+    <div style="display:flex;align-items:center;gap:16px;padding-top:10px;border-top:1px solid var(--border)">
+      <button onclick="toggleLike('${post.id}','${myLike?myLike.id:''}')" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:13px;color:${myLike?'var(--red)':'var(--text3)'}">
+        ${myLike?'❤️':'🤍'} <span>${likeCount||''}</span>
+      </button>
+      <button onclick="openComments('${post.id}')" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text3)">
+        💬 <span>${commentCount||''}</span>
+      </button>
+      <button onclick="toggleLike('${post.id}','${myLike?myLike.id:''}','💪')" style="background:none;border:none;cursor:pointer;font-size:16px" title="Let's go!">💪</button>
+      <button onclick="toggleLike('${post.id}','${myLike?myLike.id:''}','🔥')" style="background:none;border:none;cursor:pointer;font-size:16px" title="Fire!">🔥</button>
+    </div>
+  </div>`;
+}
+
+function getTimeAgo(date){
+  const diff=Math.floor((Date.now()-date.getTime())/1000);
+  if(diff<60)return 'just now';
+  if(diff<3600)return Math.floor(diff/60)+'m ago';
+  if(diff<86400)return Math.floor(diff/3600)+'h ago';
+  return Math.floor(diff/86400)+'d ago';
+}
+
+// ---- Live feed ----
+async function loadLiveFeed(){
+  const el=document.getElementById('social-live-content');
+  if(!el)return;
+  const{data:friendships}=await sb.from('friendships').select('requester_id,addressee_id').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`).eq('status','accepted');
+  const friendIds=(friendships||[]).map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id);
+  if(!friendIds.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:16px">No friends yet.</div>';return;}
+  const{data:live}=await sb.from('workout_live').select('*').in('user_id',friendIds).eq('is_live',true);
+  if(!live||!live.length){el.innerHTML='<div style="text-align:center;color:var(--text3);padding:32px;font-size:13px">No friends training right now.<br>Check back soon!</div>';return;}
+  el.innerHTML=live.map(l=>{
+    const since=l.started_at?getTimeAgo(new Date(l.started_at)):'';
+    return `<div class="card" style="margin-bottom:10px;padding:14px;border-color:var(--red)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--red);flex-shrink:0;animation:pulse 1.5s infinite"></div>
+        <div style="width:34px;height:34px;border-radius:50%;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent)">${(l.display_name||'A')[0].toUpperCase()}</div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text)">${l.display_name} is training now</div>
+          <div style="font-size:12px;color:var(--text2)">@${l.username} · ${l.day_name} · ${since}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ---- Likes ----
+async function toggleLike(postId,existingLikeId,emoji){
+  const reaction=emoji||'❤️';
+  if(existingLikeId){
+    await sb.from('post_likes').delete().eq('id',existingLikeId).eq('user_id',currentUser.id);
+  }else{
+    await sb.from('post_likes').insert({post_id:postId,user_id:currentUser.id,reaction});
+  }
+  loadSocialFeed();
+}
+
+// ---- Comments ----
+async function openComments(postId){
+  currentPostId=postId;
+  const el=document.getElementById('comments-list');
+  el.innerHTML='<div class="ai-spinner" style="margin:16px auto"></div>';
+  openModal('comments-modal');
+  const{data:comments}=await sb.from('post_comments').select('*').eq('post_id',postId).order('created_at');
+  if(!comments||!comments.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:16px;text-align:center">No comments yet. Be first!</div>';return;}
+  el.innerHTML=comments.map(c=>`<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <span style="font-size:13px;font-weight:600;color:var(--text)">${c.display_name}</span>
+        <span style="font-size:11px;color:var(--text3);margin-left:6px">@${c.username}</span>
+      </div>
+      <span style="font-size:11px;color:var(--text3)">${getTimeAgo(new Date(c.created_at))}</span>
+    </div>
+    <div style="font-size:13px;color:var(--text2);margin-top:4px">${c.body}</div>
+    ${c.user_id===currentUser.id?`<button class="btn btn-danger btn-sm" style="margin-top:4px;padding:2px 8px" onclick="deleteComment('${c.id}')">Delete</button>`:''}
+  </div>`).join('');
+}
+
+async function submitComment(){
+  const input=document.getElementById('comment-input');
+  const body=input.value.trim();
+  if(!body||!currentPostId)return;
+  input.value='';
+  await sb.from('post_comments').insert({
+    post_id:currentPostId,
+    user_id:currentUser.id,
+    username:userProfile.username||'user',
+    display_name:userProfile.name||'Athlete',
+    body
+  });
+  openComments(currentPostId);
+}
+
+async function deleteComment(id){
+  await sb.from('post_comments').delete().eq('id',id).eq('user_id',currentUser.id);
+  openComments(currentPostId);
+}
+
+async function deletePost(id){
+  if(!confirm('Delete this post?'))return;
+  await sb.from('workout_posts').delete().eq('id',id).eq('user_id',currentUser.id);
+  loadSocialFeed();
+}
+
+// ---- Friends ----
+async function searchFriends(){
+  const query=document.getElementById('friend-search-input').value.trim().toLowerCase();
+  if(!query){toast('Enter a username or email to search');return;}
+  const el=document.getElementById('friend-search-results');
+  el.innerHTML='<div style="color:var(--text3);font-size:13px">Searching...</div>';
+
+  // Search by username
+  const{data:byUsername}=await sb.from('usernames').select('user_id,username,display_name').ilike('username','%'+query+'%').neq('user_id',currentUser.id).limit(5);
+  const results=byUsername||[];
+
+  if(!results.length){
+    el.innerHTML='<div style="color:var(--text3);font-size:13px">No users found for "'+query+'"</div>';
+    return;
+  }
+
+  // Get existing friendships
+  const{data:existing}=await sb.from('friendships').select('*').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`);
+  const existingMap={};
+  (existing||[]).forEach(f=>{
+    const otherId=f.requester_id===currentUser.id?f.addressee_id:f.requester_id;
+    existingMap[otherId]=f;
+  });
+
+  el.innerHTML=results.map(u=>{
+    const fr=existingMap[u.user_id];
+    let btn='';
+    if(!fr)btn=`<button class="btn btn-primary btn-sm" onclick="sendFriendRequest('${u.user_id}','${u.display_name}')">Add friend</button>`;
+    else if(fr.status==='pending'&&fr.requester_id===currentUser.id)btn='<span style="font-size:12px;color:var(--text3)">Request sent</span>';
+    else if(fr.status==='pending')btn=`<button class="btn btn-primary btn-sm" onclick="acceptFriendRequest('${fr.id}')">Accept</button>`;
+    else btn='<span style="font-size:12px;color:var(--accent)">Friends ✓</span>';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:14px;font-weight:600;color:var(--text)">${u.display_name}</div>
+        <div style="font-size:12px;color:var(--text3)">@${u.username}</div>
+      </div>
+      ${btn}
+    </div>`;
+  }).join('');
+}
+
+async function sendFriendRequest(toUserId,toName){
+  const{error}=await sb.from('friendships').insert({requester_id:currentUser.id,addressee_id:toUserId,status:'pending'});
+  if(error&&error.code==='23505'){toast('Request already sent');return;}
+  if(error){toast('Error: '+error.message);return;}
+  toast('Friend request sent to '+toName);
+  searchFriends();
+}
+
+async function loadPendingRequests(){
+  const{data}=await sb.from('friendships').select('id,requester_id').eq('addressee_id',currentUser.id).eq('status','pending');
+  const card=document.getElementById('pending-requests-card');
+  const list=document.getElementById('pending-requests-list');
+  if(!data||!data.length){if(card)card.style.display='none';return;}
+  if(card)card.style.display='block';
+  // Look up usernames for requesters
+  const ids=data.map(d=>d.requester_id);
+  const{data:names}=await sb.from('usernames').select('user_id,username,display_name').in('user_id',ids);
+  const nameMap={};(names||[]).forEach(n=>{nameMap[n.user_id]=n;});
+  list.innerHTML=data.map(req=>{
+    const u=nameMap[req.requester_id]||{display_name:'Unknown',username:'?'};
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:14px;font-weight:600;color:var(--text)">${u.display_name}</div>
+        <div style="font-size:12px;color:var(--text3)">@${u.username} wants to connect</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-primary btn-sm" onclick="acceptFriendRequest('${req.id}')">Accept</button>
+        <button class="btn btn-danger btn-sm" onclick="declineFriendRequest('${req.id}')">Decline</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function acceptFriendRequest(id){
+  await sb.from('friendships').update({status:'accepted'}).eq('id',id);
+  toast('Friend request accepted!');
+  loadPendingRequests();
+  loadFriendsList();
+  loadSocialFeed();
+}
+
+async function declineFriendRequest(id){
+  await sb.from('friendships').delete().eq('id',id);
+  toast('Request declined');
+  loadPendingRequests();
+}
+
+async function loadFriendsList(){
+  const el=document.getElementById('friends-list-content');
+  if(!el)return;
+  const{data:friendships}=await sb.from('friendships').select('requester_id,addressee_id').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`).eq('status','accepted');
+  if(!friendships||!friendships.length){el.innerHTML='<div style="color:var(--text3);font-size:13px">No friends yet — search above to find people!</div>';return;}
+  const ids=friendships.map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id);
+  const{data:names}=await sb.from('usernames').select('user_id,username,display_name').in('user_id',ids);
+  el.innerHTML=(names||[]).map(u=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent)">${u.display_name[0].toUpperCase()}</div>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${u.display_name}</div>
+        <div style="font-size:11px;color:var(--text3)">@${u.username}</div>
+      </div>
+    </div>
+  </div>`).join('');
+}
+
+// ---- Push Notifications ----
+const VAPID_PUBLIC_KEY='';  // Add your VAPID public key here
+
+async function requestPushPermission(){
+  if(!('Notification' in window)||!('serviceWorker' in navigator))return;
+  const perm=await Notification.requestPermission();
+  if(perm!=='granted')return;
+  toast('Notifications enabled!');
+}
+
+async function sendWorkoutNotificationToFriends(friends,type){
+  // Lightweight: just store a notification record in Supabase
+  // A service worker or Vercel cron would process these in production
+  // For now we rely on feed polling to surface activity
+  try{
+    if(!friends)return;
+    const notifBody=type==='started'
+      ?`${userProfile.name||'Your friend'} just started a workout!`
+      :`${userProfile.name||'Your friend'} finished their workout!`;
+    const friendIds=friends.map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id);
+    await sb.from('workout_notifications').insert(friendIds.map(id=>({
+      to_user_id:id,from_user_id:currentUser.id,
+      from_name:userProfile.name||'Athlete',
+      from_username:userProfile.username||'',
+      type,body:notifBody,
+      created_at:new Date().toISOString(),read:false
+    })));
+    // Update feed badge for recipients (they'll see it next time they open the app)
+  }catch(e){console.warn('Notification insert failed:',e);}
+}
+
+async function checkNotifications(){
+  if(!currentUser)return;
+  const{data}=await sb.from('workout_notifications').select('id').eq('to_user_id',currentUser.id).eq('read',false);
+  const badge=document.getElementById('feed-badge');
+  if(badge){badge.style.display=(data&&data.length)?'block':'none';}
+}
+
+async function markNotificationsRead(){
+  await sb.from('workout_notifications').update({read:true}).eq('to_user_id',currentUser.id).eq('read',false);
+  const badge=document.getElementById('feed-badge');
+  if(badge)badge.style.display='none';
+}
+
+// ---- Hook into finishWorkout to publish + set live=false ----
+const _origFinishWorkout=finishWorkout;
+async function finishWorkout(){
+  await _origFinishWorkout();
+  const split=getActiveSplit();
+  const sched=split.days[currentWorkoutDay];
+  const dayName=sched?sched.name:'Workout';
+  const notes=localStorage.getItem(`it_notes_${currentUser.id}_${currentWorkoutDay}_${today()}`)||'';
+  let vol=0;
+  Object.values(workoutSets).forEach(ex=>{if(ex&&ex.sets)ex.sets.forEach(s=>{vol+=(s.w||0)*(s.r||0);});});
+  await publishWorkoutPost(dayName,workoutSets,vol,notes);
+  await setLiveStatus(false,dayName);
+}
+
+// Hook into initWorkoutPage to set live=true
+const _origInitWorkout=initWorkoutPage;
+async function initWorkoutPage(){
+  await _origInitWorkout();
+  const split=getActiveSplit();
+  const sched=split.days[currentWorkoutDay];
+  if(sched)await setLiveStatus(true,sched.name);
+}
+
+// Check notifications periodically
+setInterval(checkNotifications,60000);
+
+
 document.addEventListener('DOMContentLoaded',()=>{
   initAuth();updateTimerDisplay();
   const nd=document.getElementById('nutr-date');if(nd)nd.value=today();

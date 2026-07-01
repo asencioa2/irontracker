@@ -167,6 +167,7 @@ canvas{width:100%!important;}
 /* AI SPINNER (used by app loading screen) */
 .ai-spinner{width:20px;height:20px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;}
 @keyframes spin{to{transform:rotate(360deg);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
 
 /* WATER */
 .prog-fill-blue{background:linear-gradient(90deg,var(--blue),#7ec8f7);}
