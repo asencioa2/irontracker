@@ -1283,23 +1283,19 @@ async function renderWorkoutContent(){
   const split=getActiveSplit();
   const sched=split.days[currentWorkoutDay];
   const label=document.getElementById('workout-day-label');
-  const content=document.getElementById('workout-content');
+  const contentEl=document.getElementById('workout-content');
   const customExercises=await getCustomExercises(currentWorkoutDay);
   const splitKey=userProfile.active_split||'iron24_5day';
   const hiddenSet=await getHiddenPresetExercises(splitKey,currentWorkoutDay);
-
-  const visiblePresetExercises=sched?sched.exercises.filter(e=>!hiddenSet.has(e.name)):[];
-
-  if(!visiblePresetExercises.length&&!customExercises.length){
+  const visiblePreset=sched?sched.exercises.filter(e=>!hiddenSet.has(e.name)):[];
+  if(!visiblePreset.length&&!customExercises.length){
     if(label)label.textContent='No workout configured';
-    if(content)content.innerHTML='<div class="card" style="text-align:center;padding:40px"><div class="text-muted fs-13">Pick a split or add a custom exercise to get started.</div><button class="btn btn-primary" style="margin-top:16px" onclick="openAddExerciseModal()">+ Add exercise</button></div>';
+    if(contentEl)contentEl.innerHTML='<div class="card" style="text-align:center;padding:40px"><div class="text-muted fs-13">Pick a split or add a custom exercise.</div><button class="btn btn-primary" style="margin-top:16px" onclick="openAddExerciseModal()">+ Add exercise</button></div>';
     return;
   }
-
-  const baseExercises=visiblePresetExercises.map(e=>({name:e.name,target:e.target,sets:e.sets,isCustom:false}));
-  const customMapped=customExercises.map(c=>({name:c.name,target:c.target_reps,sets:c.sets,isCustom:true,id:c.id}));
-  const allExercises=[...baseExercises,...customMapped];
-
+  const base=visiblePreset.map(e=>({name:e.name,target:e.target,sets:e.sets,isCustom:false}));
+  const custom=customExercises.map(c=>({name:c.name,target:c.target_reps,sets:c.sets,isCustom:true,id:c.id}));
+  const allEx=[...base,...custom];
   if(label)label.textContent=sched?`Day ${currentWorkoutDay+1} — ${sched.name}${sched.focus?' · '+sched.focus:''}`:`Day ${currentWorkoutDay+1} — Custom workout`;
 
   const sessionKey=`it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`;
@@ -1308,127 +1304,164 @@ async function renderWorkoutContent(){
   const{data:prs}=await sb.from('personal_records').select('*').eq('user_id',currentUser.id);
   const prMap={};(prs||[]).forEach(p=>{prMap[p.exercise]=p;});
 
-  // Fetch last time each exercise was logged (most recent prior session, excluding today)
-  const exNames=allExercises.map(e=>e.name);
-  const{data:recentLogs}=await sb.from('workout_logs').select('date,sets_data').eq('user_id',currentUser.id).neq('date',today()).order('date',{ascending:false}).limit(20);
-  const lastSeenMap={}; // name -> {w,r,date}
+  const{data:recentLogs}=await sb.from('workout_logs').select('date,sets_data').eq('user_id',currentUser.id).eq('split_index',currentWorkoutDay).neq('date',today()).order('date',{ascending:false}).limit(1);
+  const lastMap={};
   if(recentLogs&&recentLogs.length){
-    for(const log of recentLogs){
-      const sd=log.sets_data||{};
-      for(const idx in sd){
-        const entry=sd[idx];
-        if(entry&&entry.name&&exNames.includes(entry.name)&&entry.w>0){
-          if(!lastSeenMap[entry.name]){lastSeenMap[entry.name]={w:entry.w,r:entry.r,date:log.date};}
-        }
+    const sd=recentLogs[0].sets_data||{};
+    Object.entries(sd).forEach(([name,exData])=>{
+      if(exData&&exData.sets&&exData.sets.length){
+        const best=exData.sets.reduce((b,s)=>(s.w||0)>(b.w||0)?s:b,exData.sets[0]);
+        lastMap[name]={w:best.w,r:best.r,date:recentLogs[0].date};
       }
-    }
+    });
   }
 
-  let html=`<div class="card"><div class="section-hd"><div class="section-title">${sched?sched.name:'Custom workout'}</div>${sched&&sched.focus?`<span class="badge badge-blue">${sched.focus}</span>`:''}</div></div>`;
-  allExercises.forEach((ex,i)=>{
-    const saved=workoutSets[i]||{};
+  let html='';
+  allEx.forEach((ex,i)=>{
+    const exData=workoutSets[ex.name]||{sets:[],note:''};
     const pr=prMap[ex.name];
-    const lastTime=lastSeenMap[ex.name];
-    const prTag=pr?`<span class="pb-tag">PR: ${pr.weight_lbs}lbs\xd7${pr.reps}</span>`:'';
-    const customTag=ex.isCustom?`<span class="badge badge-amber" style="margin-left:6px">Custom</span>`:'';
-    const lastTimeTag=lastTime?`<span style="font-size:10px;color:var(--blue);font-family:var(--mono);display:block;margin-top:2px">Last: ${lastTime.w}lbs\xd7${lastTime.r}</span>`:'';
-    const deleteBtn=ex.isCustom
-      ?`<button class="btn btn-danger btn-sm" onclick="deleteCustomExercise('${ex.id}')" title="Remove">🗑</button>`
-      :`<button class="btn btn-danger btn-sm" onclick="hidePresetExercise('${ex.name.replace(/'/g,"\\'")}')" title="Remove">🗑</button>`;
+    const last=lastMap[ex.name];
+    const prTag=pr?`<span class="pb-tag">PR: ${pr.weight_lbs}lbs×${pr.reps}</span>`:'';
+    const custTag=ex.isCustom?'<span class="badge badge-amber" style="margin-left:6px">Custom</span>':'';
+    const lastTag=last?`<div style="font-size:10px;color:var(--blue);font-family:var(--mono);margin-top:2px">Last: ${last.w}lbs×${last.r}</div>`:'';
+    const delBtn=ex.isCustom
+      ?`<button class="btn btn-danger btn-sm" onclick="deleteCustomExercise('${ex.id}')">Remove</button>`
+      :`<button class="btn btn-danger btn-sm" onclick="hidePresetExercise('${ex.name.replace(/'/g,"\'")}')">Remove</button>`;
+
+    // Logged sets
+    let setsHtml='';
+    if(exData.sets&&exData.sets.length){
+      setsHtml='<div style="margin-bottom:10px">';
+      exData.sets.forEach((s,si)=>{
+        const n=ex.name.replace(/'/g,"\'").replace(/`/g,"'");
+        setsHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--surface2);border-radius:8px;margin-bottom:6px">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);min-width:36px">Set ${si+1}</div>
+          <input type="number" inputmode="decimal" step="2.5" value="${s.w||''}" placeholder="lbs" style="width:64px;font-family:var(--mono);font-size:14px;padding:5px 6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);text-align:center" onchange="editSet('${n}',${si},'w',this.value)">
+          <span style="color:var(--text3)">×</span>
+          <input type="number" inputmode="numeric" value="${s.r||''}" placeholder="reps" style="width:54px;font-family:var(--mono);font-size:14px;padding:5px 6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);text-align:center" onchange="editSet('${n}',${si},'r',this.value)">
+          <input type="text" value="${(s.note||'').replace(/"/g,'&quot;')}" placeholder="note..." style="flex:1;font-size:13px;padding:5px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text)" onchange="editSet('${n}',${si},'note',this.value)">
+          <button class="btn btn-danger btn-sm" style="padding:4px 8px;flex-shrink:0" onclick="deleteSet('${n}',${si})">x</button>
+        </div>`;
+      });
+      setsHtml+='</div>';
+    }else{
+      setsHtml='<div style="font-size:12px;color:var(--text3);margin-bottom:10px;padding:6px 0">No sets logged yet.</div>';
+    }
+
+    const n=ex.name.replace(/'/g,"\'").replace(/`/g,"'");
     html+=`<div class="card" style="margin-bottom:10px;padding:14px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-        <div class="ex-name" style="flex:1;padding-right:8px">${ex.name}${prTag}${customTag}
-          <div style="font-size:11px;color:var(--text3);font-weight:400;margin-top:2px">${ex.sets} × ${ex.target}${lastTimeTag}</div>
+        <div style="flex:1;padding-right:8px">
+          <div style="font-size:14px;font-weight:600;color:var(--text)">${ex.name}${prTag}${custTag}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Target: ${ex.sets} x ${ex.target}${lastTag}</div>
         </div>
-        ${deleteBtn}
+        ${delBtn}
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end">
-        <div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Weight</div>
-          <input class="ex-input" type="number" inputmode="decimal" id="ex-w-${i}" placeholder="${lastTime?lastTime.w:'lbs'}" value="${saved.w||''}" onchange="saveSet(${i},'${ex.name.replace(/'/g,"\\'")}')" step="2.5" style="width:100%"></div>
-        <div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Reps</div>
-          <input class="ex-input" type="number" inputmode="numeric" id="ex-r-${i}" placeholder="${lastTime?lastTime.r:'reps'}" value="${saved.r||''}" onchange="saveSet(${i},'${ex.name.replace(/'/g,"\\'")}\`)" style="width:100%"></div>
-        <div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Sets</div>
-          <input class="ex-input" type="number" inputmode="numeric" id="ex-s-${i}" placeholder="/${ex.sets}" value="${saved.s||''}" onchange="saveSet(${i},'${ex.name.replace(/'/g,"\\'")}')" max="${ex.sets}" style="width:100%"></div>
-        <div style="padding-bottom:0"><button class="btn btn-ghost btn-sm" style="height:42px;padding:0 12px" onclick="checkPR(${i},'${ex.name.replace(/'/g,"\\'")}')">✓</button></div>
+      ${setsHtml}
+      <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;align-items:end;margin-bottom:12px">
+        <div>
+          <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Weight (lbs)</div>
+          <input class="ex-input" type="number" inputmode="decimal" step="2.5" id="ex-w-${i}" placeholder="${last?last.w:'lbs'}" style="width:100%">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Reps</div>
+          <input class="ex-input" type="number" inputmode="numeric" id="ex-r-${i}" placeholder="${last?last.r:'reps'}" style="width:100%">
+        </div>
+        <button class="btn btn-primary btn-sm" style="align-self:end;height:42px;padding:0 14px;white-space:nowrap" onclick="logSet(${i},'${n}')">+ Log set</button>
+        <button class="btn btn-ghost btn-sm" style="align-self:end;height:42px;padding:0 10px" onclick="checkPRFromSet(${i},'${n}')">PR?</button>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Exercise notes</div>
+        <textarea style="width:100%;resize:none;font-size:13px;padding:8px;border-radius:var(--radius);background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font)" rows="2" placeholder="Warmup sets, form notes, bands, tempo..." onchange="saveExNote('${n}',this.value)">${(exData.note||'')}</textarea>
       </div>
     </div>`;
   });
+
   const savedNotes=localStorage.getItem(`it_notes_${currentUser.id}_${currentWorkoutDay}_${today()}`)||'';
-  html+=`<div class="mt-16" style="padding-top:12px;border-top:1px solid var(--border)">
-    <div class="form-group"><label>Session notes</label><textarea id="workout-notes" rows="2" style="resize:none" placeholder="How did it feel? Any PRs?">${savedNotes}</textarea></div>
-  </div></div>`;
-  if(content)content.innerHTML=html;
+  html+=`<div class="card" style="padding:14px">
+    <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Session notes</div>
+    <textarea id="workout-notes" rows="2" style="resize:none;width:100%;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:13px" placeholder="How did the session feel overall?">${savedNotes}</textarea>
+  </div>`;
+  if(contentEl)contentEl.innerHTML=html;
+}
+
+function getSessionKey(){return `it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`;}
+function saveSession(){localStorage.setItem(getSessionKey(),JSON.stringify(workoutSets));}
+
+function logSet(exIdx,exName){
+  const w=parseFloat(document.getElementById('ex-w-'+exIdx)?.value);
+  const r=parseInt(document.getElementById('ex-r-'+exIdx)?.value);
+  if(!w||!r){toast('Enter weight and reps first');return;}
+  if(!workoutSets[exName])workoutSets[exName]={sets:[],note:''};
+  workoutSets[exName].sets.push({w,r,note:''});
+  saveSession();
+  document.getElementById('ex-w-'+exIdx).value='';
+  document.getElementById('ex-r-'+exIdx).value='';
+  renderWorkoutContent();
+  toast('Set '+workoutSets[exName].sets.length+' logged: '+w+'lbs x '+r);
+}
+
+function editSet(exName,si,field,value){
+  if(!workoutSets[exName]||!workoutSets[exName].sets[si])return;
+  if(field==='w')workoutSets[exName].sets[si].w=parseFloat(value)||0;
+  else if(field==='r')workoutSets[exName].sets[si].r=parseInt(value)||0;
+  else if(field==='note')workoutSets[exName].sets[si].note=value;
+  saveSession();
+}
+
+function deleteSet(exName,si){
+  if(!workoutSets[exName])return;
+  workoutSets[exName].sets.splice(si,1);
+  saveSession();
+  renderWorkoutContent();
+}
+
+function saveExNote(exName,note){
+  if(!workoutSets[exName])workoutSets[exName]={sets:[],note:''};
+  workoutSets[exName].note=note;
+  saveSession();
 }
 
 function saveSet(i,exName){
   const w=parseFloat(document.getElementById('ex-w-'+i)?.value)||0;
   const r=parseInt(document.getElementById('ex-r-'+i)?.value)||0;
-  const s=parseInt(document.getElementById('ex-s-'+i)?.value)||0;
-  workoutSets[i]={w,r,s,name:exName||workoutSets[i]?.name||''};
-  const key=`it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`;
-  localStorage.setItem(key,JSON.stringify(workoutSets));
+  if(w&&r)logSet(i,exName);
 }
 
-async function checkPR(i,exName){
-  const w=parseFloat(document.getElementById('ex-w-'+i)?.value)||0;
-  const r=parseInt(document.getElementById('ex-r-'+i)?.value)||0;
-  if(!w||!r)return;
+async function checkPRFromSet(exIdx,exName){
+  const w=parseFloat(document.getElementById('ex-w-'+exIdx)?.value)||0;
+  const r=parseInt(document.getElementById('ex-r-'+exIdx)?.value)||0;
+  if(!w||!r){toast('Enter weight and reps to check PR');return;}
   const orm=Math.round(w*(1+r/30));
   const{data:existing}=await sb.from('personal_records').select('*').eq('user_id',currentUser.id).eq('exercise',exName).single();
   if(!existing||w>existing.weight_lbs||(w===existing.weight_lbs&&r>existing.reps)){
     await sb.from('personal_records').upsert({user_id:currentUser.id,exercise:exName,weight_lbs:w,reps:r,estimated_orm:orm,date:today()},{onConflict:'user_id,exercise'});
-    toast(`\ud83c\udfc6 New PR on ${exName}: ${w}lbs \xd7 ${r}`);renderWorkoutContent();
-  }else{toast('Set logged \u2014 keep chasing that PR!');}
+    toast('New PR on '+exName+': '+w+'lbs x '+r);
+  }else{
+    toast('Not a PR yet. Current best: '+existing.weight_lbs+'lbs x '+existing.reps);
+  }
 }
 
+async function checkPR(i,exName){await checkPRFromSet(i,exName);}
+
 async function copyLastWorkout(){
-  const{data:logs}=await sb.from('workout_logs')
-    .select('sets_data,date,day_name')
-    .eq('user_id',currentUser.id)
-    .eq('split_index',currentWorkoutDay)
-    .neq('date',today())
-    .order('date',{ascending:false})
-    .limit(1);
-
-  if(!logs||!logs.length){
-    toast('No previous session found for this day yet');
-    return;
-  }
-
-  const prev=logs[0];
-  const prevSets=prev.sets_data||{};
-  const prevDate=prev.date;
-  const count=Object.keys(prevSets).length;
-  if(!count){toast('Previous session had no logged sets');return;}
-
-  const nameToIdx={};
-  const split=getActiveSplit();
-  const sched=split.days[currentWorkoutDay];
-  if(sched){sched.exercises.forEach((ex,i)=>{nameToIdx[ex.name]=i;});}
-
+  const{data:logs}=await sb.from('workout_logs').select('sets_data,date').eq('user_id',currentUser.id).eq('split_index',currentWorkoutDay).neq('date',today()).order('date',{ascending:false}).limit(1);
+  if(!logs||!logs.length){toast('No previous session found for this day yet');return;}
+  const prevData=logs[0].sets_data||{};
+  const prevDate=logs[0].date;
   let copied=0;
-  Object.values(prevSets).forEach(entry=>{
-    if(!entry||!entry.name||!entry.w)return;
-    const idx=nameToIdx[entry.name];
-    if(idx===undefined)return;
-    workoutSets[idx]={w:entry.w,r:entry.r,s:entry.s,name:entry.name};
-    const wEl=document.getElementById('ex-w-'+idx);
-    const rEl=document.getElementById('ex-r-'+idx);
-    const sEl=document.getElementById('ex-s-'+idx);
-    if(wEl)wEl.value=entry.w;
-    if(rEl)rEl.value=entry.r;
-    if(sEl)sEl.value=entry.s;
-    copied++;
+  Object.entries(prevData).forEach(([exName,exData])=>{
+    if(exData&&exData.sets&&exData.sets.length){
+      workoutSets[exName]={sets:exData.sets.map(s=>({w:s.w,r:s.r,note:''})),note:''};
+      copied++;
+    }else if(exData&&exData.w){
+      workoutSets[exName]={sets:[{w:exData.w,r:exData.r,note:''}],note:''};
+      copied++;
+    }
   });
-
-  const sessionKey=`it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`;
-  localStorage.setItem(sessionKey,JSON.stringify(workoutSets));
-
-  if(copied>0){
-    toast(`📋 Copied ${copied} exercise${copied>1?'s':''} from ${formatDateDisplay(prevDate)}`);
-  }else{
-    toast('No matching exercises found to copy');
-  }
+  saveSession();
+  if(copied>0){renderWorkoutContent();toast('Copied '+copied+' exercise'+(copied>1?'s':'')+' from '+prevDate);}
+  else{toast('No matching exercises found to copy');}
 }
 
 async function finishWorkout(){
@@ -1436,8 +1469,11 @@ async function finishWorkout(){
   const sched=split.days[currentWorkoutDay];
   const notes=document.getElementById('workout-notes')?.value||'';
   localStorage.setItem(`it_notes_${currentUser.id}_${currentWorkoutDay}_${today()}`,notes);
-  let totalVolume=0;
-  Object.values(workoutSets).forEach(s=>{totalVolume+=(s.w||0)*(s.r||0)*(s.s||0);});
+  let totalVolume=0;let totalSets=0;
+  Object.values(workoutSets).forEach(ex=>{
+    if(ex&&ex.sets){ex.sets.forEach(s=>{totalVolume+=(s.w||0)*(s.r||0);totalSets++;});}
+  });
+  if(totalSets===0&&!confirm('No sets logged. Save anyway?'))return;
   const dayName=sched?sched.name:'Custom workout';
   const{error}=await sb.from('workout_logs').insert({
     user_id:currentUser.id,
