@@ -6,7 +6,7 @@
 <title>IronTracker — Your Personal Fitness OS</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://fastly.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -350,26 +350,22 @@
 
     <!-- SCAN TAB -->
     <div id="food-tab-scan">
-      <!-- Scanner viewfinder -->
-      <div id="barcode-scanner-wrap" style="display:none;margin-bottom:16px">
-        <div id="barcode-reader" style="border-radius:var(--radius);overflow:hidden"></div>
-        <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">Hold the barcode steady inside the frame • Good lighting helps • Keep 6–12 inches away</div>
-        <button onclick="stopBarcodeScanner()" class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px">Stop camera</button>
-      </div>
-
-      <!-- Start button / status -->
+      <!-- Photo capture — most reliable approach on iOS -->
       <div id="barcode-start-area">
-        <button class="btn btn-primary btn-full" onclick="startBarcodeScanner()" style="margin-bottom:12px">
-          📷 Open camera to scan
-        </button>
-        <div style="text-align:center;font-size:12px;color:var(--text3)">or enter a barcode number manually:</div>
-        <div style="display:flex;gap:8px;margin-top:8px">
+        <label for="barcode-photo-input" class="btn btn-primary btn-full" style="justify-content:center;cursor:pointer;margin-bottom:12px">
+          📷 Take photo of barcode
+        </label>
+        <input type="file" id="barcode-photo-input" accept="image/*" capture="environment" style="display:none" onchange="handleBarcodePhoto(event)">
+
+        <div style="text-align:center;font-size:12px;color:var(--text3);margin-bottom:10px">— or enter barcode number directly —</div>
+        <div style="display:flex;gap:8px">
           <input type="text" id="barcode-manual-input" placeholder="e.g. 0123456789012" inputmode="numeric" style="flex:1">
           <button class="btn btn-ghost" onclick="lookupBarcode(document.getElementById('barcode-manual-input').value.trim())">Look up</button>
         </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px">The barcode number is printed directly under the barcode lines on the packaging.</div>
       </div>
 
-      <!-- Status messages -->
+      <!-- Processing status -->
       <div id="barcode-status" style="display:none;padding:12px;background:var(--surface2);border-radius:var(--radius);margin-top:12px;font-size:13px;color:var(--text2);text-align:center"></div>
 
       <!-- Result preview -->
@@ -1712,15 +1708,12 @@ function initSettingsPage(){
 // BARCODE SCANNER + USDA LOOKUP
 // ============================================================
 let barcodeFoundData=null;
-let barcodeScanning=false;
-let zxingReader=null;
 
 function switchFoodTab(tab){
   document.getElementById('food-tab-scan').style.display=tab==='scan'?'block':'none';
   document.getElementById('food-tab-manual').style.display=tab==='manual'?'block':'none';
   document.getElementById('ftab-scan').classList.toggle('active',tab==='scan');
   document.getElementById('ftab-manual').classList.toggle('active',tab==='manual');
-  if(tab!=='scan')stopBarcodeScanner();
 }
 
 function openFoodModal(){
@@ -1728,74 +1721,78 @@ function openFoodModal(){
   barcodeFoundData=null;
   document.getElementById('barcode-result').style.display='none';
   document.getElementById('barcode-status').style.display='none';
-  document.getElementById('barcode-scanner-wrap').style.display='none';
-  document.getElementById('barcode-start-area').style.display='block';
   document.getElementById('barcode-manual-input').value='';
+  const photoInput=document.getElementById('barcode-photo-input');
+  if(photoInput)photoInput.value='';
   switchFoodTab('scan');
   openModal('food-modal');
 }
 
-async function startBarcodeScanner(){
+async function handleBarcodePhoto(event){
+  const file=event.target.files[0];
+  if(!file)return;
   const status=document.getElementById('barcode-status');
-  status.style.display='none';
-  document.getElementById('barcode-scanner-wrap').style.display='block';
-  document.getElementById('barcode-start-area').style.display='none';
-  barcodeScanning=true;
-  try{
-    if(typeof Html5Qrcode==='undefined')throw new Error('Scanner library not loaded — try refreshing the page');
-    zxingReader=new Html5Qrcode('barcode-reader',{verbose:false});
-    await zxingReader.start(
-      {facingMode:'environment'},
-      {
-        fps:15,
-        // Large scan region — covers most of the viewfinder
-        // iOS needs a bigger region to reliably decode linear barcodes
-        qrbox:(viewfinderWidth,viewfinderHeight)=>({
-          width:Math.min(viewfinderWidth-40,300),
-          height:Math.min(viewfinderHeight-80,150)
-        }),
-        aspectRatio:1.7,
-        // Do NOT pass formatsToSupport — let the library auto-detect all barcode types
-        // Passing enum values causes silent failures on iOS Safari
-        disableFlip:false,
-        rememberLastUsedCamera:true,
-      },
-      async(decodedText)=>{
-        await stopBarcodeScanner();
-        await lookupBarcode(decodedText);
-      },
-      ()=>{} // suppress per-frame decode errors — these fire constantly and are normal
-    );
-  }catch(err){
-    document.getElementById('barcode-scanner-wrap').style.display='none';
-    document.getElementById('barcode-start-area').style.display='block';
-    const msg=String(err.message||err);
-    if(err.name==='NotAllowedError'||msg.includes('Permission')||msg.includes('permission')){
-      status.innerHTML='Camera permission denied. In Safari, go to Settings \u2192 Safari \u2192 Camera and set it to Allow, then reload the page.';
-    }else if(msg.includes('not loaded')){
-      status.innerHTML='Scanner failed to load. Try refreshing the page — or enter the barcode number manually below.';
-    }else{
-      status.innerHTML='Could not start camera. Enter the barcode number manually below instead.';
-      console.error('Scanner error:',err);
-    }
-    status.style.display='block';
-    barcodeScanning=false;
-  }
-}
+  status.innerHTML='<span class="ai-spinner" style="display:inline-block;margin-right:8px;vertical-align:middle"></span>Reading barcode from photo...';
+  status.style.display='block';
+  document.getElementById('barcode-result').style.display='none';
 
-async function stopBarcodeScanner(){
-  barcodeScanning=false;
-  if(zxingReader){
-    try{
-      if(zxingReader.isScanning)await zxingReader.stop();
-      zxingReader.clear();
-    }catch(e){}
-    zxingReader=null;
+  try{
+    // Draw image to canvas and decode using ZXing
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=async()=>{
+      URL.revokeObjectURL(url);
+      try{
+        const canvas=document.createElement('canvas');
+        // Scale down large images for faster processing
+        const maxDim=1200;
+        const scale=Math.min(1,maxDim/Math.max(img.width,img.height));
+        canvas.width=img.width*scale;
+        canvas.height=img.height*scale;
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+
+        if(typeof ZXing==='undefined'){
+          // ZXing not loaded — fall back to asking for manual entry
+          status.innerHTML='Barcode decoder not loaded. Enter the barcode number manually below.';
+          return;
+        }
+        const hints=new Map();
+        const formats=[
+          ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,
+          ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,
+          ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,
+        ];
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,formats);
+        hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+        const reader=new ZXing.MultiFormatReader();
+        reader.setHints(hints);
+
+        // Try decoding the full image first, then try cropped regions
+        const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+        const luminance=new ZXing.RGBLuminanceSource(imageData.data,canvas.width,canvas.height);
+        const binaryBitmap=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminance));
+        let result=null;
+        try{result=reader.decode(binaryBitmap);}catch(e){}
+
+        if(!result){
+          status.innerHTML='Could not read barcode from photo. Tips: make sure the barcode fills most of the photo, good lighting, held flat. Or type the number below.';
+          return;
+        }
+        status.style.display='none';
+        await lookupBarcode(result.getText());
+      }catch(decodeErr){
+        status.innerHTML='Could not read the barcode. Make sure it\'s flat, well-lit, and fills the photo. Or type the number below.';
+        console.error('Decode error:',decodeErr);
+      }
+    };
+    img.onerror=()=>{status.innerHTML='Could not load the photo. Try again.';};
+    img.src=url;
+  }catch(err){
+    status.innerHTML='Error processing photo. Try again or enter barcode manually.';
   }
-  const wrap=document.getElementById('barcode-scanner-wrap');
-  const start=document.getElementById('barcode-start-area');
-  if(wrap)wrap.style.display='none';
-  if(start)start.style.display='block';
+  // Reset input so same photo can be retaken
+  event.target.value='';
 }
 
 
