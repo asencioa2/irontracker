@@ -22,27 +22,41 @@
 <div class="auth-screen" id="auth-screen" style="display:none">
   <div class="auth-card">
     <div class="auth-logo"><div class="auth-logo-icon">IT</div><span>Iron</span>Tracker</div>
-    <div class="auth-tabs">
-      <button class="auth-tab active" onclick="switchAuthTab('login')">Sign in</button>
-      <button class="auth-tab" onclick="switchAuthTab('signup')">Create account</button>
+
+    <!-- Normal login/signup tabs (hidden during reset) -->
+    <div id="auth-normal">
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuthTab('login')">Sign in</button>
+        <button class="auth-tab" onclick="switchAuthTab('signup')">Create account</button>
+      </div>
+      <div id="auth-login">
+        <div class="auth-title">Welcome back</div>
+        <div class="auth-sub">Sign in to access your training dashboard</div>
+        <div class="auth-err" id="login-err"></div>
+        <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="you@email.com"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="••••••••"></div>
+        <button class="btn btn-primary btn-full" onclick="signIn()" id="login-btn">Sign in</button>
+        <div style="margin-top:14px;text-align:center"><button class="btn btn-ghost btn-sm" onclick="forgotPassword()">Forgot password?</button></div>
+      </div>
+      <div id="auth-signup" style="display:none">
+        <div class="auth-title">Create your account</div>
+        <div class="auth-sub">Start tracking your fitness journey — free forever</div>
+        <div class="auth-err" id="signup-err"></div>
+        <div class="form-group"><label>Your name</label><input type="text" id="signup-name" placeholder="Allen"></div>
+        <div class="form-group"><label>Email</label><input type="email" id="signup-email" placeholder="you@email.com"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="signup-password" placeholder="Min 6 characters"></div>
+        <button class="btn btn-primary btn-full" onclick="signUp()" id="signup-btn">Create account</button>
+      </div>
     </div>
-    <div id="auth-login">
-      <div class="auth-title">Welcome back</div>
-      <div class="auth-sub">Sign in to access your training dashboard</div>
-      <div class="auth-err" id="login-err"></div>
-      <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="you@email.com"></div>
-      <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="••••••••"></div>
-      <button class="btn btn-primary btn-full" onclick="signIn()" id="login-btn">Sign in</button>
-      <div style="margin-top:14px;text-align:center"><button class="btn btn-ghost btn-sm" onclick="forgotPassword()">Forgot password?</button></div>
-    </div>
-    <div id="auth-signup" style="display:none">
-      <div class="auth-title">Create your account</div>
-      <div class="auth-sub">Start tracking your fitness journey — free forever</div>
-      <div class="auth-err" id="signup-err"></div>
-      <div class="form-group"><label>Your name</label><input type="text" id="signup-name" placeholder="Allen"></div>
-      <div class="form-group"><label>Email</label><input type="email" id="signup-email" placeholder="you@email.com"></div>
-      <div class="form-group"><label>Password</label><input type="password" id="signup-password" placeholder="Min 6 characters"></div>
-      <button class="btn btn-primary btn-full" onclick="signUp()" id="signup-btn">Create account</button>
+
+    <!-- Password reset screen (shown after clicking reset link in email) -->
+    <div id="auth-reset" style="display:none">
+      <div class="auth-title">Set new password</div>
+      <div class="auth-sub">Choose a new password for your IronTracker account</div>
+      <div class="auth-err" id="reset-err"></div>
+      <div class="form-group"><label>New password</label><input type="password" id="reset-password" placeholder="Min 6 characters"></div>
+      <div class="form-group"><label>Confirm password</label><input type="password" id="reset-password-confirm" placeholder="Repeat password"></div>
+      <button class="btn btn-primary btn-full" onclick="submitNewPassword()">Set new password</button>
     </div>
   </div>
 </div>
@@ -877,6 +891,15 @@ async function initAuth(){
   if(session){await onSignedIn(session.user,true);}
   else{loading(false);showAuthScreen();}
   sb.auth.onAuthStateChange(async(event,session)=>{
+    // Password reset flow — show the set-new-password screen
+    if(event==='PASSWORD_RECOVERY'){
+      loading(false);
+      document.getElementById('auth-screen').style.display='flex';
+      document.getElementById('app').style.display='none';
+      document.getElementById('auth-normal').style.display='none';
+      document.getElementById('auth-reset').style.display='block';
+      return;
+    }
     // Ignore token refresh / tab refocus events if we're already signed in as this user
     if(event==='TOKEN_REFRESHED'||event==='INITIAL_SESSION')return;
     if(session){
@@ -889,7 +912,31 @@ async function initAuth(){
   });
 }
 
-function showAuthScreen(){document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}
+function showAuthScreen(){
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  // Always show normal login when explicitly showing auth screen
+  document.getElementById('auth-normal').style.display='block';
+  document.getElementById('auth-reset').style.display='none';
+}
+
+async function submitNewPassword(){
+  const pw=document.getElementById('reset-password').value;
+  const pw2=document.getElementById('reset-password-confirm').value;
+  const errEl=document.getElementById('reset-err');
+  errEl.textContent='';
+  if(!pw||pw.length<6){errEl.textContent='Password must be at least 6 characters';return;}
+  if(pw!==pw2){errEl.textContent='Passwords do not match';return;}
+  const{error}=await sb.auth.updateUser({password:pw});
+  if(error){errEl.textContent=error.message;return;}
+  toast('Password updated! Signing you in...');
+  // Hide reset screen, let normal auth flow take over
+  document.getElementById('auth-reset').style.display='none';
+  document.getElementById('auth-normal').style.display='block';
+  // The session is already active after updateUser — load the app
+  const{data:{session}}=await sb.auth.getSession();
+  if(session)await onSignedIn(session.user,true);
+}
 function switchAuthTab(tab){
   document.getElementById('auth-login').style.display=tab==='login'?'block':'none';
   document.getElementById('auth-signup').style.display=tab==='signup'?'block':'none';
