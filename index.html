@@ -42,7 +42,7 @@
         <div class="auth-title">Create your account</div>
         <div class="auth-sub">Start tracking your fitness journey — free forever</div>
         <div class="auth-err" id="signup-err"></div>
-        <div class="form-group"><label>Your name</label><input type="text" id="signup-name" placeholder="First & Last Name"></div>
+        <div class="form-group"><label>Your name</label><input type="text" id="signup-name" placeholder="Allen"></div>
         <div class="form-group"><label>Email</label><input type="email" id="signup-email" placeholder="you@email.com"></div>
         <div class="form-group"><label>Password</label><input type="password" id="signup-password" placeholder="Min 6 characters"></div>
         <button class="btn btn-primary btn-full" onclick="signUp()" id="signup-btn">Create account</button>
@@ -1092,6 +1092,8 @@ async function onSignedIn(user,showFullLoading){
   loadCustomSplits();
   await refreshDashboard();
   checkNotifications();
+  // Clear any stuck live status from a previous session that wasn't properly cleaned up
+  setLiveStatus(false,'');
   // Handle invite link — if URL has ?invite=username auto-navigate to social+friends
   const inviteParam=new URLSearchParams(window.location.search).get('invite');
   if(inviteParam){
@@ -1167,6 +1169,13 @@ function showPage(id){
   var dt=document.querySelector('[data-page="'+id+'"]');if(dt)dt.classList.add('active');
   var mb=document.querySelector('[data-mob="'+id+'"]');if(mb)mb.classList.add('active');
   window.scrollTo({top:0,behavior:'smooth'});
+  // If leaving workout page without finishing, clear live status
+  const activePage=document.querySelector('.page.active');
+  const wasOnWorkout=activePage&&activePage.id==='page-workout';
+  if(id!=='workout'&&wasOnWorkout){
+    setLiveStatus(false,'');
+    skipRestTimer();
+  }
   if(id==='dashboard')refreshDashboard();
   else if(id==='workout')initWorkoutPageAndLive();
   else if(id==='progress'){initProgressPage();renderProgressPhotos();}
@@ -1575,9 +1584,7 @@ async function getNextSplitIndex(){
 async function initWorkoutPageAndLive(){
   sessionPRCache={};  // clear PR cache for fresh session
   await initWorkoutPage();
-  const split=getActiveSplit();
-  const sched=split.days[currentWorkoutDay];
-  if(sched)setLiveStatus(true,sched.name);
+  // Don't set live yet — wait until first set is actually logged
   // Check for pending template
   const tKey='it_pending_template_'+(currentUser?.id||'');
   const pending=localStorage.getItem(tKey);
@@ -1815,6 +1822,13 @@ function logSet(exIdx,exName){
   saveSession();
   document.getElementById('ex-w-'+exIdx).value='';
   document.getElementById('ex-r-'+exIdx).value='';
+  // Go live on first set logged in this session
+  const totalSetsLogged=Object.values(workoutSets).reduce((t,ex)=>t+(ex.sets?.length||0),0);
+  if(totalSetsLogged===1){
+    const split=getActiveSplit();
+    const sched=split.days[currentWorkoutDay];
+    setLiveStatus(true,sched?sched.name:'Workout');
+  }
   autoPRCheck(exName,w,r).then(isPR=>{
     if(!isPR)toast('Set '+workoutSets[exName].sets.length+' logged: '+w+'lbs \xd7 '+r);
     if(isPR)renderWorkoutContent();
@@ -3116,6 +3130,22 @@ document.addEventListener('DOMContentLoaded',()=>{
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&currentUser){
     loading(false);
+  }
+  // If user hides tab while on workout page, clear live status
+  if(document.visibilityState==='hidden'&&currentUser){
+    const onWorkout=document.getElementById('page-workout')?.classList.contains('active');
+    if(onWorkout)setLiveStatus(false,'');
+  }
+});
+
+// Clear live status if browser/tab is closed mid-workout
+window.addEventListener('beforeunload',()=>{
+  const onWorkout=document.getElementById('page-workout')?.classList.contains('active');
+  if(onWorkout&&currentUser){
+    // Use sendBeacon for reliability on page close
+    const url=`${SUPABASE_URL}/rest/v1/workout_live`;
+    const data=JSON.stringify({user_id:currentUser.id,is_live:false,updated_at:new Date().toISOString()});
+    navigator.sendBeacon(url,new Blob([data],{type:'application/json'}));
   }
 });
 </script>
