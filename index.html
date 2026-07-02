@@ -193,6 +193,35 @@
       <button class="btn btn-primary" onclick="finishWorkout()">Finish & save</button>
     </div>
   </div>
+
+  <!-- Inline rest timer — auto-starts after each set -->
+  <div id="workout-rest-timer" style="display:none;margin-bottom:16px">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--accent)" id="workout-timer-display">01:30</div>
+          <div style="font-size:12px;color:var(--text2)" id="workout-timer-status">Resting...</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <!-- Preset rest time buttons -->
+          <select id="workout-rest-preset" onchange="setWorkoutRestTime(parseInt(this.value))" style="font-size:12px;padding:4px 8px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px">
+            <option value="30">30s</option>
+            <option value="60">60s</option>
+            <option value="90" selected>90s</option>
+            <option value="120">2 min</option>
+            <option value="180">3 min</option>
+            <option value="240">4 min</option>
+            <option value="300">5 min</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="skipRestTimer()">Skip</button>
+        </div>
+      </div>
+      <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+        <div id="workout-timer-bar" style="height:100%;background:var(--accent);border-radius:2px;transition:width 1s linear;width:100%"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="day-strip" id="workout-day-strip"></div>
   <div id="workout-content"></div>
 </div>
@@ -1544,6 +1573,7 @@ async function getNextSplitIndex(){
 }
 
 async function initWorkoutPageAndLive(){
+  sessionPRCache={};  // clear PR cache for fresh session
   await initWorkoutPage();
   const split=getActiveSplit();
   const sched=split.days[currentWorkoutDay];
@@ -1675,7 +1705,7 @@ async function renderWorkoutContent(){
         ${delBtn}
       </div>
       ${setsHtml}
-      <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;align-items:end;margin-bottom:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:12px">
         <div>
           <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Weight (lbs)</div>
           <input class="ex-input" type="number" inputmode="decimal" step="2.5" id="ex-w-${i}" placeholder="${last?last.w:'lbs'}" style="width:100%">
@@ -1685,7 +1715,6 @@ async function renderWorkoutContent(){
           <input class="ex-input" type="number" inputmode="numeric" id="ex-r-${i}" placeholder="${last?last.r:'reps'}" style="width:100%">
         </div>
         <button class="btn btn-primary btn-sm" style="align-self:end;height:42px;padding:0 14px;white-space:nowrap" onclick="logSet(${i},'${n}')">+ Log set</button>
-        <button class="btn btn-ghost btn-sm" style="align-self:end;height:42px;padding:0 10px" onclick="checkPRFromSet(${i},'${n}')">PR?</button>
       </div>
       <div>
         <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Exercise notes</div>
@@ -1705,6 +1734,78 @@ async function renderWorkoutContent(){
 function getSessionKey(){return `it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`;}
 function saveSession(){localStorage.setItem(getSessionKey(),JSON.stringify(workoutSets));}
 
+// ── Workout-page rest timer ────────────────────────────────────────────────
+let workoutRestDuration=90;
+let workoutRestRemaining=90;
+let workoutRestInterval=null;
+
+function setWorkoutRestTime(seconds){
+  workoutRestDuration=seconds;
+  if(workoutRestInterval){clearInterval(workoutRestInterval);workoutRestInterval=null;startWorkoutRestTimer();}
+}
+
+function startWorkoutRestTimer(){
+  const timerEl=document.getElementById('workout-rest-timer');
+  if(timerEl)timerEl.style.display='block';
+  const sel=document.getElementById('workout-rest-preset');
+  if(sel)sel.value=workoutRestDuration;
+  workoutRestRemaining=workoutRestDuration;
+  updateWorkoutTimerDisplay();
+  if(workoutRestInterval)clearInterval(workoutRestInterval);
+  workoutRestInterval=setInterval(()=>{
+    workoutRestRemaining--;
+    updateWorkoutTimerDisplay();
+    if(workoutRestRemaining<=0){
+      clearInterval(workoutRestInterval);workoutRestInterval=null;
+      timerBeep();
+      if(navigator.vibrate)navigator.vibrate([200,100,200]);
+      const statusEl=document.getElementById('workout-timer-status');
+      if(statusEl)statusEl.textContent='\u2705 Go time!';
+      const bar=document.getElementById('workout-timer-bar');
+      if(bar)bar.style.width='0%';
+      setTimeout(()=>{const el=document.getElementById('workout-rest-timer');if(el)el.style.display='none';},3000);
+    }
+  },1000);
+}
+
+function updateWorkoutTimerDisplay(){
+  const m=Math.floor(workoutRestRemaining/60).toString().padStart(2,'0');
+  const s=(workoutRestRemaining%60).toString().padStart(2,'0');
+  const dispEl=document.getElementById('workout-timer-display');if(dispEl)dispEl.textContent=m+':'+s;
+  const bar=document.getElementById('workout-timer-bar');
+  if(bar)bar.style.width=Math.round(workoutRestRemaining/workoutRestDuration*100)+'%';
+  const statusEl=document.getElementById('workout-timer-status');
+  if(statusEl&&workoutRestRemaining>0)statusEl.textContent='Resting \u2014 next set in '+workoutRestRemaining+'s';
+}
+
+function skipRestTimer(){
+  if(workoutRestInterval){clearInterval(workoutRestInterval);workoutRestInterval=null;}
+  const timerEl=document.getElementById('workout-rest-timer');if(timerEl)timerEl.style.display='none';
+}
+
+// ── Auto PR detection ─────────────────────────────────────────────────────
+let sessionPRCache={};
+
+async function autoPRCheck(exName,w,r){
+  if(!w||!r)return false;
+  const orm=Math.round(w*(1+r/30));
+  let existing=sessionPRCache[exName];
+  if(existing===undefined){
+    const{data}=await sb.from('personal_records').select('*').eq('user_id',currentUser.id).eq('exercise',exName).single();
+    existing=data||null;
+    sessionPRCache[exName]=existing;
+  }
+  const isPR=!existing||w>existing.weight_lbs||(w===existing.weight_lbs&&r>existing.reps);
+  if(isPR){
+    const newPR={user_id:currentUser.id,exercise:exName,weight_lbs:w,reps:r,estimated_orm:orm,date:today()};
+    await sb.from('personal_records').upsert(newPR,{onConflict:'user_id,exercise'});
+    sessionPRCache[exName]=newPR;
+    toast('\ud83c\udfc6 NEW PR \u2014 '+exName+': '+w+'lbs \xd7 '+r);
+    return true;
+  }
+  return false;
+}
+
 function logSet(exIdx,exName){
   const w=parseFloat(document.getElementById('ex-w-'+exIdx)?.value);
   const r=parseInt(document.getElementById('ex-r-'+exIdx)?.value);
@@ -1714,8 +1815,12 @@ function logSet(exIdx,exName){
   saveSession();
   document.getElementById('ex-w-'+exIdx).value='';
   document.getElementById('ex-r-'+exIdx).value='';
+  autoPRCheck(exName,w,r).then(isPR=>{
+    if(!isPR)toast('Set '+workoutSets[exName].sets.length+' logged: '+w+'lbs \xd7 '+r);
+    if(isPR)renderWorkoutContent();
+  });
+  startWorkoutRestTimer();
   renderWorkoutContent();
-  toast('Set '+workoutSets[exName].sets.length+' logged: '+w+'lbs x '+r);
 }
 
 function editSet(exName,si,field,value){
