@@ -887,11 +887,38 @@ function closeModal(id){
 // ============================================================
 async function initAuth(){
   loading(true,'Checking session...');
+
+  // Check URL hash FIRST — Supabase puts the recovery token here before any session exists
+  // Must do this before getSession() so we can intercept it
+  const hash=window.location.hash;
+  const hashParams=new URLSearchParams(hash.replace('#',''));
+  const tokenType=hashParams.get('type');
+
+  if(tokenType==='recovery'){
+    // This is a password reset link — show the reset screen immediately
+    // Let Supabase parse the token by calling getSession (it reads the hash automatically)
+    await sb.auth.getSession();
+    loading(false);
+    document.getElementById('auth-screen').style.display='flex';
+    document.getElementById('app').style.display='none';
+    document.getElementById('auth-normal').style.display='none';
+    document.getElementById('auth-reset').style.display='block';
+    // Clean up the URL hash so it doesn't persist
+    window.history.replaceState({},'',window.location.pathname);
+    // Still register onAuthStateChange for after they set the password
+    sb.auth.onAuthStateChange(async(event,session)=>{
+      if(event==='USER_UPDATED'&&session){
+        await onSignedIn(session.user,true);
+      }
+    });
+    return;
+  }
+
   const {data:{session}}=await sb.auth.getSession();
   if(session){await onSignedIn(session.user,true);}
   else{loading(false);showAuthScreen();}
   sb.auth.onAuthStateChange(async(event,session)=>{
-    // Password reset flow — show the set-new-password screen
+    // Password reset flow — fallback if hash wasn't present but event fires
     if(event==='PASSWORD_RECOVERY'){
       loading(false);
       document.getElementById('auth-screen').style.display='flex';
@@ -900,10 +927,9 @@ async function initAuth(){
       document.getElementById('auth-reset').style.display='block';
       return;
     }
-    // Ignore token refresh / tab refocus events if we're already signed in as this user
     if(event==='TOKEN_REFRESHED'||event==='INITIAL_SESSION')return;
     if(session){
-      if(currentUser&&currentUser.id===session.user.id)return; // already signed in, no need to reload
+      if(currentUser&&currentUser.id===session.user.id)return;
       await onSignedIn(session.user,true);
     }else{
       currentUser=null;
