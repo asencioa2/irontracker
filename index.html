@@ -1536,7 +1536,6 @@ async function renderWorkoutContent(){
           <input type="number" inputmode="decimal" step="2.5" value="${s.w||''}" placeholder="lbs" style="width:64px;font-family:var(--mono);font-size:14px;padding:5px 6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);text-align:center" onchange="editSet('${n}',${si},'w',this.value)">
           <span style="color:var(--text3)">×</span>
           <input type="number" inputmode="numeric" value="${s.r||''}" placeholder="reps" style="width:54px;font-family:var(--mono);font-size:14px;padding:5px 6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);text-align:center" onchange="editSet('${n}',${si},'r',this.value)">
-          <input type="text" value="${(s.note||'').replace(/"/g,'&quot;')}" placeholder="note..." style="flex:1;font-size:13px;padding:5px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text)" onchange="editSet('${n}',${si},'note',this.value)">
           <button class="btn btn-danger btn-sm" style="padding:4px 8px;flex-shrink:0" onclick="deleteSet('${n}',${si})">x</button>
         </div>`;
       });
@@ -2018,46 +2017,48 @@ async function lookupBarcode(barcode){
   if(!barcode){toast('Enter a barcode number');return;}
   barcode=barcode.replace(/\D/g,'');
   if(barcode.length<6){toast('Barcode too short — check the number');return;}
-  
+
   const status=document.getElementById('barcode-status');
   const result=document.getElementById('barcode-result');
-  status.innerHTML='<span class="ai-spinner" style="display:inline-block;margin-right:8px;vertical-align:middle"></span>Looking up barcode '+barcode+'...';
+  status.innerHTML='<span class="ai-spinner" style="display:inline-block;margin-right:8px;vertical-align:middle"></span>Looking up '+barcode+'...';
   status.style.display='block';
   result.style.display='none';
 
   try{
-    const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
-    const data = await res.json();
-    
-    if (data.status === 1 && data.product) {
-      const p = data.product;
-      const nut = p.nutriments || {};
-      
-      barcodeFoundData = {
-        name: p.product_name || 'Unknown Food',
-        cal: Math.round(nut['energy-kcal_100g'] || nut['energy-kcal'] || 0),
-        protein: Math.round(nut.proteins_100g || nut.proteins || 0),
-        carbs: Math.round(nut.carbohydrates_100g || nut.carbohydrates || 0),
-        fat: Math.round(nut.fat_100g || nut.fat || 0)
-      };
-      
-      status.style.display='none';
-      document.getElementById('barcode-product-name').textContent=barcodeFoundData.name;
-      document.getElementById('barcode-product-macros').textContent=`${barcodeFoundData.cal} kcal · ${barcodeFoundData.protein}g protein · ${barcodeFoundData.carbs}g carbs · ${barcodeFoundData.fat}g fat`;
-      document.getElementById('barcode-product-serving').textContent=p.serving_size?`Per serving: ${p.serving_size}`:'';
-      document.getElementById('barcode-product-source').textContent='Source: OpenFoodFacts';
-      
-      document.getElementById('f-name').value=barcodeFoundData.name;
-      document.getElementById('f-cal').value=barcodeFoundData.cal;
-      document.getElementById('f-pro').value=barcodeFoundData.protein;
-      document.getElementById('f-carb').value=barcodeFoundData.carbs;
-      document.getElementById('f-fat').value=barcodeFoundData.fat;
-      
-      result.style.display='block';
-    } else {
-      status.innerHTML='Product not found in database. Try entering details manually.';
+    // Use the server-side proxy so USDA key stays secret and serving logic is correct
+    const res=await fetch(`/api/food-lookup?barcode=${barcode}`);
+    const food=await res.json();
+
+    if(!res.ok||food.error){
+      status.innerHTML='Product not found. Try entering the details manually.';
       status.style.display='block';
+      return;
     }
+
+    barcodeFoundData=food;
+    status.style.display='none';
+
+    document.getElementById('barcode-product-name').textContent=food.name;
+    document.getElementById('barcode-product-macros').textContent=
+      `${food.cal} kcal · ${food.protein}g protein · ${food.carbs}g carbs · ${food.fat}g fat`;
+    document.getElementById('barcode-product-serving').textContent=
+      food.serving?`Per serving: ${food.serving}`:'';
+    document.getElementById('barcode-product-source').textContent=
+      `Source: ${food.source}`+(food.warning?` ⚠️ ${food.warning}`:'');
+
+    // Pre-fill manual tab in case user wants to adjust
+    document.getElementById('f-name').value=food.name;
+    document.getElementById('f-cal').value=food.cal;
+    document.getElementById('f-pro').value=food.protein;
+    document.getElementById('f-carb').value=food.carbs;
+    document.getElementById('f-fat').value=food.fat;
+
+    // If there's a warning about per-100g values, highlight it
+    if(food.warning){
+      document.getElementById('barcode-product-source').style.color='var(--amber)';
+    }
+
+    result.style.display='block';
   }catch(e){
     status.innerHTML='Lookup failed — check your connection and try again.';
     status.style.display='block';
