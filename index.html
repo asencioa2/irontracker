@@ -145,11 +145,15 @@
   <div class="card" style="margin-bottom:20px">
     <div class="section-hd"><div class="section-title">💧 Water intake</div><div style="display:flex;align-items:center;gap:8px"><span style="font-family:var(--mono);font-size:12px;color:var(--text2)" id="water-label">0 oz</span><button class="btn btn-ghost btn-sm" onclick="resetWater()">Reset</button></div></div>
     <div style="margin-bottom:10px"><div class="prog-bar" style="height:6px"><div class="prog-fill prog-fill-blue" id="water-bar" style="width:0%"></div></div><div style="font-size:11px;color:var(--text3);margin-top:5px" id="water-sub-label">Loading goal...</div></div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
       <button class="btn btn-ghost btn-sm" onclick="addWaterOz(8)">+ 8 oz</button>
       <button class="btn btn-ghost btn-sm" onclick="addWaterOz(16)">+ 16 oz</button>
       <button class="btn btn-ghost btn-sm" onclick="addWaterOz(24)">+ 24 oz</button>
       <button class="btn btn-ghost btn-sm" onclick="addWaterOz(-8)">– 8 oz</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="number" id="water-custom-input" placeholder="Custom oz" inputmode="numeric" style="width:110px;font-size:16px;padding:7px 10px">
+      <button class="btn btn-primary btn-sm" onclick="addCustomWater()">+ Add</button>
     </div>
   </div>
   <div class="card" style="margin-bottom:20px">
@@ -622,11 +626,35 @@
   </div>
 </div>
 
+<!-- Past workout detail (from split progress strip) -->
+<div class="modal-overlay" id="past-workout-modal">
+  <div class="modal" style="width:500px">
+    <div class="modal-hd"><div class="modal-title" id="past-workout-title">Past workout</div><button class="modal-close" onclick="closeModal('past-workout-modal')">×</button></div>
+    <div id="past-workout-content" style="max-height:70vh;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- Custom split builder -->
+<div class="modal-overlay" id="custom-split-modal">
+  <div class="modal" style="width:540px">
+    <div class="modal-hd"><div class="modal-title">✏️ Build custom split</div><button class="modal-close" onclick="closeModal('custom-split-modal')">×</button></div>
+    <div class="form-group"><label>Split name</label><input type="text" id="custom-split-name" placeholder="e.g. My 4-Day Split"></div>
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">Workout days</div>
+    <div id="custom-split-days" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
+    <button class="btn btn-ghost btn-sm" onclick="addCustomSplitDay()" style="margin-bottom:16px">+ Add day</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveCustomSplit()">Save & use this split</button>
+      <button class="btn btn-ghost" onclick="closeModal('custom-split-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="split-picker-modal">
   <div class="modal">
     <div class="modal-hd"><div class="modal-title">⚙ Choose your workout split</div><button class="modal-close" onclick="closeModal('split-picker-modal')">×</button></div>
     <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Your split rotates each time you log a workout — it doesn't matter which day of the week it is.</div>
-    <div id="split-picker-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div id="split-picker-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
+    <button class="btn btn-ghost btn-full" onclick="closeModal('split-picker-modal');openCustomSplitModal()">✏️ Build my own custom split</button>
   </div>
 </div>
 
@@ -898,9 +926,12 @@ async function signUp(){
 
 async function forgotPassword(){
   const email=document.getElementById('login-email').value.trim();
-  if(!email){toast('Enter your email first');return;}
-  await sb.auth.resetPasswordForEmail(email);
-  toast('Password reset email sent');
+  if(!email){toast('Enter your email address above first');return;}
+  const{error}=await sb.auth.resetPasswordForEmail(email,{
+    redirectTo:window.location.origin+'/?reset=true'
+  });
+  if(error){toast('Error: '+error.message);return;}
+  toast('Check your email — reset link sent to '+email);
 }
 
 async function signOut(){await sb.auth.signOut();showAuthScreen();}
@@ -956,6 +987,7 @@ async function onSignedIn(user,showFullLoading){
   document.getElementById('settings-email').textContent=user.email;
   document.getElementById('nav-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   await loadProfile();
+  loadCustomSplits();
   await refreshDashboard();
   checkNotifications();
   // Handle invite link — if URL has ?invite=username auto-navigate to social+friends
@@ -1150,7 +1182,9 @@ function buildSplitProgressStrip(logs,restDays){
       const label=dayInfo?dayInfo.name:(log.day_name||'Workout');
       div.className='day-pill completed';
       div.innerHTML=`<div style="font-size:10px;font-weight:700">${label.split(' ')[0]}</div><div style="font-size:9px;margin-top:2px;color:var(--text3)">${log.date.slice(5)}</div>`;
-      div.title=`${label} — ${log.date}`;
+      div.title=`${label} — ${log.date} (tap to view)`;
+      div.style.cursor='pointer';
+      div.onclick=()=>showPastWorkout(log);
     }
     container.appendChild(div);
   });
@@ -1215,6 +1249,20 @@ function addWaterOz(delta){
 
 function resetWater(){const key='water_oz_'+today()+'_'+currentUser?.id;localStorage.removeItem(key);renderWaterOz();}
 
+function addCustomWater(){
+  const input=document.getElementById('water-custom-input');
+  const oz=parseInt(input?.value||0);
+  if(!oz||oz<=0){toast('Enter a valid amount');return;}
+  addWaterOz(oz);
+  if(input)input.value='';
+}
+
+function formatVolume(vol){
+  // vol is stored as sum of (weight × reps) per set — display cleanly
+  if(vol>=1000)return (vol/1000).toFixed(1)+'k';
+  return vol.toString();
+}
+
 // ============================================================
 // WEEKLY CHECK-IN
 // ============================================================
@@ -1234,7 +1282,7 @@ function buildWeeklyCheckin(logs,weights,prs){
   const el=document.getElementById('checkin-stats');
   if(el)el.innerHTML=`
     <div class="stat-card"><div class="stat-label">Sessions</div><div class="stat-value text-mono">${uniqueDays.length}<span class="stat-unit">/5</span></div></div>
-    <div class="stat-card"><div class="stat-label">Volume</div><div class="stat-value text-mono" style="font-size:18px">${totalVol>0?(totalVol/1000).toFixed(1)+'k':'0'}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">lbs lifted</div></div>
+    <div class="stat-card"><div class="stat-label">Volume</div><div class="stat-value text-mono" style="font-size:18px">${totalVol>0?formatVolume(totalVol):'0'}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">total lbs</div></div>
     <div class="stat-card"><div class="stat-label">Weight Δ</div><div class="stat-value text-mono" style="color:${wc<=0?'var(--accent)':'var(--red)'}">${wc!==null?(wc>0?'+':'')+wc:'—'}<span class="stat-unit" style="font-size:12px">lbs</span></div></div>
     <div class="stat-card"><div class="stat-label">Streak</div><div class="stat-value text-mono">${calcStreak(logs)}<span class="stat-unit">days</span></div></div>`;
   const prEl=document.getElementById('checkin-pr-highlight');
@@ -2742,6 +2790,143 @@ function deleteCurrentTemplate(){
 
 // Load pending template when workout page opens
 
+// ============================================================
+// PAST WORKOUT VIEWER (fix 3)
+// ============================================================
+function showPastWorkout(log){
+  const split=getActiveSplit();
+  const dayInfo=split.days[log.split_index];
+  const dayName=dayInfo?dayInfo.name:(log.day_name||'Workout');
+  const date=new Date(log.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+
+  document.getElementById('past-workout-title').textContent=dayName+' · '+date;
+
+  const sets=log.sets_data||{};
+  const exEntries=Object.entries(sets);
+  let html='';
+
+  if(!exEntries.length){
+    html='<div style="color:var(--text3);font-size:13px;padding:16px">No set data recorded for this session.</div>';
+  }else{
+    exEntries.forEach(([exName,exData])=>{
+      const exSets=exData?.sets||[];
+      if(!exSets.length)return;
+      const totalVol=exSets.reduce((t,s)=>(t+(s.w||0)*(s.r||0)),0);
+      html+=`<div style="margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:8px">${exName}</div>
+        ${exSets.map((s,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:6px 10px;background:var(--surface2);border-radius:8px;margin-bottom:4px">
+          <span style="font-size:11px;font-weight:700;color:var(--text3);min-width:40px">Set ${i+1}</span>
+          <span style="font-family:var(--mono);font-size:14px;color:var(--text)">${s.w||0} lbs</span>
+          <span style="color:var(--text3)">×</span>
+          <span style="font-family:var(--mono);font-size:14px;color:var(--text)">${s.r||0} reps</span>
+          ${s.note?`<span style="font-size:11px;color:var(--text3);flex:1">${s.note}</span>`:''}
+        </div>`).join('')}
+        ${exData?.note?`<div style="font-size:12px;color:var(--text2);margin-top:6px;font-style:italic">📝 ${exData.note}</div>`:''}
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">${exSets.length} sets · ${formatVolume(totalVol)} lbs volume</div>
+      </div>`;
+    });
+  }
+
+  if(log.notes){
+    html+=`<div style="padding:12px;background:var(--surface2);border-radius:var(--radius);margin-top:8px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Session notes</div>
+      <div style="font-size:13px;color:var(--text2)">${log.notes}</div>
+    </div>`;
+  }
+
+  const totalVol=Object.values(sets).reduce((t,ex)=>t+(ex?.sets||[]).reduce((s2,s)=>s2+(s.w||0)*(s.r||0),0),0);
+  const totalSets=Object.values(sets).reduce((t,ex)=>t+(ex?.sets?.length||0),0);
+  html=`<div style="display:flex;gap:16px;padding:12px;background:var(--accent-dim);border-radius:var(--radius);margin-bottom:16px">
+    <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--accent)">${Object.keys(sets).length}</div><div style="font-size:11px;color:var(--text3)">exercises</div></div>
+    <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--accent)">${totalSets}</div><div style="font-size:11px;color:var(--text3)">sets</div></div>
+    <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--accent)">${formatVolume(totalVol)}</div><div style="font-size:11px;color:var(--text3)">lbs vol.</div></div>
+  </div>`+html;
+
+  document.getElementById('past-workout-content').innerHTML=html;
+  openModal('past-workout-modal');
+}
+
+// ============================================================
+// CUSTOM SPLIT BUILDER (fix 2)
+// ============================================================
+let customSplitDayCount=0;
+
+function openCustomSplitModal(){
+  customSplitDayCount=0;
+  document.getElementById('custom-split-name').value='';
+  document.getElementById('custom-split-days').innerHTML='';
+  // Start with 3 days
+  addCustomSplitDay();addCustomSplitDay();addCustomSplitDay();
+  openModal('custom-split-modal');
+}
+
+function addCustomSplitDay(){
+  customSplitDayCount++;
+  const idx=customSplitDayCount;
+  const container=document.getElementById('custom-split-days');
+  const div=document.createElement('div');
+  div.id='custom-day-'+idx;
+  div.style.cssText='background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px';
+  div.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+    <div style="font-size:12px;font-weight:700;color:var(--text3);min-width:40px">Day ${idx}</div>
+    <input type="text" placeholder="Day name (e.g. Push, Chest, Legs)" style="flex:1;font-size:14px;padding:7px 10px" id="csd-name-${idx}">
+    <button onclick="document.getElementById('custom-day-${idx}').remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:18px;line-height:1">×</button>
+  </div>
+  <input type="text" placeholder="Focus (e.g. Chest + Triceps, optional)" style="width:100%;font-size:13px;padding:6px 10px;margin-bottom:8px" id="csd-focus-${idx}">
+  <textarea placeholder="Exercises — one per line (e.g. Barbell Bench Press, Incline DB Press)" rows="3" style="width:100%;resize:none;font-size:13px;padding:8px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--font)" id="csd-exercises-${idx}"></textarea>`;
+  container.appendChild(div);
+}
+
+async function saveCustomSplit(){
+  const name=document.getElementById('custom-split-name').value.trim();
+  if(!name){toast('Enter a name for your split');return;}
+
+  const days=[];
+  let i=1;
+  while(document.getElementById('custom-day-'+i)||i<=customSplitDayCount){
+    const el=document.getElementById('custom-day-'+i);
+    if(el){
+      const dayName=document.getElementById('csd-name-'+i)?.value.trim()||`Day ${i}`;
+      const focus=document.getElementById('csd-focus-'+i)?.value.trim()||'';
+      const exText=document.getElementById('csd-exercises-'+i)?.value.trim()||'';
+      const exercises=exText.split('\n').map(l=>l.trim()).filter(Boolean).map(n=>({name:n,target:'3 × 10-12',sets:3}));
+      days.push({name:dayName,focus,exercises});
+    }
+    i++;
+    if(i>50)break;
+  }
+
+  if(!days.length){toast('Add at least one day');return;}
+
+  // Save as a custom split in the user's profile (stored in Supabase)
+  const customKey='custom_'+Date.now();
+  const customSplit={label:name,days};
+
+  // Store in profile.custom_splits JSONB column
+  const existingCustom=userProfile.custom_splits||{};
+  existingCustom[customKey]=customSplit;
+
+  const{error}=await sb.from('profiles').upsert({id:currentUser.id,custom_splits:existingCustom});
+  if(error){toast('Error saving: '+error.message);return;}
+
+  userProfile.custom_splits=existingCustom;
+
+  // Also register it in SPLIT_PRESETS so the app can use it
+  SPLIT_PRESETS[customKey]=customSplit;
+
+  // Switch to it
+  await chooseSplit(customKey);
+  closeModal('custom-split-modal');
+  toast('Custom split "'+name+'" saved and activated!');
+}
+
+// Load custom splits from profile into SPLIT_PRESETS on sign-in
+function loadCustomSplits(){
+  const custom=userProfile.custom_splits||{};
+  Object.entries(custom).forEach(([key,split])=>{
+    SPLIT_PRESETS[key]=split;
+  });
+}
 
 document.addEventListener('DOMContentLoaded',()=>{
   initAuth();updateTimerDisplay();
