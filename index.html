@@ -3158,138 +3158,141 @@ function deleteCurrentTemplate(){
 let planResults=null; // store calculated results for apply button
 
 function generateMyPlan(){
-  // Read profile values
-  const weight=parseFloat(document.getElementById('set-start-weight')?.value||userProfile.start_weight||0);
-  const goalWeight=parseFloat(document.getElementById('set-goal-weight')?.value||userProfile.goal_weight||0);
-  const heightIn=parseFloat(document.getElementById('set-height')?.value||userProfile.height_in||0);
-  const age=parseInt(document.getElementById('set-age')?.value||userProfile.age||0);
-  const gender=document.getElementById('set-gender')?.value||userProfile.gender||'';
-  const goal=document.getElementById('plan-goal')?.value||'maintain';
-  const activity=parseFloat(document.getElementById('plan-activity')?.value||1.55);
+  // Read values — prefer live field values, fall back to saved profile
+  const currentWeight = parseFloat(document.getElementById('set-start-weight')?.value) || parseFloat(userProfile.start_weight) || 0;
+  const goalWeight    = parseFloat(document.getElementById('set-goal-weight')?.value)  || parseFloat(userProfile.goal_weight)  || 0;
+  const heightIn      = parseFloat(document.getElementById('set-height')?.value)       || parseFloat(userProfile.height_in)    || 0;
+  const age           = parseInt(document.getElementById('set-age')?.value)             || parseInt(userProfile.age)            || 0;
+  const gender        = document.getElementById('set-gender')?.value                   || userProfile.gender                   || '';
+  const goal          = document.getElementById('plan-goal')?.value  || 'maintain';
+  const activity      = parseFloat(document.getElementById('plan-activity')?.value || 1.55);
 
-  // Validate we have enough data
-  const missing=[];
-  if(!weight)missing.push('current weight');
-  if(!heightIn)missing.push('height');
-  if(!age)missing.push('age');
-  if(!gender)missing.push('gender');
-  if(missing.length){toast('Please fill in your '+missing.join(', ')+' in the profile above first');return;}
-
-  // ── STEP 1: BMR using Mifflin-St Jeor ──────────────────────────────
-  // Male:   BMR = 10W + 6.25H - 5A + 5
-  // Female: BMR = 10W + 6.25H - 5A - 161
-  // W = weight in kg, H = height in cm, A = age
-  const weightKg=weight * 0.453592;
-  const heightCm=heightIn * 2.54;
-  let bmr;
-  if(gender==='male') bmr=Math.round(10*weightKg + 6.25*heightCm - 5*age + 5);
-  else bmr=Math.round(10*weightKg + 6.25*heightCm - 5*age - 161);
-
-  // ── STEP 2: TDEE ─────────────────────────────────────────────────────
-  const tdee=Math.round(bmr * activity);
-
-  // ── STEP 3: Calorie target based on goal ─────────────────────────────
-  let targetCal, calNote, deficit;
-  const weightDiff=goalWeight?(goalWeight-weight):0;
-  if(goal==='cut'){
-    // Aggressive but safe: 500 cal deficit (≈1 lb/week loss)
-    // Never go below BMR
-    deficit=Math.min(500, tdee-bmr-100);
-    targetCal=Math.round(tdee-deficit);
-    calNote=`${deficit} cal deficit · ~${(deficit/3500*7).toFixed(1)} lbs/week loss`;
-  }else if(goal==='bulk'){
-    // Lean bulk: 250-300 cal surplus
-    targetCal=Math.round(tdee+275);
-    calNote=`275 cal surplus · lean muscle gain`;
-  }else{
-    targetCal=tdee;
-    calNote='Maintenance · body recomposition';
+  // Validate
+  const missing = [];
+  if (!currentWeight) missing.push('current weight (Starting weight field)');
+  if (!heightIn)       missing.push('height');
+  if (!age)            missing.push('age');
+  if (!gender)         missing.push('gender');
+  if (missing.length) {
+    toast('Please fill in: ' + missing.join(', ') + ' — then hit Save profile before calculating');
+    return;
   }
 
-  // ── STEP 4: Time to goal ──────────────────────────────────────────────
-  let timeToGoal='—';
-  if(goalWeight&&Math.abs(weightDiff)>0.5){
-    if(goal==='cut'&&weightDiff<0){
-      const weeks=Math.ceil(Math.abs(weightDiff)/(deficit/3500));
-      timeToGoal=weeks<52?`~${weeks} weeks`:`~${(weeks/52).toFixed(1)} years`;
-    }else if(goal==='bulk'&&weightDiff>0){
-      // Realistic: 0.25-0.5 lbs muscle/week
-      const weeks=Math.ceil(weightDiff/0.3);
-      timeToGoal=`~${weeks} weeks`;
-    }else{
-      timeToGoal='N/A';
+  // ── BMR using Mifflin-St Jeor ─────────────────────────────────────────
+  // Inputs must be in kg and cm
+  const weightKg  = currentWeight * 0.453592;
+  const heightCm  = heightIn * 2.54;
+  let bmr;
+  if (gender === 'male')   bmr = Math.round(10 * weightKg + 6.25 * heightCm - 5 * age + 5);
+  else                     bmr = Math.round(10 * weightKg + 6.25 * heightCm - 5 * age - 161);
+
+  // ── TDEE ──────────────────────────────────────────────────────────────
+  const tdee = Math.round(bmr * activity);
+
+  // ── Calorie target ────────────────────────────────────────────────────
+  let targetCal, calNote, weeklyLoss = 0;
+  if (goal === 'cut') {
+    // Safe deficit: 500 cal/day = ~1 lb/week. Never go below BMR + 200.
+    const maxDeficit = Math.max(0, tdee - bmr - 200);
+    const deficit    = Math.min(500, maxDeficit);
+    targetCal        = Math.max(bmr + 200, tdee - deficit);
+    weeklyLoss       = (tdee - targetCal) / 3500;
+    calNote          = `${tdee - targetCal} cal deficit · ~${weeklyLoss.toFixed(1)} lbs/week`;
+  } else if (goal === 'bulk') {
+    targetCal = tdee + 275;
+    calNote   = '275 cal surplus · lean muscle gain';
+  } else {
+    targetCal = tdee;
+    calNote   = 'Maintenance · body recomposition';
+  }
+  targetCal = Math.round(targetCal);
+
+  // ── Time to goal ──────────────────────────────────────────────────────
+  let timeToGoal = '—';
+  const weightDiff = goalWeight ? goalWeight - currentWeight : 0;
+  if (goalWeight && Math.abs(weightDiff) > 0.5) {
+    if (goal === 'cut' && weightDiff < 0 && weeklyLoss > 0) {
+      const weeks = Math.ceil(Math.abs(weightDiff) / weeklyLoss);
+      timeToGoal = weeks <= 52 ? `~${weeks} weeks` : `~${(weeks / 52).toFixed(1)} yrs`;
+    } else if (goal === 'bulk' && weightDiff > 0) {
+      const weeks = Math.ceil(weightDiff / 0.3); // ~0.3 lbs muscle/week realistic
+      timeToGoal = `~${weeks} weeks`;
+    } else {
+      timeToGoal = 'N/A';
     }
   }
 
-  // ── STEP 5: Macros ────────────────────────────────────────────────────
-  // Protein: 0.8g/lb for maintain, 1g/lb for cut (preserve muscle), 0.8g/lb for bulk
-  let proteinPerLb;
-  if(goal==='cut') proteinPerLb=1.0;
-  else if(goal==='bulk') proteinPerLb=0.85;
-  else proteinPerLb=0.8;
+  // ── Macros ────────────────────────────────────────────────────────────
+  // Protein: g per lb of BODYWEIGHT (not goal weight)
+  const proteinPerLb = goal === 'cut' ? 1.0 : goal === 'bulk' ? 0.85 : 0.8;
+  const protein      = Math.round(currentWeight * proteinPerLb);
+  const proteinCals  = protein * 4;
 
-  const protein=Math.round(weight * proteinPerLb);
-  const proteinCals=protein*4;
+  // Fat: 25-28% of TARGET calories
+  const fatPct  = goal === 'cut' ? 0.25 : 0.28;
+  const fatCals = Math.round(targetCal * fatPct);
+  const fat     = Math.round(fatCals / 9);
 
-  // Fat: 25-30% of target calories
-  const fatPct=goal==='cut'?0.25:0.28;
-  const fat=Math.round((targetCal * fatPct)/9);
-  const fatCals=fat*9;
+  // Carbs: whatever is left — ensure at minimum 50g
+  const carbCals = Math.max(200, targetCal - proteinCals - fatCals); // min 200 kcal from carbs
+  const carbs    = Math.round(carbCals / 4);
 
-  // Carbs: remaining calories
-  const carbCals=targetCal - proteinCals - fatCals;
-  const carbs=Math.round(Math.max(50, carbCals/4)); // min 50g
+  // Recalculate true total (carb floor may push over target slightly — that's fine)
+  const trueTotal = proteinCals + fatCals + carbCals;
 
-  // Fiber: 14g per 1000 calories (standard guideline)
-  const fiber=Math.round(targetCal/1000*14);
+  // Fiber: 14g per 1000 kcal
+  const fiber = Math.round(targetCal / 1000 * 14);
 
-  // ── STEP 6: Macro note ────────────────────────────────────────────────
-  let macroNote='';
-  if(goal==='cut'){
-    macroNote=`High protein (${proteinPerLb}g/lb bodyweight) protects muscle during a caloric deficit. Fat is kept at 25% of calories for hormone health. Carbs fill the remaining calories and fuel your workouts — time them around training for best performance.`;
-  }else if(goal==='bulk'){
-    macroNote=`Moderate protein (${proteinPerLb}g/lb bodyweight) supports muscle synthesis without excess. Higher carbs fuel heavy training sessions and glycogen replenishment. Slight calorie surplus promotes muscle growth while minimizing fat gain.`;
-  }else{
-    macroNote=`Balanced macros for body recomposition — losing fat while building muscle at the same time. This works best for people with training experience. Protein is prioritized to support muscle retention and satiety.`;
+  // Macro note
+  let macroNote = '';
+  if (goal === 'cut') {
+    macroNote = `High protein (${proteinPerLb}g per lb) protects muscle during a deficit. Fat is kept at 25% of calories to support hormones. Carbs fill the remaining calories — time them around workouts for best performance.`;
+  } else if (goal === 'bulk') {
+    macroNote = `Moderate protein (${proteinPerLb}g per lb) supports muscle synthesis. Higher carbs fuel heavy training and glycogen replenishment. The 275 cal surplus promotes muscle growth while minimising fat gain.`;
+  } else {
+    macroNote = `Balanced macros for body recomposition — losing fat while building muscle simultaneously. Protein is prioritised for muscle retention and satiety. Works best with consistent training.`;
   }
 
-  // Save for apply button
-  planResults={cal:targetCal, pro:protein, carb:carbs, fat};
+  // Store for apply button
+  planResults = { cal: targetCal, pro: protein, carb: carbs, fat };
 
-  // ── RENDER ────────────────────────────────────────────────────────────
-  document.getElementById('plan-bmr').textContent=bmr.toLocaleString();
-  document.getElementById('plan-tdee').textContent=tdee.toLocaleString();
-  document.getElementById('plan-target-cal').textContent=targetCal.toLocaleString();
-  document.getElementById('plan-cal-note').textContent=calNote;
-  document.getElementById('plan-time').textContent=timeToGoal;
+  // ── Render stats ──────────────────────────────────────────────────────
+  const s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  s('plan-bmr', bmr.toLocaleString());
+  s('plan-tdee', tdee.toLocaleString());
+  s('plan-target-cal', targetCal.toLocaleString());
+  s('plan-cal-note', calNote);
+  s('plan-time', timeToGoal);
 
   // Macro cards
-  const macroGrid=document.getElementById('plan-macros-grid');
-  const macros=[
-    {label:'Calories',val:targetCal,unit:'kcal',color:'var(--accent)',pct:null,desc:`${Math.round(targetCal/tdee*100)}% of TDEE`},
-    {label:'Protein',val:protein,unit:'g',color:'var(--blue)',pct:Math.round(proteinCals/targetCal*100),desc:`${proteinCals} kcal`},
-    {label:'Carbs',val:carbs,unit:'g',color:'var(--amber)',pct:Math.round(carbCals/targetCal*100),desc:`${carbCals} kcal`},
-    {label:'Fat',val:fat,unit:'g',color:'var(--green)',pct:Math.round(fatCals/targetCal*100),desc:`${fatCals} kcal`},
-    {label:'Fiber',val:fiber,unit:'g',color:'var(--text2)',pct:null,desc:'recommended'},
+  const macroGrid = document.getElementById('plan-macros-grid');
+  const pctOf = (cals) => Math.round(cals / trueTotal * 100);
+  const macros = [
+    { label:'Calories', val:targetCal, unit:'kcal', color:'var(--accent)',  extra:`${Math.round(targetCal/tdee*100)}% of TDEE` },
+    { label:'Protein',  val:protein,   unit:'g',    color:'var(--blue)',    extra:`${pctOf(proteinCals)}% · ${proteinCals} kcal` },
+    { label:'Carbs',    val:carbs,     unit:'g',    color:'var(--amber)',   extra:`${pctOf(carbCals)}% · ${carbCals} kcal` },
+    { label:'Fat',      val:fat,       unit:'g',    color:'var(--green)',   extra:`${pctOf(fatCals)}% · ${fatCals} kcal` },
+    { label:'Fiber',    val:fiber,     unit:'g',    color:'var(--text2)',   extra:'recommended daily' },
   ];
-  macroGrid.innerHTML=macros.map(m=>`
-    <div class="stat-card" style="${m.color!=='var(--text2)'?'border-color:'+m.color+';background:'+m.color.replace(')',',0.06)').replace('var','rgba').replace('--',''):''}">
+  if (macroGrid) macroGrid.innerHTML = macros.map(m => `
+    <div class="stat-card" style="border-color:${m.color}44">
       <div class="stat-label" style="color:${m.color}">${m.label}</div>
-      <div class="stat-value text-mono" style="font-size:18px;color:${m.color}">${m.val.toLocaleString()}<span class="stat-unit">${m.unit}</span></div>
-      ${m.pct?`<div style="font-size:10px;color:var(--text3);margin-top:2px">${m.pct}% of calories</div>`:''}
-      <div style="font-size:10px;color:var(--text3)">${m.desc}</div>
+      <div class="stat-value text-mono" style="font-size:20px;color:${m.color}">${m.val.toLocaleString()}<span class="stat-unit" style="font-size:13px">${m.unit}</span></div>
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">${m.extra}</div>
     </div>`).join('');
 
-  document.getElementById('plan-macro-note').textContent=macroNote;
+  const macroNoteEl = document.getElementById('plan-macro-note');
+  if (macroNoteEl) macroNoteEl.textContent = macroNote;
 
   // Supplements
-  renderSupplementRecs(goal, activity, weight, protein, macroNote);
+  renderSupplementRecs(goal, activity, currentWeight, protein);
 
-  // Show results
-  document.getElementById('my-plan-results').style.display='block';
-  document.getElementById('my-plan-results').scrollIntoView({behavior:'smooth',block:'start'});
+  // Show
+  document.getElementById('my-plan-results').style.display = 'block';
+  document.getElementById('my-plan-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
   toast('✅ Your plan is ready!');
 }
+
 
 function renderSupplementRecs(goal, activity, weight, proteinTarget, macroNote){
   // All supplements with evidence ratings and goal relevance
