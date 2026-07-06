@@ -510,6 +510,14 @@
       <div class="section-title" style="margin-bottom:16px">Your profile</div>
       <div class="form-group"><label>Name</label><input type="text" id="set-name"></div>
       <div class="form-group"><label>Height (inches)</label><input type="number" id="set-height" placeholder="e.g. 70"></div>
+      <div class="form-group"><label>Age</label><input type="number" id="set-age" placeholder="e.g. 26" min="13" max="100"></div>
+      <div class="form-group"><label>Gender</label>
+        <select id="set-gender" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px">
+          <option value="">Select...</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+      </div>
       <div class="form-group"><label>Starting weight (lbs)</label><input type="number" id="set-start-weight" placeholder="e.g. 195"></div>
       <div class="form-group"><label>Goal weight (lbs)</label><input type="number" id="set-goal-weight" placeholder="e.g. 175"></div>
       <div class="form-group"><label>Gym</label><input type="text" id="set-gym"></div>
@@ -517,11 +525,90 @@
     </div>
     <div class="card">
       <div class="section-title" style="margin-bottom:16px">Daily macro targets</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Set manually or use the <strong style="color:var(--accent)">My Plan</strong> calculator below to auto-generate targets based on your goals.</div>
       <div class="form-group"><label>Calories</label><input type="number" id="set-cal" value="2200"></div>
       <div class="form-group"><label>Protein (g)</label><input type="number" id="set-pro" value="190"></div>
       <div class="form-group"><label>Carbs (g)</label><input type="number" id="set-carb" value="210"></div>
       <div class="form-group"><label>Fat (g)</label><input type="number" id="set-fat" value="65"></div>
       <button class="btn btn-primary" onclick="saveMacros()">Save targets</button>
+    </div>
+  </div>
+
+  <!-- MY PLAN — Macro + Supplement Recommender -->
+  <div class="card mt-20" id="my-plan-card">
+    <div class="section-hd" style="margin-bottom:6px">
+      <div class="section-title">🎯 My plan</div>
+      <span class="badge badge-blue">AI-powered</span>
+    </div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:20px">Fill in your profile above and answer two quick questions — we'll calculate your exact calorie and macro targets, tell you whether to cut or bulk, and suggest the right supplements for your goal.</div>
+
+    <div class="grid-2" style="margin-bottom:16px">
+      <div class="form-group">
+        <label>My goal</label>
+        <select id="plan-goal" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px">
+          <option value="cut">🔥 Cut — lose fat, keep muscle</option>
+          <option value="maintain">⚖️ Maintain — body recomposition</option>
+          <option value="bulk">💪 Bulk — build muscle and strength</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Activity level</label>
+        <select id="plan-activity" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px">
+          <option value="1.2">Sedentary (desk job, little exercise)</option>
+          <option value="1.375">Lightly active (1-3 days/week)</option>
+          <option value="1.55" selected>Moderately active (3-5 days/week)</option>
+          <option value="1.725">Very active (6-7 days/week)</option>
+          <option value="1.9">Extremely active (athlete / 2x/day)</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="generateMyPlan()" style="margin-bottom:20px">Calculate my plan →</button>
+
+    <!-- Results — hidden until calculated -->
+    <div id="my-plan-results" style="display:none">
+
+      <!-- TDEE / Calorie breakdown -->
+      <div style="border-top:1px solid var(--border);padding-top:20px;margin-bottom:20px">
+        <div style="font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px">📊 Your calorie breakdown</div>
+        <div class="grid-4">
+          <div class="stat-card">
+            <div class="stat-label">BMR</div>
+            <div class="stat-value text-mono" id="plan-bmr" style="font-size:18px">—</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">at rest</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">TDEE</div>
+            <div class="stat-value text-mono" id="plan-tdee" style="font-size:18px">—</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">maintenance</div>
+          </div>
+          <div class="stat-card" style="border-color:var(--accent);background:var(--accent-dim)">
+            <div class="stat-label" style="color:var(--accent)">Target calories</div>
+            <div class="stat-value text-mono" id="plan-target-cal" style="font-size:18px;color:var(--accent)">—</div>
+            <div style="font-size:10px;color:var(--accent);margin-top:2px" id="plan-cal-note">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Time to goal</div>
+            <div class="stat-value text-mono" id="plan-time" style="font-size:18px">—</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">estimated</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Macro breakdown -->
+      <div style="border-top:1px solid var(--border);padding-top:20px;margin-bottom:20px">
+        <div style="font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px">🥗 Recommended macros</div>
+        <div id="plan-macros-grid" class="grid-4" style="margin-bottom:16px"></div>
+        <div id="plan-macro-note" style="font-size:12px;color:var(--text2);line-height:1.6;padding:12px;background:var(--surface2);border-radius:var(--radius);border-left:3px solid var(--accent)"></div>
+        <button class="btn btn-primary mt-16" onclick="applyPlanMacros()" id="plan-apply-btn">✓ Apply these macros to my targets</button>
+      </div>
+
+      <!-- Supplements -->
+      <div style="border-top:1px solid var(--border);padding-top:20px">
+        <div style="font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">💊 Supplement recommendations</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Based on your goal and training frequency. Always consult a healthcare professional before starting any supplement. These are evidence-based suggestions, not medical advice.</div>
+        <div id="plan-supplements"></div>
+      </div>
+
     </div>
   </div>
 
@@ -1157,6 +1244,8 @@ async function saveSettings(){
     id:currentUser.id,
     name:document.getElementById('set-name').value,
     height_in:parseFloat(document.getElementById('set-height').value)||null,
+    age:parseInt(document.getElementById('set-age').value)||null,
+    gender:document.getElementById('set-gender').value||null,
     start_weight:parseFloat(document.getElementById('set-start-weight').value)||null,
     goal_weight:parseFloat(document.getElementById('set-goal-weight').value)||null,
     gym:document.getElementById('set-gym').value,
@@ -2219,12 +2308,15 @@ async function buildToolsCheckin(){
 function initSettingsPage(){
   const f=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
   f('set-name',userProfile.name);f('set-height',userProfile.height_in);
+  f('set-age',userProfile.age);
   f('set-start-weight',userProfile.start_weight);f('set-goal-weight',userProfile.goal_weight);
   f('set-gym',userProfile.gym);f('set-cal',userProfile.macro_cal||2200);
   f('set-pro',userProfile.macro_pro||190);f('set-carb',userProfile.macro_carb||210);
   f('set-fat',userProfile.macro_fat||65);
+  // Set gender dropdown
+  const genderEl=document.getElementById('set-gender');
+  if(genderEl&&userProfile.gender)genderEl.value=userProfile.gender;
   const se=document.getElementById('settings-email');if(se)se.textContent=currentUser?.email||'';
-  // Update theme button label to match current state
   const isLight=document.body.classList.contains('light-mode');
   const btn=document.getElementById('theme-toggle-btn');
   if(btn)btn.textContent=isLight?'🌙 Dark mode':'☀️ Light mode';
@@ -3058,6 +3150,306 @@ function deleteCurrentTemplate(){
 }
 
 // Load pending template when workout page opens
+
+// ============================================================
+// MY PLAN — MACRO & SUPPLEMENT RECOMMENDER
+// ============================================================
+
+let planResults=null; // store calculated results for apply button
+
+function generateMyPlan(){
+  // Read profile values
+  const weight=parseFloat(document.getElementById('set-start-weight')?.value||userProfile.start_weight||0);
+  const goalWeight=parseFloat(document.getElementById('set-goal-weight')?.value||userProfile.goal_weight||0);
+  const heightIn=parseFloat(document.getElementById('set-height')?.value||userProfile.height_in||0);
+  const age=parseInt(document.getElementById('set-age')?.value||userProfile.age||0);
+  const gender=document.getElementById('set-gender')?.value||userProfile.gender||'';
+  const goal=document.getElementById('plan-goal')?.value||'maintain';
+  const activity=parseFloat(document.getElementById('plan-activity')?.value||1.55);
+
+  // Validate we have enough data
+  const missing=[];
+  if(!weight)missing.push('current weight');
+  if(!heightIn)missing.push('height');
+  if(!age)missing.push('age');
+  if(!gender)missing.push('gender');
+  if(missing.length){toast('Please fill in your '+missing.join(', ')+' in the profile above first');return;}
+
+  // ── STEP 1: BMR using Mifflin-St Jeor ──────────────────────────────
+  // Male:   BMR = 10W + 6.25H - 5A + 5
+  // Female: BMR = 10W + 6.25H - 5A - 161
+  // W = weight in kg, H = height in cm, A = age
+  const weightKg=weight * 0.453592;
+  const heightCm=heightIn * 2.54;
+  let bmr;
+  if(gender==='male') bmr=Math.round(10*weightKg + 6.25*heightCm - 5*age + 5);
+  else bmr=Math.round(10*weightKg + 6.25*heightCm - 5*age - 161);
+
+  // ── STEP 2: TDEE ─────────────────────────────────────────────────────
+  const tdee=Math.round(bmr * activity);
+
+  // ── STEP 3: Calorie target based on goal ─────────────────────────────
+  let targetCal, calNote, deficit;
+  const weightDiff=goalWeight?(goalWeight-weight):0;
+  if(goal==='cut'){
+    // Aggressive but safe: 500 cal deficit (≈1 lb/week loss)
+    // Never go below BMR
+    deficit=Math.min(500, tdee-bmr-100);
+    targetCal=Math.round(tdee-deficit);
+    calNote=`${deficit} cal deficit · ~${(deficit/3500*7).toFixed(1)} lbs/week loss`;
+  }else if(goal==='bulk'){
+    // Lean bulk: 250-300 cal surplus
+    targetCal=Math.round(tdee+275);
+    calNote=`275 cal surplus · lean muscle gain`;
+  }else{
+    targetCal=tdee;
+    calNote='Maintenance · body recomposition';
+  }
+
+  // ── STEP 4: Time to goal ──────────────────────────────────────────────
+  let timeToGoal='—';
+  if(goalWeight&&Math.abs(weightDiff)>0.5){
+    if(goal==='cut'&&weightDiff<0){
+      const weeks=Math.ceil(Math.abs(weightDiff)/(deficit/3500));
+      timeToGoal=weeks<52?`~${weeks} weeks`:`~${(weeks/52).toFixed(1)} years`;
+    }else if(goal==='bulk'&&weightDiff>0){
+      // Realistic: 0.25-0.5 lbs muscle/week
+      const weeks=Math.ceil(weightDiff/0.3);
+      timeToGoal=`~${weeks} weeks`;
+    }else{
+      timeToGoal='N/A';
+    }
+  }
+
+  // ── STEP 5: Macros ────────────────────────────────────────────────────
+  // Protein: 0.8g/lb for maintain, 1g/lb for cut (preserve muscle), 0.8g/lb for bulk
+  let proteinPerLb;
+  if(goal==='cut') proteinPerLb=1.0;
+  else if(goal==='bulk') proteinPerLb=0.85;
+  else proteinPerLb=0.8;
+
+  const protein=Math.round(weight * proteinPerLb);
+  const proteinCals=protein*4;
+
+  // Fat: 25-30% of target calories
+  const fatPct=goal==='cut'?0.25:0.28;
+  const fat=Math.round((targetCal * fatPct)/9);
+  const fatCals=fat*9;
+
+  // Carbs: remaining calories
+  const carbCals=targetCal - proteinCals - fatCals;
+  const carbs=Math.round(Math.max(50, carbCals/4)); // min 50g
+
+  // Fiber: 14g per 1000 calories (standard guideline)
+  const fiber=Math.round(targetCal/1000*14);
+
+  // ── STEP 6: Macro note ────────────────────────────────────────────────
+  let macroNote='';
+  if(goal==='cut'){
+    macroNote=`High protein (${proteinPerLb}g/lb bodyweight) protects muscle during a caloric deficit. Fat is kept at 25% of calories for hormone health. Carbs fill the remaining calories and fuel your workouts — time them around training for best performance.`;
+  }else if(goal==='bulk'){
+    macroNote=`Moderate protein (${proteinPerLb}g/lb bodyweight) supports muscle synthesis without excess. Higher carbs fuel heavy training sessions and glycogen replenishment. Slight calorie surplus promotes muscle growth while minimizing fat gain.`;
+  }else{
+    macroNote=`Balanced macros for body recomposition — losing fat while building muscle at the same time. This works best for people with training experience. Protein is prioritized to support muscle retention and satiety.`;
+  }
+
+  // Save for apply button
+  planResults={cal:targetCal, pro:protein, carb:carbs, fat};
+
+  // ── RENDER ────────────────────────────────────────────────────────────
+  document.getElementById('plan-bmr').textContent=bmr.toLocaleString();
+  document.getElementById('plan-tdee').textContent=tdee.toLocaleString();
+  document.getElementById('plan-target-cal').textContent=targetCal.toLocaleString();
+  document.getElementById('plan-cal-note').textContent=calNote;
+  document.getElementById('plan-time').textContent=timeToGoal;
+
+  // Macro cards
+  const macroGrid=document.getElementById('plan-macros-grid');
+  const macros=[
+    {label:'Calories',val:targetCal,unit:'kcal',color:'var(--accent)',pct:null,desc:`${Math.round(targetCal/tdee*100)}% of TDEE`},
+    {label:'Protein',val:protein,unit:'g',color:'var(--blue)',pct:Math.round(proteinCals/targetCal*100),desc:`${proteinCals} kcal`},
+    {label:'Carbs',val:carbs,unit:'g',color:'var(--amber)',pct:Math.round(carbCals/targetCal*100),desc:`${carbCals} kcal`},
+    {label:'Fat',val:fat,unit:'g',color:'var(--green)',pct:Math.round(fatCals/targetCal*100),desc:`${fatCals} kcal`},
+    {label:'Fiber',val:fiber,unit:'g',color:'var(--text2)',pct:null,desc:'recommended'},
+  ];
+  macroGrid.innerHTML=macros.map(m=>`
+    <div class="stat-card" style="${m.color!=='var(--text2)'?'border-color:'+m.color+';background:'+m.color.replace(')',',0.06)').replace('var','rgba').replace('--',''):''}">
+      <div class="stat-label" style="color:${m.color}">${m.label}</div>
+      <div class="stat-value text-mono" style="font-size:18px;color:${m.color}">${m.val.toLocaleString()}<span class="stat-unit">${m.unit}</span></div>
+      ${m.pct?`<div style="font-size:10px;color:var(--text3);margin-top:2px">${m.pct}% of calories</div>`:''}
+      <div style="font-size:10px;color:var(--text3)">${m.desc}</div>
+    </div>`).join('');
+
+  document.getElementById('plan-macro-note').textContent=macroNote;
+
+  // Supplements
+  renderSupplementRecs(goal, activity, weight, protein, macroNote);
+
+  // Show results
+  document.getElementById('my-plan-results').style.display='block';
+  document.getElementById('my-plan-results').scrollIntoView({behavior:'smooth',block:'start'});
+  toast('✅ Your plan is ready!');
+}
+
+function renderSupplementRecs(goal, activity, weight, proteinTarget, macroNote){
+  // All supplements with evidence ratings and goal relevance
+  const allSupplements=[
+    {
+      name:'Creatine Monohydrate',
+      icon:'💪',
+      dose:'3-5g daily',
+      timing:'Any time (consistency matters)',
+      goals:['cut','bulk','maintain'],
+      priority:'essential',
+      evidence:'⭐⭐⭐⭐⭐',
+      benefit:'The most researched supplement in sports science. Increases strength, power output, and muscle mass. Helps preserve muscle during a cut. No loading phase needed.',
+      note:'Take every day — even on rest days.',
+    },
+    {
+      name:'Protein Powder (Whey or Plant)',
+      icon:'🥛',
+      dose:`${Math.max(0,Math.round(proteinTarget*0.3))}g per shake`,
+      timing:'Post-workout or between meals',
+      goals:['bulk','cut','maintain'],
+      priority: proteinTarget>180?'essential':'recommended',
+      evidence:'⭐⭐⭐⭐⭐',
+      benefit:`You need ${proteinTarget}g protein daily. If you struggle to hit that from food alone, protein powder is the most convenient way to close the gap. Whey is absorbed fastest post-workout.`,
+      note:'Not needed if you hit protein targets from whole food.',
+    },
+    {
+      name:'Caffeine / Pre-workout',
+      icon:'⚡',
+      dose:'150-300mg caffeine',
+      timing:'30-45 min before training',
+      goals:['cut','bulk','maintain'],
+      priority:'recommended',
+      evidence:'⭐⭐⭐⭐⭐',
+      benefit:'Clinically proven to improve strength, endurance, and focus. Particularly useful on a cut when lower calories can leave you feeling sluggish before training.',
+      note:'Avoid after 2pm to protect sleep quality.',
+    },
+    {
+      name:'Omega-3 Fish Oil',
+      icon:'🐟',
+      dose:'2-3g EPA+DHA daily',
+      timing:'With meals',
+      goals:['cut','bulk','maintain'],
+      priority:'recommended',
+      evidence:'⭐⭐⭐⭐',
+      benefit:'Reduces inflammation from heavy training, supports joint health, and may improve muscle protein synthesis. Also has cardiovascular and cognitive benefits.',
+      note:'Look for a product with at least 1g EPA+DHA combined per serving.',
+    },
+    {
+      name:'Vitamin D3 + K2',
+      icon:'☀️',
+      dose:'2000-5000 IU D3 daily',
+      timing:'Morning with fat-containing meal',
+      goals:['cut','bulk','maintain'],
+      priority:'recommended',
+      evidence:'⭐⭐⭐⭐',
+      benefit:'Most people — especially those who train indoors — are Vitamin D deficient. D3 supports testosterone production, bone density, immune function, and muscle recovery.',
+      note:'K2 (100-200mcg) helps direct calcium to bones rather than arteries.',
+    },
+    {
+      name:'Magnesium Glycinate',
+      icon:'😴',
+      dose:'300-400mg elemental magnesium',
+      timing:'30-60 min before bed',
+      goals:['cut','bulk','maintain'],
+      priority:'recommended',
+      evidence:'⭐⭐⭐⭐',
+      benefit:'Heavy training depletes magnesium. Low levels hurt sleep quality, muscle recovery, and energy production. Glycinate form is easiest on the stomach and best absorbed.',
+      note:'Avoid magnesium oxide — it\'s poorly absorbed.',
+    },
+    {
+      name:'Beta-Alanine',
+      icon:'🔥',
+      dose:'3.2-6.4g daily',
+      timing:'Split doses throughout day',
+      goals:['bulk','maintain'],
+      priority: activity>=1.725?'recommended':'optional',
+      evidence:'⭐⭐⭐⭐',
+      benefit:'Buffers lactic acid in muscles, delaying fatigue during high-rep training and HIIT. Most effective for sets lasting 60-240 seconds.',
+      note:'Causes harmless tingling (paresthesia). Split doses to reduce this.',
+    },
+    {
+      name:'Zinc + Magnesium (ZMA)',
+      icon:'🌙',
+      dose:'ZMA supplement as directed',
+      timing:'Before bed on empty stomach',
+      goals:['bulk'],
+      priority:'optional',
+      evidence:'⭐⭐⭐',
+      benefit:'Zinc supports testosterone production and immune function. Combined with magnesium and B6, ZMA may improve sleep quality and recovery in lifters with low zinc/magnesium levels.',
+      note:'Not needed if already taking magnesium and getting adequate zinc from diet.',
+    },
+    {
+      name:'L-Carnitine',
+      icon:'🔥',
+      dose:'1-2g daily',
+      timing:'With meals',
+      goals:['cut'],
+      priority:'optional',
+      evidence:'⭐⭐⭐',
+      benefit:'May enhance fat oxidation during exercise. Most effective when combined with a caloric deficit and cardio. Evidence is moderate — not a magic fat burner.',
+      note:'Acetyl-L-Carnitine form also has cognitive benefits.',
+    },
+    {
+      name:'Electrolytes',
+      icon:'💧',
+      dose:'1 serving during/after training',
+      timing:'During workout or post-workout',
+      goals:['cut','bulk','maintain'],
+      priority: activity>=1.55?'recommended':'optional',
+      evidence:'⭐⭐⭐⭐',
+      benefit:'Heavy training and sweating deplete sodium, potassium, and magnesium. Electrolytes maintain performance, prevent cramping, and support recovery. Especially important on a cut where carb restriction reduces glycogen and water retention.',
+      note:'Coconut water + a pinch of sea salt is a cheap alternative.',
+    },
+  ];
+
+  // Filter and sort by relevance
+  const priorityOrder={essential:0,recommended:1,optional:2};
+  const relevant=allSupplements
+    .filter(s=>s.goals.includes(goal))
+    .sort((a,b)=>priorityOrder[a.priority]-priorityOrder[b.priority]);
+
+  const priorityColors={essential:'var(--accent)',recommended:'var(--blue)',optional:'var(--text3)'};
+  const priorityLabels={essential:'Essential',recommended:'Recommended',optional:'Optional'};
+
+  document.getElementById('plan-supplements').innerHTML=relevant.map(s=>`
+    <div class="card" style="margin-bottom:12px;border-color:${priorityColors[s.priority]}33">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:24px">${s.icon}</span>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--text)">${s.name}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Evidence: ${s.evidence}</div>
+          </div>
+        </div>
+        <span style="padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${priorityColors[s.priority]}22;color:${priorityColors[s.priority]};border:1px solid ${priorityColors[s.priority]}55;white-space:nowrap">${priorityLabels[s.priority]}</span>
+      </div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:10px;line-height:1.6">${s.benefit}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <div style="padding:4px 10px;background:var(--surface2);border-radius:20px;font-size:11px;color:var(--text3)">📏 ${s.dose}</div>
+        <div style="padding:4px 10px;background:var(--surface2);border-radius:20px;font-size:11px;color:var(--text3)">⏰ ${s.timing}</div>
+        ${s.note?`<div style="padding:4px 10px;background:var(--accent-dim);border-radius:20px;font-size:11px;color:var(--accent)">💡 ${s.note}</div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function applyPlanMacros(){
+  if(!planResults)return;
+  // Fill macro fields
+  const f=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v;};
+  f('set-cal',planResults.cal);
+  f('set-pro',planResults.pro);
+  f('set-carb',planResults.carb);
+  f('set-fat',planResults.fat);
+  // Auto-save
+  saveMacros();
+  toast('✅ Macros applied to your daily targets!');
+  // Scroll to macro section
+  document.getElementById('set-cal')?.scrollIntoView({behavior:'smooth',block:'center'});
+}
 
 // ============================================================
 // PAST WORKOUT VIEWER (fix 3)
