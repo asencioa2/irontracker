@@ -3241,7 +3241,7 @@ function generateMyPlan(){
     const maxDeficit = Math.max(0, tdee - bmr - 200);
     const deficit    = Math.min(500, maxDeficit);
     targetCal        = Math.max(bmr + 200, tdee - deficit);
-    weeklyLoss       = (tdee - targetCal) / 3500;
+    weeklyLoss       = (tdee - targetCal) * 7 / 3500;
     calNote          = `${tdee - targetCal} cal deficit · ~${weeklyLoss.toFixed(1)} lbs/week`;
   } else if (goal === 'bulk') {
     targetCal = tdee + 275;
