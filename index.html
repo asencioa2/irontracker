@@ -509,7 +509,12 @@
     <div class="card">
       <div class="section-title" style="margin-bottom:16px">Your profile</div>
       <div class="form-group"><label>Name</label><input type="text" id="set-name"></div>
-      <div class="form-group"><label>Height (inches)</label><input type="number" id="set-height" placeholder="e.g. 70"></div>
+      <div class="form-group">
+        <label>Height</label>
+        <input type="text" id="set-height-display" placeholder="e.g. 5'10&quot; or 70" oninput="parseHeightInput(this.value)" style="margin-bottom:4px">
+        <input type="hidden" id="set-height">
+        <div id="height-hint" style="font-size:11px;color:var(--text3)">Enter as feet/inches (5'10") or total inches (70)</div>
+      </div>
       <div class="form-group"><label>Age</label><input type="number" id="set-age" placeholder="e.g. 26" min="13" max="100"></div>
       <div class="form-group"><label>Gender</label>
         <select id="set-gender" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px">
@@ -1243,7 +1248,7 @@ async function saveSettings(){
   const updates={
     id:currentUser.id,
     name:document.getElementById('set-name').value,
-    height_in:parseFloat(document.getElementById('set-height').value)||null,
+    height_in:parseFloat(document.getElementById('set-height').value)||parseFloat(document.getElementById('set-height-display').value)||null,
     age:parseInt(document.getElementById('set-age').value)||null,
     gender:document.getElementById('set-gender').value||null,
     start_weight:parseFloat(document.getElementById('set-start-weight').value)||null,
@@ -2308,6 +2313,15 @@ async function buildToolsCheckin(){
 function initSettingsPage(){
   const f=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
   f('set-name',userProfile.name);f('set-height',userProfile.height_in);
+  // Populate height display field
+  if(userProfile.height_in){
+    const h=userProfile.height_in;
+    const ft=Math.floor(h/12);const inn=h%12;
+    const dispEl=document.getElementById('set-height-display');
+    if(dispEl)dispEl.value=`${ft}'${inn}"`;
+    const hint=document.getElementById('height-hint');
+    if(hint)hint.textContent=`${ft}ft ${inn}in = ${h} inches`;
+  }
   f('set-age',userProfile.age);
   f('set-start-weight',userProfile.start_weight);f('set-goal-weight',userProfile.goal_weight);
   f('set-gym',userProfile.gym);f('set-cal',userProfile.macro_cal||2200);
@@ -3157,11 +3171,42 @@ function deleteCurrentTemplate(){
 
 let planResults=null; // store calculated results for apply button
 
+function parseHeightInput(val){
+  // Accept formats: 5'10", 5'10, 5-10, 510, 70 (pure inches)
+  val=val.trim();
+  let inches=0;
+  // Try ft'in" format: 5'10" or 5'10
+  const ftIn=val.match(/^(\d+)[''`](\d+)/);
+  if(ftIn){inches=parseInt(ftIn[1])*12+parseInt(ftIn[2]);}
+  // Try ft-in format: 5-10
+  else if(val.match(/^\d+-\d+$/)){const p=val.split('-');inches=parseInt(p[0])*12+parseInt(p[1]);}
+  // Try pure number (assume inches if >=48, feet if <8)
+  else if(val.match(/^\d+\.?\d*$/)){
+    const n=parseFloat(val);
+    inches=n<8?Math.round(n*12):Math.round(n); // e.g. "5.9" as feet, "69" as inches
+  }
+  const hiddenEl=document.getElementById('set-height');
+  const hint=document.getElementById('height-hint');
+  if(inches>=48&&inches<=96){
+    if(hiddenEl)hiddenEl.value=inches;
+    const ft=Math.floor(inches/12);const inn=inches%12;
+    if(hint)hint.textContent=`✓ ${ft}ft ${inn}in = ${inches} inches`;
+    hint.style.color='var(--accent)';
+  }else if(val.length>0){
+    if(hiddenEl)hiddenEl.value='';
+    if(hint)hint.textContent="Try: 5'10\" or just 70 inches";
+    hint.style.color='var(--red)';
+  }else{
+    if(hiddenEl)hiddenEl.value='';
+    if(hint){hint.textContent="Enter height like 5'10\" or 70 inches";hint.style.color="var(--text3)";}
+  }
+}
+
 function generateMyPlan(){
   // Read values — prefer live field values, fall back to saved profile
   const currentWeight = parseFloat(document.getElementById('set-start-weight')?.value) || parseFloat(userProfile.start_weight) || 0;
   const goalWeight    = parseFloat(document.getElementById('set-goal-weight')?.value)  || parseFloat(userProfile.goal_weight)  || 0;
-  const heightIn      = parseFloat(document.getElementById('set-height')?.value)       || parseFloat(userProfile.height_in)    || 0;
+  const heightIn      = parseFloat(document.getElementById('set-height')?.value)       || parseFloat(userProfile.height_in)    || 0;  // hidden field set by parseHeightInput
   const age           = parseInt(document.getElementById('set-age')?.value)             || parseInt(userProfile.age)            || 0;
   const gender        = document.getElementById('set-gender')?.value                   || userProfile.gender                   || '';
   const goal          = document.getElementById('plan-goal')?.value  || 'maintain';
