@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>IronTracker — Your Personal Fitness OS</title>
 
 <!-- PWA manifest -->
@@ -4115,6 +4115,18 @@ document.addEventListener('DOMContentLoaded',()=>{
     }).catch(err=>{
       console.warn('SW registration failed:', err);
     });
+  }
+  // iOS Safari fix: prevent mobile nav touch events from going dead after idle
+  // Adding a passive touchstart listener forces the browser to keep the element in the touch event stack
+  const mobileNav=document.getElementById('mobile-nav');
+  if(mobileNav){
+    mobileNav.addEventListener('touchstart',()=>{}, {passive:true});
+    // Also periodically nudge the nav to keep GPU layer alive
+    setInterval(()=>{
+      if(mobileNav){
+        mobileNav.style.transform='translateZ(0)';
+      }
+    }, 10000);
   }
 });
 

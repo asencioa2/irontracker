@@ -193,7 +193,17 @@ canvas{width:100%!important;}
 .progress-photo-caption{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(8,12,20,0.9));padding:10px 8px 8px;}
 
 /* ===== MOBILE NAV ===== */
-.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(8,12,20,0.98);backdrop-filter:blur(16px);border-top:1px solid var(--border);height:64px;align-items:stretch;}
+.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(8,12,20,0.98);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--border);height:64px;align-items:stretch;
+  /* iOS Safari fix: use env(safe-area-inset-bottom) to account for home indicator */
+  padding-bottom:env(safe-area-inset-bottom);
+  height:calc(64px + env(safe-area-inset-bottom));
+  /* Force GPU layer to prevent touch event loss after scroll */
+  -webkit-transform:translateZ(0);
+  transform:translateZ(0);
+  will-change:transform;
+  -webkit-backface-visibility:hidden;
+  backface-visibility:hidden;
+}
 .mobile-nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;color:var(--text3);cursor:pointer;font-family:var(--font);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;transition:color 0.15s;padding:6px 2px;}
 .mobile-nav-btn.active{color:var(--accent);}
 .mobile-nav-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
@@ -208,7 +218,7 @@ canvas{width:100%!important;}
   .nav{display:none;}
   .mobile-nav{display:flex;}
   .mobile-header{display:flex;}
-  .main{padding-top:0 !important;padding-bottom:80px;overflow-x:hidden;}
+  .main{padding-top:0 !important;padding-bottom:calc(80px + env(safe-area-inset-bottom));overflow-x:hidden;}
   .page{padding:16px 14px !important;max-width:100% !important;box-sizing:border-box;width:100%;}
   .page.active{display:block !important;}
   .grid-4{grid-template-columns:1fr 1fr;}
