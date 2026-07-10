@@ -763,15 +763,21 @@
       <div class="form-group"><label>Meal</label><select id="f-meal"><option>Pre-workout</option><option>Post-workout</option><option>Breakfast</option><option>Lunch</option><option>Snack</option><option>Dinner</option><option>Evening</option></select></div>
       <div class="grid-2">
         <!-- Serving size adjuster -->
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:16px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap">Serving size</label>
-          <input type="number" id="f-servings" value="1" min="0.25" step="0.25" style="width:60px;text-align:center" oninput="updateServingMacros()">
-          <span style="font-size:12px;color:var(--text3)">servings ×</span>
-          <input type="number" id="f-serving-size" placeholder="size (g)" style="width:90px;font-size:13px;padding:8px 10px" oninput="updateServingMacros()">
-          <span style="font-size:11px;color:var(--text3)">g each</span>
-          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('f-servings').value=1;document.getElementById('f-serving-size').value='';updateServingMacros()">Reset</button>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Serving size</div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+          <div style="display:flex;flex-direction:column;gap:4px;flex:1">
+            <label style="font-size:11px;color:var(--text3)">Servings</label>
+            <input type="number" id="f-servings" value="1" min="0.25" step="0.25" style="width:100%;text-align:center;font-size:16px;font-weight:700;font-family:var(--mono)" oninput="updateServingMacros()">
+          </div>
+          <span style="font-size:18px;color:var(--text3);margin-top:18px">×</span>
+          <div style="display:flex;flex-direction:column;gap:4px;flex:2">
+            <label style="font-size:11px;color:var(--text3)">Serving size (g) — optional</label>
+            <input type="number" id="f-serving-size" placeholder="e.g. 28" style="width:100%;font-size:15px" oninput="updateServingMacros()">
+          </div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:18px;white-space:nowrap" onclick="document.getElementById('f-servings').value=1;document.getElementById('f-serving-size').value='';updateServingMacros()">Reset</button>
         </div>
+        <div style="font-size:11px;color:var(--text3)">Change servings to scale macros · Enter serving size (g) if macros are per 100g</div>
       </div>
       <div class="grid-2">
         <div class="form-group"><label>Calories</label><input type="number" id="f-cal" placeholder="0" oninput="storeBaseServingMacros()"></div>
