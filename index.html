@@ -762,10 +762,23 @@
       <div class="form-group"><label>Food name</label><input type="text" id="f-name" placeholder="e.g. Grilled chicken breast"></div>
       <div class="form-group"><label>Meal</label><select id="f-meal"><option>Pre-workout</option><option>Post-workout</option><option>Breakfast</option><option>Lunch</option><option>Snack</option><option>Dinner</option><option>Evening</option></select></div>
       <div class="grid-2">
-        <div class="form-group"><label>Calories</label><input type="number" id="f-cal" placeholder="0"></div>
-        <div class="form-group"><label>Protein (g)</label><input type="number" id="f-pro" placeholder="0"></div>
-        <div class="form-group"><label>Carbs (g)</label><input type="number" id="f-carb" placeholder="0"></div>
-        <div class="form-group"><label>Fat (g)</label><input type="number" id="f-fat" placeholder="0"></div>
+        <!-- Serving size adjuster -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap">Serving size</label>
+          <input type="number" id="f-servings" value="1" min="0.25" step="0.25" style="width:60px;text-align:center" oninput="updateServingMacros()">
+          <span style="font-size:12px;color:var(--text3)">servings ×</span>
+          <input type="number" id="f-serving-size" placeholder="size (g)" style="width:90px;font-size:13px;padding:8px 10px" oninput="updateServingMacros()">
+          <span style="font-size:11px;color:var(--text3)">g each</span>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('f-servings').value=1;document.getElementById('f-serving-size').value='';updateServingMacros()">Reset</button>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label>Calories</label><input type="number" id="f-cal" placeholder="0" oninput="storeBaseServingMacros()"></div>
+        <div class="form-group"><label>Protein (g)</label><input type="number" id="f-pro" placeholder="0" oninput="storeBaseServingMacros()"></div>
+        <div class="form-group"><label>Carbs (g)</label><input type="number" id="f-carb" placeholder="0" oninput="storeBaseServingMacros()"></div>
+        <div class="form-group"><label>Fat (g)</label><input type="number" id="f-fat" placeholder="0" oninput="storeBaseServingMacros()"></div>
+      </div>
       </div>
       <button class="btn btn-primary btn-full" onclick="addFood()">Add entry</button>
     </div>
@@ -830,13 +843,35 @@
   </div>
 </div>
 
+<!-- Post workout detail modal -->
+<div class="modal-overlay" id="post-detail-modal">
+  <div class="modal" style="width:520px">
+    <div class="modal-hd">
+      <div>
+        <div class="modal-title" id="post-detail-name">Workout</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px" id="post-detail-meta"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('post-detail-modal')">×</button>
+    </div>
+    <div id="post-detail-content" style="max-height:70vh;overflow-y:auto"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="comments-modal">
-  <div class="modal" style="width:500px">
-    <div class="modal-hd"><div class="modal-title">Comments</div><button class="modal-close" onclick="closeModal('comments-modal')">x</button></div>
-    <div id="comments-list" style="max-height:320px;overflow-y:auto;margin-bottom:16px"></div>
-    <div style="display:flex;gap:8px">
-      <input type="text" id="comment-input" placeholder="Add a comment..." style="flex:1" onkeydown="if(event.key==='Enter')submitComment()">
-      <button class="btn btn-primary btn-sm" onclick="submitComment()">Post</button>
+  <div class="modal" style="width:520px">
+    <div class="modal-hd">
+      <div>
+        <div class="modal-title">💬 Comments</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px" id="comments-post-info"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('comments-modal')">×</button>
+    </div>
+    <div id="comments-list" style="max-height:380px;overflow-y:auto;margin-bottom:16px;padding-right:4px"></div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;gap:8px;align-items:flex-end">
+      <div style="flex:1">
+        <textarea id="comment-input" placeholder="Write a comment..." rows="2" style="width:100%;resize:none;font-size:14px;padding:10px;border-radius:var(--radius);background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font);outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitComment();}"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="submitComment()" style="padding:10px 18px;margin-bottom:1px">Post</button>
     </div>
   </div>
 </div>
@@ -2058,6 +2093,10 @@ function logSet(exIdx,exName){
     if(!isPR)toast('Set '+workoutSets[exName].sets.length+' logged: '+w+'lbs \xd7 '+r);
     if(isPR)renderWorkoutContent();
   });
+  // Push live sets so friends can follow along
+  if(Object.values(workoutSets).some(ex=>ex?.sets?.length>0)){
+    sb.from('workout_live').update({sets_data:workoutSets,updated_at:new Date().toISOString()}).eq('user_id',currentUser.id).then(()=>{});
+  }
   startWorkoutRestTimer();
   renderWorkoutContent();
 }
@@ -2432,6 +2471,9 @@ function switchFoodTab(tab){
 
 function openFoodModal(){
   ['f-name','f-cal','f-pro','f-carb','f-fat'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  _baseMacros={cal:0,pro:0,carb:0,fat:0};
+  document.getElementById('f-servings').value=1;
+  const sizeEl=document.getElementById('f-serving-size');if(sizeEl)sizeEl.value='';;
   barcodeFoundData=null;
   document.getElementById('barcode-result').style.display='none';
   document.getElementById('barcode-status').style.display='none';
@@ -2532,6 +2574,7 @@ async function lookupBarcode(barcode){
     document.getElementById('f-pro').value=food.protein;
     document.getElementById('f-carb').value=food.carbs;
     document.getElementById('f-fat').value=food.fat;
+    _baseMacros={cal:food.cal,pro:food.protein,carb:food.carbs,fat:food.fat};
 
     // If there's a warning about per-100g values, highlight it
     if(food.warning){
@@ -2738,8 +2781,8 @@ function renderFeedPost(post,likes,commentCount){
       ${isOwn?`<button class="btn btn-danger btn-sm" onclick="deletePost('${post.id}')">Delete</button>`:''}
     </div>
 
-    <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:12px">
-      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">🏋️ ${post.day_name}</div>
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:12px;cursor:pointer" onclick="openPostDetail('${post.id}')" title="Click to see full workout">
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">🏋️ ${post.day_name} <span style="font-size:11px;color:var(--text3);font-weight:400">tap for full workout →</span></div>
       <div style="display:flex;gap:16px;font-size:12px;color:var(--text2);margin-bottom:8px">
         ${post.set_count?`<span><strong style="color:var(--text)">${post.set_count}</strong> sets</span>`:''}
         ${post.exercise_count?`<span><strong style="color:var(--text)">${post.exercise_count}</strong> exercises</span>`:''}
@@ -2801,8 +2844,22 @@ async function loadLiveFeed(){
 
   el.innerHTML=live.map(l=>{
     const since=l.started_at?getTimeAgo(new Date(l.started_at)):'just started';
-    return `<div class="card" style="margin-bottom:10px;padding:14px;border-color:var(--red)">
-      <div style="display:flex;align-items:center;gap:10px">
+    const setsData=l.sets_data||{};
+    const exEntries=Object.entries(setsData).filter(([,ex])=>ex?.sets?.length>0);
+    const totalSets=exEntries.reduce((t,[,ex])=>t+(ex?.sets?.length||0),0);
+    const setsHtml=exEntries.length?`
+      <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">${totalSets} sets so far</div>
+        ${exEntries.map(([name,ex])=>`
+          <div style="margin-bottom:8px">
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px">${name}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px">
+              ${(ex.sets||[]).map((s,i)=>`<span style="font-size:11px;font-family:var(--mono);padding:2px 7px;border-radius:4px;background:var(--surface3);color:var(--text2)">Set ${i+1}: ${s.w}lbs×${s.r}</span>`).join('')}
+            </div>
+          </div>`).join('')}
+      </div>`:'<div style="font-size:12px;color:var(--text3);margin-top:8px">Warming up — no sets yet</div>';
+    return `<div class="card" style="margin-bottom:12px;border-color:var(--red)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
         <div style="width:10px;height:10px;border-radius:50%;background:var(--red);flex-shrink:0;animation:pulse 1.5s infinite"></div>
         <div style="width:34px;height:34px;border-radius:50%;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent)">${(l.display_name||'A')[0].toUpperCase()}</div>
         <div style="flex:1">
@@ -2810,6 +2867,7 @@ async function loadLiveFeed(){
           <div style="font-size:12px;color:var(--text2)">@${l.username} · ${l.day_name} · ${since}</div>
         </div>
       </div>
+      ${setsHtml}
     </div>`;
   }).join('')+'<div style="text-align:center;margin-top:8px"><button class="btn btn-ghost btn-sm" onclick="loadLiveFeed()">🔄 Refresh</button></div>';
 }
@@ -2833,16 +2891,21 @@ async function openComments(postId){
   openModal('comments-modal');
   const{data:comments}=await sb.from('post_comments').select('*').eq('post_id',postId).order('created_at');
   if(!comments||!comments.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:16px;text-align:center">No comments yet. Be first!</div>';return;}
-  el.innerHTML=comments.map(c=>`<div style="padding:10px 0;border-bottom:1px solid var(--border)">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start">
-      <div>
-        <span style="font-size:13px;font-weight:600;color:var(--text)">${c.display_name}</span>
-        <span style="font-size:11px;color:var(--text3);margin-left:6px">@${c.username}</span>
+  el.innerHTML=comments.map(c=>`<div style="display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">
+    <div style="width:34px;height:34px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0">${(c.display_name||'A')[0].toUpperCase()}</div>
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div>
+          <span style="font-size:13px;font-weight:700;color:var(--text)">${c.display_name}</span>
+          <span style="font-size:11px;color:var(--text3);margin-left:6px">@${c.username}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:var(--text3)">${getTimeAgo(new Date(c.created_at))}</span>
+          ${c.user_id===currentUser.id?`<button onclick="deleteComment('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:16px;line-height:1" title="Delete">×</button>`:''}
+        </div>
       </div>
-      <span style="font-size:11px;color:var(--text3)">${getTimeAgo(new Date(c.created_at))}</span>
+      <div style="font-size:14px;color:var(--text);line-height:1.5;word-break:break-word">${c.body}</div>
     </div>
-    <div style="font-size:13px;color:var(--text2);margin-top:4px">${c.body}</div>
-    ${c.user_id===currentUser.id?`<button class="btn btn-danger btn-sm" style="margin-top:4px;padding:2px 8px" onclick="deleteComment('${c.id}')">Delete</button>`:''}
   </div>`).join('');
 }
 
@@ -2963,19 +3026,25 @@ async function declineFriendRequest(id){
 async function loadFriendsList(){
   const el=document.getElementById('friends-list-content');
   if(!el)return;
-  const{data:friendships}=await sb.from('friendships').select('requester_id,addressee_id').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`).eq('status','accepted');
+  const{data:friendships}=await sb.from('friendships').select('id,requester_id,addressee_id').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`).eq('status','accepted');
   if(!friendships||!friendships.length){el.innerHTML='<div style="color:var(--text3);font-size:13px">No friends yet — search above to find people!</div>';return;}
   const ids=friendships.map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id);
   const{data:names}=await sb.from('usernames').select('user_id,username,display_name').in('user_id',ids);
-  el.innerHTML=(names||[]).map(u=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+  const friendshipMap={};
+  (friendships||[]).forEach(f=>{
+    const fid=f.requester_id===currentUser.id?f.addressee_id:f.requester_id;
+    friendshipMap[fid]=f.id;
+  });
+  el.innerHTML=(names||[]).map(u=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
     <div style="display:flex;align-items:center;gap:10px">
-      <div style="width:32px;height:32px;border-radius:50%;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent)">${u.display_name[0].toUpperCase()}</div>
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--accent)">${u.display_name[0].toUpperCase()}</div>
       <div>
-        <div style="font-size:13px;font-weight:600;color:var(--text)">${u.display_name}</div>
-        <div style="font-size:11px;color:var(--text3)">@${u.username}</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text)">${u.display_name}</div>
+        <div style="font-size:12px;color:var(--text3)">@${u.username}</div>
       </div>
     </div>
-  </div>`).join('');
+    <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red)" onclick="removeFriend('${friendshipMap[u.user_id]}','${u.display_name}')">Remove</button>
+  </div>`).join('') || '<div style="color:var(--text3);font-size:13px">No friends yet!</div>';
 }
 
 // ---- Push Notifications ----
@@ -2986,6 +3055,48 @@ async function requestPushPermission(){
   const perm=await Notification.requestPermission();
   if(perm!=='granted')return;
   toast('Notifications enabled!');
+}
+
+async function removeFriend(friendshipId, displayName){
+  if(!confirm('Remove '+displayName+' from your friends?'))return;
+  const{error}=await sb.from('friendships').delete().eq('id',friendshipId);
+  if(error){toast('Error: '+error.message);return;}
+  toast(displayName+' removed');
+  loadFriendsList();
+}
+
+async function openPostDetail(postId){
+  const{data:post}=await sb.from('workout_posts').select('*').eq('id',postId).single();
+  if(!post)return;
+  if(!post.sets_data||!Object.keys(post.sets_data).length){toast('No detailed workout data for this post');return;}
+  document.getElementById('past-workout-title').textContent=post.display_name+"'s "+post.day_name;
+  const d=new Date(post.posted_at);
+  const dateStr=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const sets=post.sets_data||{};
+  const exEntries=Object.entries(sets);
+  const totalSets=exEntries.reduce((t,[,ex])=>t+(ex?.sets?.length||0),0);
+  const totalVol=exEntries.reduce((t,[,ex])=>t+(ex?.sets||[]).reduce((s2,s)=>s2+(s.w||0)*(s.r||0),0),0);
+  let html=`<div style="font-size:12px;color:var(--text3);margin-bottom:16px">${dateStr} · @${post.username}</div>
+  <div style="display:flex;gap:16px;padding:12px;background:var(--accent-dim);border-radius:var(--radius);margin-bottom:16px;border:1px solid var(--accent)">
+    <div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--accent)">${exEntries.length}</div><div style="font-size:11px;color:var(--text3)">exercises</div></div>
+    <div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--accent)">${totalSets}</div><div style="font-size:11px;color:var(--text3)">sets</div></div>
+    <div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--accent)">${totalVol>0?(totalVol/1000).toFixed(1)+'k':0}</div><div style="font-size:11px;color:var(--text3)">lbs vol.</div></div>
+  </div>`;
+  exEntries.forEach(([name,ex])=>{
+    const exSets=ex?.sets||[];
+    const vol=exSets.reduce((t,s)=>t+(s.w||0)*(s.r||0),0);
+    html+=`<div style="margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:8px">${name}</div>
+      ${exSets.map((s,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:6px 10px;background:var(--surface2);border-radius:8px;margin-bottom:4px">
+        <span style="font-size:11px;font-weight:700;color:var(--text3);min-width:40px">Set ${i+1}</span>
+        <span style="font-family:var(--mono);font-size:14px;color:var(--text)">${s.w||0} lbs × ${s.r||0} reps</span>
+      </div>`).join('')}
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">${exSets.length} sets · ${vol>0?(vol/1000).toFixed(1)+'k':0} lbs</div>
+    </div>`;
+  });
+  if(post.notes)html+=`<div style="padding:12px;background:var(--surface2);border-radius:var(--radius);border-left:3px solid var(--accent)"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">SESSION NOTES</div><div style="font-size:13px;color:var(--text2);font-style:italic">${post.notes}</div></div>`;
+  document.getElementById('past-workout-content').innerHTML=html;
+  openModal('past-workout-modal');
 }
 
 async function sendWorkoutNotificationToFriends(friends,type){
@@ -3717,8 +3828,35 @@ function loadCustomSplits(){
   });
 }
 
-// ============================================================
-// WORKOUT HISTORY PAGE
+// ── Serving size / multiplier for food modal ──────────────────────────────
+let _baseMacros={cal:0,pro:0,carb:0,fat:0};
+
+function storeBaseServingMacros(){
+  // Called when user types directly into a macro field — store as the 1-serving base
+  _baseMacros={
+    cal:parseFloat(document.getElementById('f-cal')?.value)||0,
+    pro:parseFloat(document.getElementById('f-pro')?.value)||0,
+    carb:parseFloat(document.getElementById('f-carb')?.value)||0,
+    fat:parseFloat(document.getElementById('f-fat')?.value)||0,
+  };
+}
+
+function updateServingMacros(){
+  const servings=parseFloat(document.getElementById('f-servings')?.value)||1;
+  const servingSize=parseFloat(document.getElementById('f-serving-size')?.value)||0;
+  // If serving size is provided, treat base macros as per-gram values scaled by serving size
+  // Otherwise just multiply base macros by servings count
+  const scale=servingSize>0?(servingSize/100*servings):servings;
+  const base=_baseMacros;
+  if(!base.cal&&!base.pro&&!base.carb&&!base.fat)return;
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=Math.round(v*10)/10;};
+  set('f-cal',base.cal*scale);
+  set('f-pro',base.pro*scale);
+  set('f-carb',base.carb*scale);
+  set('f-fat',base.fat*scale);
+}
+
+
 // ============================================================
 let allWorkoutLogs=[];
 
