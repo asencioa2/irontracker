@@ -2581,6 +2581,7 @@ async function lookupBarcode(barcode){
     document.getElementById('f-carb').value=food.carbs;
     document.getElementById('f-fat').value=food.fat;
     _baseMacros={cal:food.cal,pro:food.protein,carb:food.carbs,fat:food.fat};
+    document.getElementById('f-servings').value=1;
 
     // If there's a warning about per-100g values, highlight it
     if(food.warning){
@@ -3836,30 +3837,37 @@ function loadCustomSplits(){
 
 // ── Serving size / multiplier for food modal ──────────────────────────────
 let _baseMacros={cal:0,pro:0,carb:0,fat:0};
+let _updatingMacros=false; // prevent feedback loop
 
 function storeBaseServingMacros(){
-  // Called when user types directly into a macro field — store as the 1-serving base
+  // Only store when user is directly typing — not when updateServingMacros is writing
+  if(_updatingMacros)return;
   _baseMacros={
     cal:parseFloat(document.getElementById('f-cal')?.value)||0,
     pro:parseFloat(document.getElementById('f-pro')?.value)||0,
     carb:parseFloat(document.getElementById('f-carb')?.value)||0,
     fat:parseFloat(document.getElementById('f-fat')?.value)||0,
   };
+  // Reset servings to 1 when user manually edits macros
+  const servEl=document.getElementById('f-servings');
+  if(servEl)servEl.value=1;
 }
 
 function updateServingMacros(){
   const servings=parseFloat(document.getElementById('f-servings')?.value)||1;
   const servingSize=parseFloat(document.getElementById('f-serving-size')?.value)||0;
-  // If serving size is provided, treat base macros as per-gram values scaled by serving size
-  // Otherwise just multiply base macros by servings count
-  const scale=servingSize>0?(servingSize/100*servings):servings;
   const base=_baseMacros;
+  // Nothing to scale if base is empty
   if(!base.cal&&!base.pro&&!base.carb&&!base.fat)return;
+  // Scale = just servings count (serving size field is informational / for barcode use)
+  const scale=servings;
+  _updatingMacros=true;
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=Math.round(v*10)/10;};
   set('f-cal',base.cal*scale);
   set('f-pro',base.pro*scale);
   set('f-carb',base.carb*scale);
   set('f-fat',base.fat*scale);
+  _updatingMacros=false;
 }
 
 
@@ -3954,11 +3962,12 @@ async function searchFood(){
 }
 
 function selectSearchedFood(food){
-  // Pre-fill manual entry with searched food
   const f=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v;};
   f('f-name',food.name);f('f-cal',food.cal);f('f-pro',food.pro);f('f-carb',food.carb);f('f-fat',food.fat);
+  _baseMacros={cal:food.cal,pro:food.pro,carb:food.carb,fat:food.fat};
+  document.getElementById('f-servings').value=1;
   switchFoodTab('manual');
-  toast('Food selected — review and add');
+  toast('Food selected — adjust servings to scale macros');
 }
 
 // ============================================================
