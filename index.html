@@ -268,6 +268,15 @@
 
   <div class="day-strip" id="workout-day-strip"></div>
   <div id="workout-content"></div>
+
+  <!-- CARDIO LOG -->
+  <div class="card mt-20" id="cardio-section">
+    <div class="section-hd" style="margin-bottom:14px">
+      <div class="section-title">🏃 Cardio</div>
+      <button class="btn btn-ghost btn-sm" onclick="addCardioEntry()">+ Add cardio</button>
+    </div>
+    <div id="cardio-entries" style="font-size:13px;color:var(--text3)">No cardio logged today.</div>
+  </div>
 </div>
 
 <!-- NUTRITION -->
@@ -349,6 +358,7 @@
   <div style="display:flex;gap:6px;margin-bottom:20px">
     <button class="food-tab-btn active" id="social-tab-feed" onclick="switchSocialTab('feed')">🏋️ Feed</button>
     <button class="food-tab-btn" id="social-tab-live" onclick="switchSocialTab('live')">🔴 Live</button>
+    <button class="food-tab-btn" id="social-tab-leaderboard" onclick="switchSocialTab('leaderboard')">🏆 Leaderboard</button>
     <button class="food-tab-btn" id="social-tab-friends" onclick="switchSocialTab('friends')">👥 Friends</button>
   </div>
 
@@ -360,6 +370,15 @@
   </div>
 
   <!-- LIVE TAB -->
+  <div id="social-leaderboard-tab" style="display:none">
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" id="lb-week-btn" onclick="loadLeaderboard('week')" style="border-color:var(--accent);color:var(--accent)">This week</button>
+      <button class="btn btn-ghost btn-sm" id="lb-month-btn" onclick="loadLeaderboard('month')">This month</button>
+      <button class="btn btn-ghost btn-sm" id="lb-alltime-btn" onclick="loadLeaderboard('alltime')">All time</button>
+    </div>
+    <div id="leaderboard-content"><div style="color:var(--text3);font-size:13px">Loading...</div></div>
+  </div>
+
   <div id="social-live-tab" style="display:none">
     <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Friends currently training right now</div>
     <div id="social-live-content">
@@ -654,6 +673,40 @@
   </div>
 
   <div class="card mt-20">
+    <div class="section-title" style="margin-bottom:12px">🔔 Push notifications</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Get notified directly on this device — no email needed.</div>
+
+    <!-- Permission status / enable button -->
+    <div id="notif-permission-banner" style="display:none;padding:12px;border-radius:var(--radius);margin-bottom:16px;background:var(--amber-dim);border:1px solid rgba(232,148,74,0.3)">
+      <div style="font-size:13px;font-weight:600;color:var(--amber);margin-bottom:6px">⚠️ Notifications are blocked</div>
+      <div style="font-size:12px;color:var(--text2)">To receive push notifications, reset notification permissions for this site in your browser settings.</div>
+    </div>
+    <div id="notif-enable-banner" style="margin-bottom:16px">
+      <button class="btn btn-primary" id="notif-enable-btn" onclick="requestPushPermission()" style="width:100%;justify-content:center">
+        🔔 Enable push notifications on this device
+      </button>
+      <div id="notif-enabled-status" style="display:none;font-size:13px;color:var(--accent);padding:10px 0">✓ Push notifications enabled on this device</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px" id="notif-toggles" style="display:none">
+      <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">Alert me when a friend starts a workout</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Requires the friend to have broadcasting enabled</div>
+        </div>
+        <input type="checkbox" id="notif-friend-workout" style="width:18px;height:18px;padding:0;background:none;border:none;box-shadow:none;accent-color:var(--accent);flex-shrink:0" onchange="saveNotificationSettings()">
+      </label>
+      <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">Let my friends know when I start</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Sends a push notification to friends who have alerts on</div>
+        </div>
+        <input type="checkbox" id="notif-broadcast-workout" style="width:18px;height:18px;padding:0;background:none;border:none;box-shadow:none;accent-color:var(--accent);flex-shrink:0" onchange="saveNotificationSettings()">
+      </label>
+    </div>
+  </div>
+
+  <div class="card mt-20">
     <div class="section-title" style="margin-bottom:16px">Account</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Signed in as <span id="settings-email" style="color:var(--accent);font-family:var(--mono)"></span></div>
     <button class="btn btn-danger" onclick="signOut()">Sign out</button>
@@ -788,6 +841,20 @@
         <div class="form-group"><label>Carbs (g)</label><input type="number" id="f-carb" placeholder="0" oninput="storeBaseServingMacros()"></div>
         <div class="form-group"><label>Fat (g)</label><input type="number" id="f-fat" placeholder="0" oninput="storeBaseServingMacros()"></div>
       </div>
+      </div>
+      <div style="background:var(--blue-dim);border:1px solid rgba(77,143,212,0.25);border-radius:var(--radius);padding:12px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.07em">💧 Water content</span>
+          <label style="display:flex;align-items:center;gap:6px;margin-bottom:0;text-transform:none;letter-spacing:0;font-size:12px;color:var(--text2);cursor:pointer;font-weight:400">
+            <input type="checkbox" id="f-is-liquid" style="width:auto;padding:0;background:none;border:none;box-shadow:none" onchange="toggleLiquidEstimate()"> This is a drink/liquid
+          </label>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" id="f-water-ml" placeholder="0" style="width:90px" min="0" oninput="updateWaterOzPreview()">
+          <span style="font-size:13px;color:var(--text2)">ml</span>
+          <span style="font-size:12px;color:var(--blue);font-family:var(--mono);font-weight:700" id="f-water-oz-preview"></span>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:6px">Auto-filled from barcode or food search. Will be added to your daily water intake.</div>
       </div>
       <button class="btn btn-primary btn-full" onclick="addFood()">Add entry</button>
     </div>
@@ -1412,6 +1479,8 @@ function showPage(id){
   else if(id==='settings')initSettingsPage();
   else if(id==='social'){ensureUsername();switchSocialTab('feed');startLivePoll();markNotificationsRead();}
   else if(id==='history')initHistoryPage();
+  else if(id==='workout')loadCardioForToday();
+  else if(id==='settings'){initSettingsPage();loadNotificationSettings();}
   if(id!=='social')stopLivePoll();
 }
 
@@ -2216,7 +2285,8 @@ async function openPRModal(){
   const{data:prs}=await sb.from('personal_records').select('*').eq('user_id',currentUser.id).order('exercise');
   const content=document.getElementById('pr-modal-content');
   if(!prs?.length){content.innerHTML='<div class="text-muted fs-13">No PRs tracked yet.</div>';}
-  else{content.innerHTML=`<table class="table"><thead><tr><th>Exercise</th><th>Weight</th><th>Reps</th><th>Est. 1RM</th><th>Date</th></tr></thead><tbody>${prs.map(p=>`<tr><td style="color:var(--text)">${p.exercise}</td><td class="text-accent text-mono">${p.weight_lbs} lbs</td><td class="text-mono">${p.reps}</td><td class="text-mono" style="color:var(--amber)">${p.estimated_orm||'\u2014'}</td><td style="color:var(--text3);font-size:12px">${p.date}</td></tr>`).join('')}</tbody></table>`;}
+  else{content.innerHTML=`<table class="table"><thead><tr><th>Exercise</th><th>Weight</th><th>Reps</th><th>Est. 1RM</th><th>Date</th><th></th></tr></thead><tbody>${prs.map(p=>`<tr><td style="color:var(--text)">${p.exercise}</td><td class="text-accent text-mono">${p.weight_lbs} lbs</td><td class="text-mono">${p.reps}</td><td class="text-mono" style="color:var(--amber)">${p.estimated_orm||'\u2014'}</td><td style="color:var(--text3);font-size:12px">${p.date}</td><td><button onclick="deletePR('${p.exercise.replace(/'/g,"\\'")}') " style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:2px 6px" title="Remove PR">×</button></td></tr>`).join('')}</tbody></table>`;
+  }
   openModal('pr-modal');
 }
 
@@ -2569,7 +2639,10 @@ async function lookupBarcode(barcode){
 
     barcodeFoundData=food;
     status.style.display='none';
-
+    // Pre-fill water field
+    const wml=document.getElementById('f-water-ml');
+    if(wml&&food.waterMl>0){wml.value=food.waterMl;updateWaterOzPreview();}
+    else if(wml){wml.value='';}
     document.getElementById('barcode-product-name').textContent=food.name;
     document.getElementById('barcode-product-macros').textContent=
       `${food.cal} kcal · ${food.protein}g protein · ${food.carbs}g carbs · ${food.fat}g fat`;
@@ -2670,11 +2743,12 @@ function copyInviteLink(){
 
 // ---- Social Tab Switching ----
 function switchSocialTab(tab){
-  ['feed','live','friends'].forEach(t=>{
+  ['feed','live','leaderboard','friends'].forEach(t=>{
     document.getElementById('social-'+t+'-tab').style.display=t===tab?'block':'none';
     document.getElementById('social-tab-'+t).classList.toggle('active',t===tab);
   });
   if(tab==='feed')loadSocialFeed();
+  if(tab==='leaderboard')loadLeaderboard(currentLbPeriod||'week');
   if(tab==='live')loadLiveFeed();
   if(tab==='friends'){loadFriendsList();loadPendingRequests();}
 }
@@ -3059,7 +3133,7 @@ async function loadFriendsList(){
 }
 
 // ---- Push Notifications ----
-const VAPID_PUBLIC_KEY='';  // Add your VAPID public key here
+// VAPID public key defined in notification settings section below
 
 async function requestPushPermission(){
   if(!('Notification' in window)||!('serviceWorker' in navigator))return;
@@ -3111,15 +3185,18 @@ async function openPostDetail(postId){
 }
 
 async function sendWorkoutNotificationToFriends(friends,type){
-  // Lightweight: just store a notification record in Supabase
-  // A service worker or Vercel cron would process these in production
-  // For now we rely on feed polling to surface activity
   try{
+    // Check if user has broadcasting enabled before doing anything
+    if(type==='started'){
+      const{data:myProfile}=await sb.from('profiles').select('notif_broadcast_workout').eq('id',currentUser.id).single();
+      if(!myProfile?.notif_broadcast_workout)return;
+    }
     if(!friends)return;
     const notifBody=type==='started'
-      ?`${userProfile.name||'Your friend'} just started a workout!`
+      ?`${userProfile.name||'Your friend'} just started a workout! Open IronTracker to follow along live.`
       :`${userProfile.name||'Your friend'} finished their workout!`;
     const friendIds=friends.map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id);
+    // Insert in-app notification records
     await sb.from('workout_notifications').insert(friendIds.map(id=>({
       to_user_id:id,from_user_id:currentUser.id,
       from_name:userProfile.name||'Athlete',
@@ -3127,8 +3204,25 @@ async function sendWorkoutNotificationToFriends(friends,type){
       type,body:notifBody,
       created_at:new Date().toISOString(),read:false
     })));
-    // Update feed badge for recipients (they'll see it next time they open the app)
-  }catch(e){console.warn('Notification insert failed:',e);}
+    // Send push notifications to friends who have alerts enabled
+    if(type==='started'&&friendIds.length>0){
+      const{data:friendProfiles}=await sb.from('profiles').select('id,notif_friend_workout').in('id',friendIds);
+      const pushRecipients=(friendProfiles||[]).filter(p=>p.notif_friend_workout).map(p=>p.id);
+      if(pushRecipients.length>0){
+        fetch('/api/notify-workout',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            fromName:userProfile.name||'Athlete',
+            fromUsername:userProfile.username||'',
+            toUserIds:pushRecipients,
+            type,
+            message:notifBody,
+          }),
+        }).catch(()=>{});
+      }
+    }
+  }catch(e){console.warn('Notification error:',e);}
 }
 
 async function checkNotifications(){
@@ -3840,6 +3934,29 @@ function loadCustomSplits(){
 }
 
 // ── Serving size / multiplier for food modal ──────────────────────────────
+function updateWaterOzPreview(){
+  const ml=parseFloat(document.getElementById('f-water-ml')?.value)||0;
+  const prev=document.getElementById('f-water-oz-preview');
+  if(!prev)return;
+  if(ml>0){prev.textContent='= ~'+Math.round(ml/29.5735)+' oz';prev.style.color='var(--blue)';}
+  else{prev.textContent='';}
+}
+
+function toggleLiquidEstimate(){
+  const isLiq=document.getElementById('f-is-liquid')?.checked;
+  if(!isLiq){const wml=document.getElementById('f-water-ml');if(wml)wml.value='';updateWaterOzPreview();return;}
+  const sizeG=parseFloat(document.getElementById('f-serving-size')?.value)||0;
+  const servings=parseFloat(document.getElementById('f-servings')?.value)||1;
+  if(sizeG>0){
+    const est=Math.round(sizeG*servings*0.9);
+    const wml=document.getElementById('f-water-ml');if(wml)wml.value=est;
+    updateWaterOzPreview();
+    toast('Estimated '+est+'ml water from serving size — adjust if needed');
+  }else{
+    toast('Enter a serving size (g/ml) above to auto-estimate water content');
+  }
+}
+
 let _baseMacros={cal:0,pro:0,carb:0,fat:0};
 let _updatingMacros=false; // prevent feedback loop
 
@@ -3956,10 +4073,11 @@ async function searchFood(){
       const pro=Math.round((n['proteins_100g']||0)*scale*10)/10;
       const carb=Math.round((n['carbohydrates_100g']||0)*scale*10)/10;
       const fat=Math.round((n['fat_100g']||0)*scale*10)/10;
+      const waterMl=Math.round((n['water_100g']||0)*scale);
       const serving=p.serving_size||(servingG?servingG+'g':null);
-      return `<div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;transition:border-color 0.15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'" onclick="selectSearchedFood(${JSON.stringify({name:p.product_name,cal,pro,carb,fat,serving}).replace(/"/g,'&quot;')})">
+      return `<div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;transition:border-color 0.15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'" onclick="selectSearchedFood(${JSON.stringify({name:p.product_name,cal,pro,carb,fat,waterMl,serving}).replace(/"/g,'&quot;')})">
         <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">${p.product_name}${p.brands?` <span style="font-weight:400;color:var(--text3)">(${p.brands})</span>`:''}</div>
-        <div style="font-size:12px;color:var(--text2)">${cal} kcal · ${pro}g protein · ${carb}g carbs · ${fat}g fat${serving?' · per '+serving:''}</div>
+        <div style="font-size:12px;color:var(--text2)">${cal} kcal · ${pro}g protein · ${carb}g carbs · ${fat}g fat${serving?' · per '+serving:''}${waterMl>0?' · 💧 ~'+Math.round(waterMl/29.5735)+'oz water':''}</div>
       </div>`;
     }).join('');
   }catch(e){if(status)status.textContent='Search failed — check your connection';}
@@ -3970,8 +4088,11 @@ function selectSearchedFood(food){
   f('f-name',food.name);f('f-cal',food.cal);f('f-pro',food.pro);f('f-carb',food.carb);f('f-fat',food.fat);
   _baseMacros={cal:food.cal,pro:food.pro,carb:food.carb,fat:food.fat};
   document.getElementById('f-servings').value=1;
+  const wml=document.getElementById('f-water-ml');if(wml)wml.value=food.waterMl||'';
+  updateWaterOzPreview();
   switchFoodTab('manual');
-  toast('Food selected — adjust servings to scale macros');
+  const note=food.waterMl>0?' + 💧 ~'+Math.round(food.waterMl/29.5735)+'oz water':'';
+  toast('Food selected'+note);
 }
 
 // ============================================================
@@ -4106,6 +4227,251 @@ function checkRestDaySuggestion(logs){
   }
   sugg.style.display=consecutive>=4?'block':'none';
   if(consecutive>=4)sugg.textContent=`😴 You've trained ${consecutive} days straight — a rest day will help you recover and come back stronger`;
+}
+
+// ============================================================
+// CARDIO LOGGING
+// ============================================================
+let cardioEntries = [];
+
+const CARDIO_TYPES = ['Running','Cycling','Walking','Rowing','Jump Rope','Swimming','Elliptical','Stair Climber','HIIT','Other'];
+
+function addCardioEntry(){
+  const modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:24px;width:380px;max-width:95vw">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:700">🏃 Log cardio</div>
+      <button onclick="this.closest('.cardio-modal-wrap').remove()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:18px;cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center">×</button>
+    </div>
+    <div class="form-group"><label>Type</label>
+      <select id="cardio-type">${CARDIO_TYPES.map(t=>`<option>${t}</option>`).join('')}</select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group"><label>Duration (min)</label><input type="number" id="cardio-duration" placeholder="30" min="1"></div>
+      <div class="form-group"><label>Distance (optional)</label><input type="text" id="cardio-distance" placeholder="3.1 mi"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group"><label>Calories burned</label><input type="number" id="cardio-calories" placeholder="est."></div>
+      <div class="form-group"><label>Avg heart rate</label><input type="number" id="cardio-hr" placeholder="bpm"></div>
+    </div>
+    <div class="form-group"><label>Notes</label><input type="text" id="cardio-notes" placeholder="e.g. easy pace, felt great"></div>
+    <button class="btn btn-primary btn-full" onclick="saveCardioEntry()">Save cardio</button>
+  </div>`;
+  modal.classList.add('cardio-modal-wrap');
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+}
+
+async function saveCardioEntry(){
+  const type=document.getElementById('cardio-type')?.value;
+  const duration=parseInt(document.getElementById('cardio-duration')?.value)||0;
+  if(!duration){toast('Enter a duration');return;}
+  const entry={
+    user_id:currentUser.id,
+    date:today(),
+    type,
+    duration_min:duration,
+    distance:document.getElementById('cardio-distance')?.value||null,
+    calories_burned:parseInt(document.getElementById('cardio-calories')?.value)||null,
+    avg_hr:parseInt(document.getElementById('cardio-hr')?.value)||null,
+    notes:document.getElementById('cardio-notes')?.value||null,
+  };
+  const{error}=await sb.from('cardio_logs').insert(entry);
+  if(error){toast('Error: '+error.message);return;}
+  document.querySelector('.cardio-modal-wrap')?.remove();
+  toast('🏃 '+type+' logged: '+duration+' min');
+  loadCardioForToday();
+}
+
+async function loadCardioForToday(){
+  const el=document.getElementById('cardio-entries');if(!el)return;
+  const{data}=await sb.from('cardio_logs').select('*').eq('user_id',currentUser.id).eq('date',today()).order('created_at',{ascending:false});
+  if(!data?.length){el.innerHTML='<div style="font-size:13px;color:var(--text3)">No cardio logged today.</div>';return;}
+  el.innerHTML=data.map(c=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${c.type} <span style="font-family:var(--mono);color:var(--accent)">${c.duration_min} min</span></div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">
+          ${c.distance?c.distance+' · ':''}${c.calories_burned?c.calories_burned+' kcal · ':''}${c.avg_hr?'♥ '+c.avg_hr+'bpm · ':''}${c.notes||''}
+        </div>
+      </div>
+      <button onclick="deleteCardioEntry('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;padding:4px 8px" title="Delete">×</button>
+    </div>`).join('');
+}
+
+async function deleteCardioEntry(id){
+  await sb.from('cardio_logs').delete().eq('id',id).eq('user_id',currentUser.id);
+  loadCardioForToday();
+  toast('Cardio entry removed');
+}
+
+// ============================================================
+// LEADERBOARD
+// ============================================================
+let currentLbPeriod='week';
+
+async function loadLeaderboard(period='week'){
+  currentLbPeriod=period;
+  // Update button styles
+  ['week','month','alltime'].forEach(p=>{
+    const btn=document.getElementById('lb-'+p+'-btn');
+    if(!btn)return;
+    btn.style.borderColor=p===period?'var(--accent)':'';
+    btn.style.color=p===period?'var(--accent)':'';
+  });
+  const el=document.getElementById('leaderboard-content');
+  if(!el)return;
+  el.innerHTML='<div style="color:var(--text3);font-size:13px">Loading...</div>';
+  // Get accepted friends
+  const{data:friendships}=await sb.from('friendships').select('requester_id,addressee_id').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`).eq('status','accepted');
+  const friendIds=(friendships||[]).map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id);
+  const allIds=[currentUser.id,...friendIds];
+  // Date range
+  const now=new Date();
+  let startDate='';
+  if(period==='week'){const d=new Date();d.setDate(d.getDate()-d.getDay());startDate=d.toISOString().split('T')[0];}
+  else if(period==='month'){startDate=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';}
+  // Fetch workout logs for all users in one query
+  let query=sb.from('workout_logs').select('user_id,volume,date,day_name,sets_data').in('user_id',allIds);
+  if(startDate)query=query.gte('date',startDate);
+  const{data:logs}=await query;
+  // Fetch profiles for names
+  const{data:profiles}=await sb.from('profiles').select('id,name').in('id',allIds);
+  const nameMap={};(profiles||[]).forEach(p=>nameMap[p.id]=p.name||'Athlete');
+  // Aggregate stats per user
+  const stats={};
+  allIds.forEach(id=>{stats[id]={id,name:nameMap[id]||'Athlete',isMe:id===currentUser.id,sessions:0,volume:0,sets:0,prs:0};});
+  (logs||[]).forEach(l=>{
+    if(!stats[l.user_id])return;
+    stats[l.user_id].sessions++;
+    stats[l.user_id].volume+=(l.volume||0);
+    stats[l.user_id].sets+=Object.values(l.sets_data||{}).reduce((t,ex)=>t+(ex?.sets?.length||0),0);
+  });
+  // Sort by volume
+  const ranked=Object.values(stats).sort((a,b)=>b.volume-a.volume);
+  const medals=['🥇','🥈','🥉'];
+  const periodLabel=period==='week'?'This week':period==='month'?'This month':'All time';
+  el.innerHTML=`
+    <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">${periodLabel} · ranked by total volume</div>
+    ${ranked.map((u,i)=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--radius);background:${u.isMe?'var(--accent-dim)':'var(--surface2)'};border:1px solid ${u.isMe?'var(--accent)':'var(--border)'};margin-bottom:8px">
+        <div style="font-size:22px;width:30px;text-align:center">${medals[i]||'#'+(i+1)}</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:700;color:${u.isMe?'var(--accent)':'var(--text)'}">${u.name}${u.isMe?' (you)':''}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${u.sessions} sessions · ${u.sets} sets</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:16px;font-weight:700;font-family:var(--mono);color:${u.isMe?'var(--accent)':'var(--text)'}">${u.volume>0?(u.volume/1000).toFixed(1)+'k':'0'}</div>
+          <div style="font-size:10px;color:var(--text3)">lbs volume</div>
+        </div>
+      </div>`).join('')}
+    ${ranked.length<2?'<div style="font-size:13px;color:var(--text3);margin-top:12px">Add friends to compete on the leaderboard!</div>':''}`;
+}
+
+// ============================================================
+// DELETE A PR
+// ============================================================
+async function deletePR(exercise){
+  if(!confirm('Delete PR for '+exercise+'?'))return;
+  const{error}=await sb.from('personal_records').delete().eq('user_id',currentUser.id).eq('exercise',exercise);
+  if(!error){toast('PR deleted for '+exercise);openPRModal();}
+  else toast('Error: '+error.message);
+}
+
+// ============================================================
+// NOTIFICATION SETTINGS
+// ============================================================
+// ============================================================
+// PUSH NOTIFICATIONS (Web Push API — 100% free)
+// ============================================================
+const VAPID_PUBLIC_KEY = 'BG6vwgDid9iVzoD99u6QjZEE9g3dSrGvvQGZhhcGqxzBQXx4P6UQCd3VQAeMBFElvcw6MNuhO3vh0pHR0dW9pGA';
+
+function urlBase64ToUint8Array(base64String){
+  const padding='='.repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const rawData=atob(base64);
+  const outputArray=new Uint8Array(rawData.length);
+  for(let i=0;i<rawData.length;i++)outputArray[i]=rawData.charCodeAt(i);
+  return outputArray;
+}
+
+async function loadNotificationSettings(){
+  const {data}=await sb.from('profiles').select('notif_friend_workout,notif_broadcast_workout').eq('id',currentUser.id).single();
+  if(data){
+    const f=(id,v)=>{const el=document.getElementById(id);if(el)el.checked=!!v;};
+    f('notif-friend-workout',data.notif_friend_workout);
+    f('notif-broadcast-workout',data.notif_broadcast_workout);
+  }
+  // Update UI based on current permission state
+  updateNotifPermissionUI();
+}
+
+function updateNotifPermissionUI(){
+  const perm='Notification' in window ? Notification.permission : 'unsupported';
+  const banner=document.getElementById('notif-permission-banner');
+  const enableBanner=document.getElementById('notif-enable-banner');
+  const enableBtn=document.getElementById('notif-enable-btn');
+  const enabledStatus=document.getElementById('notif-enabled-status');
+  const toggles=document.getElementById('notif-toggles');
+  if(!banner||!enableBanner)return;
+
+  if(perm==='granted'){
+    if(enableBtn)enableBtn.style.display='none';
+    if(enabledStatus)enabledStatus.style.display='block';
+    if(banner)banner.style.display='none';
+    if(toggles)toggles.style.display='flex';
+  } else if(perm==='denied'){
+    if(enableBanner)enableBanner.style.display='none';
+    if(banner)banner.style.display='block';
+    if(toggles)toggles.style.display='none';
+  } else {
+    // 'default' — not asked yet
+    if(enableBtn)enableBtn.style.display='block';
+    if(enabledStatus)enabledStatus.style.display='none';
+    if(banner)banner.style.display='none';
+    if(toggles)toggles.style.display='none';
+  }
+}
+
+async function requestPushPermission(){
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)){
+    toast('Push notifications not supported in this browser');return;
+  }
+  const perm=await Notification.requestPermission();
+  if(perm!=='granted'){toast('Notification permission denied');updateNotifPermissionUI();return;}
+  // Subscribe via service worker
+  const reg=await navigator.serviceWorker.ready;
+  let subscription;
+  try{
+    subscription=await reg.pushManager.subscribe({
+      userVisibleOnly:true,
+      applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+  }catch(e){toast('Could not create push subscription: '+e.message);return;}
+  // Store subscription in Supabase
+  const{error}=await sb.from('push_subscriptions').upsert({
+    user_id:currentUser.id,
+    subscription:JSON.stringify(subscription),
+    updated_at:new Date().toISOString(),
+  },{onConflict:'user_id'});
+  if(error){toast('Could not save subscription: '+error.message);return;}
+  toast('🔔 Push notifications enabled!');
+  updateNotifPermissionUI();
+  // Auto-enable the alert checkbox
+  const alertEl=document.getElementById('notif-friend-workout');
+  if(alertEl&&!alertEl.checked){alertEl.checked=true;saveNotificationSettings();}
+}
+
+async function saveNotificationSettings(){
+  const updates={
+    id:currentUser.id,
+    notif_friend_workout:document.getElementById('notif-friend-workout')?.checked||false,
+    notif_broadcast_workout:document.getElementById('notif-broadcast-workout')?.checked||false,
+  };
+  const{error}=await sb.from('profiles').upsert(updates);
+  if(!error)toast('Notification preferences saved');
+  else toast('Error: '+error.message);
 }
 
 document.addEventListener('DOMContentLoaded',()=>{

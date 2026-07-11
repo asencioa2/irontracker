@@ -73,9 +73,13 @@ export default async function handler(req, res) {
       }
 
       if (cal > 0 || protein > 0) {
+        // Water content — OFF stores water_100g, scale to serving
+        const waterScale = servingG > 0 ? servingG / 100 : 1;
+        const waterMl = Math.round((n['water_100g'] || 0) * waterScale);
         return res.status(200).json({
           name, cal, protein, carbs, fat,
           serving: servingLabel,
+          waterMl: waterMl || 0,
           source: 'Open Food Facts',
           ...(warning ? { warning } : {})
         });
@@ -126,9 +130,12 @@ export default async function handler(req, res) {
         : null;
 
       if (cal > 0 || protein > 0) {
+        const waterN = getById(1051) || getByName('water');
+        const waterMl = Math.round(waterN?.value || 0);
         return res.status(200).json({
           name: food.description || food.brandOwner || 'Unknown',
           cal, protein, carbs, fat, serving,
+          waterMl: waterMl || 0,
           source: 'USDA FoodData Central'
         });
       }
