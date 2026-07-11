@@ -4336,12 +4336,21 @@ async function loadLeaderboard(period='week'){
   let query=sb.from('workout_logs').select('user_id,volume,date,day_name,sets_data').in('user_id',allIds);
   if(startDate)query=query.gte('date',startDate);
   const{data:logs}=await query;
-  // Fetch profiles for names
-  const{data:profiles}=await sb.from('profiles').select('id,name').in('id',allIds);
-  const nameMap={};(profiles||[]).forEach(p=>nameMap[p.id]=p.name||'Athlete');
+  // Fetch profiles AND usernames for display names — usernames table is more reliably populated
+  const [profilesRes, usernamesRes] = await Promise.all([
+    sb.from('profiles').select('id,name').in('id',allIds),
+    sb.from('usernames').select('user_id,display_name,username').in('user_id',allIds),
+  ]);
+  const nameMap={};
+  // Start with profile names
+  (profilesRes.data||[]).forEach(p=>{ if(p.name) nameMap[p.id]=p.name; });
+  // Override/fill with display_name from usernames table (more reliable)
+  (usernamesRes.data||[]).forEach(u=>{ if(u.display_name) nameMap[u.user_id]=u.display_name; });
+  // My own name from userProfile as final fallback for current user
+  if(!nameMap[currentUser.id]) nameMap[currentUser.id]=userProfile.name||userProfile.display_name||currentUser.email?.split('@')[0]||'You';
   // Aggregate stats per user
   const stats={};
-  allIds.forEach(id=>{stats[id]={id,name:nameMap[id]||'Athlete',isMe:id===currentUser.id,sessions:0,volume:0,sets:0,prs:0};});
+  allIds.forEach(id=>{stats[id]={id,name:nameMap[id]||'User '+id.slice(0,4),isMe:id===currentUser.id,sessions:0,volume:0,sets:0,prs:0};});
   (logs||[]).forEach(l=>{
     if(!stats[l.user_id])return;
     stats[l.user_id].sessions++;
