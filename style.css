@@ -322,6 +322,10 @@ canvas{width:100%!important;}
   .table-scroll .table{min-width:480px;}
 }
 
+/* LEADERBOARD CATEGORY BUTTONS */
+.lb-cat-btn{padding:6px 12px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--font);cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text3);white-space:nowrap;transition:all 0.15s;text-transform:uppercase;letter-spacing:0.04em;touch-action:manipulation;}
+.lb-cat-btn.active,.lb-cat-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+
 /* UTILS */
 .mt-8{margin-top:8px;}.mt-16{margin-top:16px;}.mt-20{margin-top:20px;}
 .flex{display:flex;}.items-center{align-items:center;}.justify-between{justify-content:justify-between;}

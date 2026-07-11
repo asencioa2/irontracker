@@ -369,12 +369,22 @@
     </div>
   </div>
 
-  <!-- LIVE TAB -->
+  <!-- LEADERBOARD TAB -->
   <div id="social-leaderboard-tab" style="display:none">
-    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <!-- Period picker -->
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
       <button class="btn btn-ghost btn-sm" id="lb-week-btn" onclick="loadLeaderboard('week')" style="border-color:var(--accent);color:var(--accent)">This week</button>
       <button class="btn btn-ghost btn-sm" id="lb-month-btn" onclick="loadLeaderboard('month')">This month</button>
       <button class="btn btn-ghost btn-sm" id="lb-alltime-btn" onclick="loadLeaderboard('alltime')">All time</button>
+    </div>
+    <!-- Category picker -->
+    <div style="display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px">
+      <button class="lb-cat-btn active" id="lb-cat-volume" onclick="setLbCategory('volume')">🏋️ Volume</button>
+      <button class="lb-cat-btn" id="lb-cat-sessions" onclick="setLbCategory('sessions')">📅 Sessions</button>
+      <button class="lb-cat-btn" id="lb-cat-sets" onclick="setLbCategory('sets')">🔢 Total sets</button>
+      <button class="lb-cat-btn" id="lb-cat-streak" onclick="setLbCategory('streak')">🔥 Streak</button>
+      <button class="lb-cat-btn" id="lb-cat-prs" onclick="setLbCategory('prs')">🏆 PRs</button>
+      <button class="lb-cat-btn" id="lb-cat-cardio" onclick="setLbCategory('cardio')">🏃 Cardio</button>
     </div>
     <div id="leaderboard-content"><div style="color:var(--text3);font-size:13px">Loading...</div></div>
   </div>
@@ -4311,72 +4321,125 @@ async function deleteCardioEntry(id){
 // ============================================================
 let currentLbPeriod='week';
 
+let currentLbCategory='volume';
+
+function setLbCategory(cat){
+  currentLbCategory=cat;
+  document.querySelectorAll('.lb-cat-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('lb-cat-'+cat);
+  if(btn)btn.classList.add('active');
+  renderLeaderboard();
+}
+
 async function loadLeaderboard(period='week'){
   currentLbPeriod=period;
-  // Update button styles
   ['week','month','alltime'].forEach(p=>{
-    const btn=document.getElementById('lb-'+p+'-btn');
-    if(!btn)return;
+    const btn=document.getElementById('lb-'+p+'-btn');if(!btn)return;
     btn.style.borderColor=p===period?'var(--accent)':'';
     btn.style.color=p===period?'var(--accent)':'';
   });
   const el=document.getElementById('leaderboard-content');
   if(!el)return;
   el.innerHTML='<div style="color:var(--text3);font-size:13px">Loading...</div>';
-  // Get accepted friends
   const{data:friendships}=await sb.from('friendships').select('requester_id,addressee_id').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`).eq('status','accepted');
   const friendIds=(friendships||[]).map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id);
   const allIds=[currentUser.id,...friendIds];
-  // Date range
   const now=new Date();
   let startDate='';
   if(period==='week'){const d=new Date();d.setDate(d.getDate()-d.getDay());startDate=d.toISOString().split('T')[0];}
   else if(period==='month'){startDate=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';}
-  // Fetch workout logs for all users in one query
-  let query=sb.from('workout_logs').select('user_id,volume,date,day_name,sets_data').in('user_id',allIds);
-  if(startDate)query=query.gte('date',startDate);
-  const{data:logs}=await query;
-  // Fetch profiles AND usernames for display names — usernames table is more reliably populated
-  const [profilesRes, usernamesRes] = await Promise.all([
+  // Parallel fetch everything
+  const makeQuery=(table,cols)=>{let q=sb.from(table).select(cols).in('user_id',allIds);if(startDate)q=q.gte('date',startDate);return q;};
+  const[logsRes,prsRes,cardioRes,profilesRes,usernamesRes]=await Promise.all([
+    makeQuery('workout_logs','user_id,volume,date,sets_data'),
+    makeQuery('personal_records','user_id,exercise'),
+    makeQuery('cardio_logs','user_id,duration_min,type'),
     sb.from('profiles').select('id,name').in('id',allIds),
-    sb.from('usernames').select('user_id,display_name,username').in('user_id',allIds),
+    sb.from('usernames').select('user_id,display_name').in('user_id',allIds),
   ]);
+  const logs=logsRes.data||[];
+  // Name map
   const nameMap={};
-  // Start with profile names
-  (profilesRes.data||[]).forEach(p=>{ if(p.name) nameMap[p.id]=p.name; });
-  // Override/fill with display_name from usernames table (more reliable)
-  (usernamesRes.data||[]).forEach(u=>{ if(u.display_name) nameMap[u.user_id]=u.display_name; });
-  // My own name from userProfile as final fallback for current user
-  if(!nameMap[currentUser.id]) nameMap[currentUser.id]=userProfile.name||userProfile.display_name||currentUser.email?.split('@')[0]||'You';
-  // Aggregate stats per user
+  (profilesRes.data||[]).forEach(p=>{if(p.name)nameMap[p.id]=p.name;});
+  (usernamesRes.data||[]).forEach(u=>{if(u.display_name)nameMap[u.user_id]=u.display_name;});
+  if(!nameMap[currentUser.id])nameMap[currentUser.id]=userProfile.name||userProfile.display_name||currentUser.email?.split('@')[0]||'You';
+  // Aggregate
   const stats={};
-  allIds.forEach(id=>{stats[id]={id,name:nameMap[id]||'User '+id.slice(0,4),isMe:id===currentUser.id,sessions:0,volume:0,sets:0,prs:0};});
-  (logs||[]).forEach(l=>{
+  allIds.forEach(id=>{stats[id]={id,name:nameMap[id]||'User '+id.slice(0,4),isMe:id===currentUser.id,sessions:0,volume:0,sets:0,prs:0,cardioMin:0,cardioSessions:0,streak:0};});
+  logs.forEach(l=>{
     if(!stats[l.user_id])return;
     stats[l.user_id].sessions++;
     stats[l.user_id].volume+=(l.volume||0);
     stats[l.user_id].sets+=Object.values(l.sets_data||{}).reduce((t,ex)=>t+(ex?.sets?.length||0),0);
   });
-  // Sort by volume
-  const ranked=Object.values(stats).sort((a,b)=>b.volume-a.volume);
+  (prsRes.data||[]).forEach(p=>{if(stats[p.user_id])stats[p.user_id].prs++;});
+  (cardioRes.data||[]).forEach(c=>{if(stats[c.user_id]){stats[c.user_id].cardioMin+=(c.duration_min||0);stats[c.user_id].cardioSessions++;}});
+  // Streak — needs full history
+  const allLogsForStreak=startDate?(await sb.from('workout_logs').select('user_id,date').in('user_id',allIds)).data||[]:logs;
+  allIds.forEach(id=>{
+    const dates=new Set(allLogsForStreak.filter(l=>l.user_id===id).map(l=>l.date));
+    let streak=0;const d=new Date();
+    for(let i=0;i<365;i++){
+      const ds=d.toISOString().split('T')[0];
+      if(dates.has(ds)){streak++;d.setDate(d.getDate()-1);}
+      else if(i===0){d.setDate(d.getDate()-1);}
+      else break;
+    }
+    if(stats[id])stats[id].streak=streak;
+  });
+  window._lbStats=stats;
+  window._lbPeriodLabel=period==='week'?'This week':period==='month'?'This month':'All time';
+  renderLeaderboard();
+}
+
+function renderLeaderboard(){
+  const el=document.getElementById('leaderboard-content');
+  if(!el||!window._lbStats)return;
+  const stats=window._lbStats;
+  const periodLabel=window._lbPeriodLabel||'';
+  const cat=currentLbCategory||'volume';
+  const CATEGORIES={
+    volume:{label:'Total volume',icon:'🏋️',sort:(a,b)=>b.volume-a.volume,
+      val:u=>u.volume>0?(u.volume/1000).toFixed(1)+'k lbs':'—',
+      sub:u=>`${u.sessions} sessions · ${u.sets} sets`},
+    sessions:{label:'Sessions',icon:'📅',sort:(a,b)=>b.sessions-a.sessions,
+      val:u=>u.sessions+' sessions',
+      sub:u=>u.volume>0?(u.volume/1000).toFixed(1)+'k lbs vol':''},
+    sets:{label:'Total sets',icon:'🔢',sort:(a,b)=>b.sets-a.sets,
+      val:u=>u.sets+' sets',
+      sub:u=>`${u.sessions} sessions`},
+    streak:{label:'Streak',icon:'🔥',sort:(a,b)=>b.streak-a.streak,
+      val:u=>(u.streak||0)+' days',
+      sub:u=>`${u.sessions} sessions this period`},
+    prs:{label:'Personal records',icon:'🏆',sort:(a,b)=>b.prs-a.prs,
+      val:u=>u.prs+' PR'+(u.prs!==1?'s':''),
+      sub:u=>`${u.sessions} sessions · ${u.sets} sets`},
+    cardio:{label:'Cardio',icon:'🏃',sort:(a,b)=>b.cardioMin-a.cardioMin,
+      val:u=>u.cardioMin>=60?Math.floor(u.cardioMin/60)+'h '+(u.cardioMin%60)+'m':u.cardioMin+'min',
+      sub:u=>`${u.cardioSessions} cardio session${u.cardioSessions!==1?'s':''}`},
+  };
+  const c=CATEGORIES[cat];
+  const ranked=Object.values(stats).sort(c.sort);
   const medals=['🥇','🥈','🥉'];
-  const periodLabel=period==='week'?'This week':period==='month'?'This month':'All time';
   el.innerHTML=`
-    <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">${periodLabel} · ranked by total volume</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em">${periodLabel} · ${c.icon} ${c.label}</div>
+      <div style="font-size:11px;color:var(--text3)">${ranked.length} athlete${ranked.length!==1?'s':''}</div>
+    </div>
     ${ranked.map((u,i)=>`
-      <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--radius);background:${u.isMe?'var(--accent-dim)':'var(--surface2)'};border:1px solid ${u.isMe?'var(--accent)':'var(--border)'};margin-bottom:8px">
-        <div style="font-size:22px;width:30px;text-align:center">${medals[i]||'#'+(i+1)}</div>
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:700;color:${u.isMe?'var(--accent)':'var(--text)'}">${u.name}${u.isMe?' (you)':''}</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:2px">${u.sessions} sessions · ${u.sets} sets</div>
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 12px;border-radius:var(--radius);background:${u.isMe?'var(--accent-dim)':i<3?'var(--surface2)':'var(--surface)'};border:1px solid ${u.isMe?'var(--accent)':i<3?'var(--border2)':'var(--border)'};margin-bottom:8px">
+        <div style="font-size:${i<3?24:14}px;width:32px;text-align:center;flex-shrink:0;font-family:${i>=3?'var(--mono)':''};color:var(--text3)">${medals[i]||('#'+(i+1))}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:700;color:${u.isMe?'var(--accent)':'var(--text)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name}${u.isMe?' <span style="font-size:11px;font-weight:400">(you)</span>':''}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${c.sub(u)}</div>
         </div>
-        <div style="text-align:right">
-          <div style="font-size:16px;font-weight:700;font-family:var(--mono);color:${u.isMe?'var(--accent)':'var(--text)'}">${u.volume>0?(u.volume/1000).toFixed(1)+'k':'0'}</div>
-          <div style="font-size:10px;color:var(--text3)">lbs volume</div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:16px;font-weight:800;font-family:var(--mono);color:${u.isMe?'var(--accent)':i===0?'var(--gold-light)':i<3?'var(--text)':'var(--text2)'}">${c.val(u)}</div>
         </div>
       </div>`).join('')}
-    ${ranked.length<2?'<div style="font-size:13px;color:var(--text3);margin-top:12px">Add friends to compete on the leaderboard!</div>':''}`;
+    ${ranked.length<2?'<div style="font-size:13px;color:var(--text3);margin-top:8px;padding:16px;background:var(--surface2);border-radius:var(--radius);text-align:center">Add friends to compete! Go to the <strong style="color:var(--text)">Friends</strong> tab to find people.</div>':''}`;
 }
+
 
 // ============================================================
 // DELETE A PR
