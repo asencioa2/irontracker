@@ -2758,7 +2758,7 @@ function switchSocialTab(tab){
     document.getElementById('social-tab-'+t).classList.toggle('active',t===tab);
   });
   if(tab==='feed')loadSocialFeed();
-  if(tab==='leaderboard')loadLeaderboard(currentLbPeriod||'week');
+  if(tab==='leaderboard'){window._lbStats=null;loadLeaderboard(currentLbPeriod||'week');}
   if(tab==='live')loadLiveFeed();
   if(tab==='friends'){loadFriendsList();loadPendingRequests();}
 }
@@ -4328,7 +4328,8 @@ function setLbCategory(cat){
   document.querySelectorAll('.lb-cat-btn').forEach(b=>b.classList.remove('active'));
   const btn=document.getElementById('lb-cat-'+cat);
   if(btn)btn.classList.add('active');
-  renderLeaderboard();
+  // Always re-fetch when switching category so names stay fresh
+  loadLeaderboard(currentLbPeriod||'week');
 }
 
 async function loadLeaderboard(period='week'){
