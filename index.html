@@ -2726,7 +2726,7 @@ async function ensureUsername(){
 async function saveUsername(){
   const raw=document.getElementById('username-input').value.trim().toLowerCase();
   if(!raw||!/^[a-z0-9_]{3,30}$/.test(raw)){toast('Username must be 3-30 chars, letters/numbers/underscores only');return;}
-  const{error}=await sb.from('usernames').insert({user_id:currentUser.id,username:raw,display_name:userProfile.name||'Athlete'});
+  const{error}=await sb.from('usernames').insert({user_id:currentUser.id,username:raw,display_name:userProfile.name||(currentUser.email?.split('@')[0])||raw});
   if(error){
     if(error.code==='23505')toast('That username is taken — try another');
     else toast('Error: '+error.message);
@@ -4355,13 +4355,18 @@ async function loadLeaderboard(period='week'){
     makeQuery('personal_records','user_id,exercise'),
     makeQuery('cardio_logs','user_id,duration_min,type'),
     sb.from('profiles').select('id,name').in('id',allIds),
-    sb.from('usernames').select('user_id,display_name').in('user_id',allIds),
+    sb.from('usernames').select('user_id,display_name,username').in('user_id',allIds),
   ]);
   const logs=logsRes.data||[];
   // Name map
   const nameMap={};
-  (profilesRes.data||[]).forEach(p=>{if(p.name)nameMap[p.id]=p.name;});
-  (usernamesRes.data||[]).forEach(u=>{if(u.display_name)nameMap[u.user_id]=u.display_name;});
+  (profilesRes.data||[]).forEach(p=>{if(p.name&&p.name!=='Athlete')nameMap[p.id]=p.name;});
+  (usernamesRes.data||[]).forEach(u=>{
+    // Prefer display_name if it's set and not the generic fallback
+    if(u.display_name&&u.display_name!=='Athlete')nameMap[u.user_id]=u.display_name;
+    // Fall back to @username if display_name is missing or generic
+    else if(u.username&&!nameMap[u.user_id])nameMap[u.user_id]='@'+u.username;
+  });
   if(!nameMap[currentUser.id])nameMap[currentUser.id]=userProfile.name||userProfile.display_name||currentUser.email?.split('@')[0]||'You';
   // Aggregate
   const stats={};
