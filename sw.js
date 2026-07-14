@@ -1,5 +1,5 @@
 // IronTracker Service Worker
-const CACHE_NAME = 'irontracker-v2';
+const CACHE_NAME = 'irontracker-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -21,10 +21,17 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => {
+        console.log('[SW] Deleting old cache:', k);
+        return caches.delete(k);
+      }))
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
+});
+
+// Tell all open tabs to reload when a new SW takes over
+self.addEventListener('message', event => {
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
 
 // Fetch — network-first for API, cache-first for static

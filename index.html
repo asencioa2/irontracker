@@ -4516,32 +4516,54 @@ function updateNotifPermissionUI(){
 }
 
 async function requestPushPermission(){
-  if(!('serviceWorker' in navigator)||!('PushManager' in window)){
-    toast('Push notifications not supported in this browser');return;
+  // Check basic support
+  if(!('Notification' in window)){
+    showNotifError('Push notifications are not supported in this browser. Try adding the app to your home screen first.');
+    return;
   }
-  const perm=await Notification.requestPermission();
-  if(perm!=='granted'){toast('Notification permission denied');updateNotifPermissionUI();return;}
-  // Subscribe via service worker
-  const reg=await navigator.serviceWorker.ready;
-  let subscription;
+  // iOS requires app to be installed as PWA (added to home screen)
+  // Check if running as standalone
+  const isStandalone=window.navigator.standalone||window.matchMedia('(display-mode: standalone)').matches;
+  if(!isStandalone&&/iPhone|iPad|iPod/.test(navigator.userAgent)){
+    showNotifError('To enable notifications on iPhone, first add IronTracker to your Home Screen, then open it from there and try again.');
+    return;
+  }
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)){
+    showNotifError('Push notifications are not fully supported in this browser. On iPhone, make sure you\'re using iOS 16.4+ and have added the app to your Home Screen.');
+    return;
+  }
   try{
-    subscription=await reg.pushManager.subscribe({
+    const perm=await Notification.requestPermission();
+    if(perm==='denied'){
+      showNotifError('Notifications blocked. Go to Settings → Safari → [IronTracker] → Notifications and allow them.');
+      updateNotifPermissionUI();return;
+    }
+    if(perm!=='granted'){toast('Notification permission not granted');updateNotifPermissionUI();return;}
+    // Subscribe via service worker
+    const reg=await navigator.serviceWorker.ready;
+    const subscription=await reg.pushManager.subscribe({
       userVisibleOnly:true,
       applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });
-  }catch(e){toast('Could not create push subscription: '+e.message);return;}
-  // Store subscription in Supabase
-  const{error}=await sb.from('push_subscriptions').upsert({
-    user_id:currentUser.id,
-    subscription:JSON.stringify(subscription),
-    updated_at:new Date().toISOString(),
-  },{onConflict:'user_id'});
-  if(error){toast('Could not save subscription: '+error.message);return;}
-  toast('🔔 Push notifications enabled!');
-  updateNotifPermissionUI();
-  // Auto-enable the alert checkbox
-  const alertEl=document.getElementById('notif-friend-workout');
-  if(alertEl&&!alertEl.checked){alertEl.checked=true;saveNotificationSettings();}
+    // Store subscription in Supabase
+    const{error}=await sb.from('push_subscriptions').upsert({
+      user_id:currentUser.id,
+      subscription:JSON.stringify(subscription),
+      updated_at:new Date().toISOString(),
+    },{onConflict:'user_id'});
+    if(error){toast('Could not save: '+error.message);return;}
+    toast('🔔 Push notifications enabled!');
+    updateNotifPermissionUI();
+    const alertEl=document.getElementById('notif-friend-workout');
+    if(alertEl&&!alertEl.checked){alertEl.checked=true;saveNotificationSettings();}
+  }catch(e){
+    showNotifError('Could not enable notifications: '+e.message);
+  }
+}
+
+function showNotifError(msg){
+  const banner=document.getElementById('notif-enable-banner');
+  if(banner)banner.innerHTML=`<div style="padding:12px;background:var(--amber-dim);border:1px solid rgba(232,148,74,0.4);border-radius:var(--radius);font-size:13px;color:var(--amber);line-height:1.5">${msg}</div>`;
 }
 
 async function saveNotificationSettings(){
@@ -4562,9 +4584,27 @@ document.addEventListener('DOMContentLoaded',()=>{
   // Register PWA service worker
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('/sw.js').then(reg=>{
-      console.log('SW registered:', reg.scope);
+      console.log('[IronTracker] SW registered:', reg.scope);
+      // When a new SW is waiting, activate it immediately
+      reg.addEventListener('updatefound',()=>{
+        const newWorker=reg.installing;
+        if(!newWorker)return;
+        newWorker.addEventListener('statechange',()=>{
+          if(newWorker.state==='installed'&&navigator.serviceWorker.controller){
+            // New version available — tell SW to take over, then reload
+            newWorker.postMessage('SKIP_WAITING');
+            navigator.serviceWorker.addEventListener('controllerchange',()=>{
+              window.location.reload();
+            },{once:true});
+          }
+        });
+      });
+      // Check for updates every time app comes to foreground
+      document.addEventListener('visibilitychange',()=>{
+        if(document.visibilityState==='visible')reg.update();
+      });
     }).catch(err=>{
-      console.warn('SW registration failed:', err);
+      console.warn('[IronTracker] SW registration failed:', err);
     });
   }
   // iOS Safari fix: prevent mobile nav touch events from going dead after idle
