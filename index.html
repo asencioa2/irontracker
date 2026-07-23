@@ -523,6 +523,16 @@
     </div>
   </div>
 
+  <!-- Muscle group focus -->
+  <div class="card mt-20">
+    <div class="section-hd" style="margin-bottom:14px">
+      <div class="section-title">🎯 Muscle group focus</div>
+      <button class="btn btn-primary btn-sm" onclick="openMuscleGroupEditor()">Edit focus</button>
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">The muscle groups your program currently prioritizes.</div>
+    <div id="muscle-focus-display" style="display:flex;flex-wrap:wrap;gap:6px"><div style="font-size:12px;color:var(--text3)">Loading...</div></div>
+  </div>
+
   <!-- Workout templates -->
   <div class="card" style="margin-bottom:20px">
     <div class="section-hd" style="margin-bottom:14px">
@@ -1024,6 +1034,7 @@
       </div>
       <div class="form-group"><input type="text" id="ex-db-search" placeholder="Search exercises..." oninput="renderExerciseDbList()"></div>
       <div id="ex-db-list" style="display:flex;flex-direction:column;gap:4px;max-height:240px;overflow-y:auto;margin-bottom:8px"></div>
+      <div id="ex-detail-panel" style="display:none"></div>
     </div>
 
     <div id="ex-tab-manual-content" style="display:none">
@@ -1043,6 +1054,69 @@
 
 <div class="modal-overlay" id="pr-modal">
   <div class="modal"><div class="modal-hd"><div class="modal-title">🏆 Personal records</div><button class="modal-close" onclick="closeModal('pr-modal')">×</button></div><div id="pr-modal-content"></div></div>
+</div>
+
+
+<!-- ONBOARDING MODAL -->
+<div class="modal-overlay" id="onboarding-modal" style="display:none;align-items:center;justify-content:center;z-index:500;background:rgba(0,0,0,0.92)">
+  <div class="modal" style="width:560px;max-height:90vh;overflow-y:auto">
+    <div style="text-align:center;padding:8px 0 20px">
+      <div style="font-size:32px;margin-bottom:8px">🏋️</div>
+      <div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:6px">Welcome to IronTracker!</div>
+      <div style="font-size:14px;color:var(--text2);line-height:1.6">Let's set up your program.<br>Pick your <strong style="color:var(--accent)">goal</strong> and <strong style="color:var(--accent)">muscle groups</strong> to focus on.</div>
+    </div>
+    <div id="ob-step-1">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px">What is your primary goal?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:24px">
+        <div class="ob-goal-card" onclick="selectGoal('build_muscle')" id="goal-build_muscle"><div style="font-size:28px;margin-bottom:8px">💪</div><div style="font-size:13px;font-weight:700;color:var(--text)">Build Muscle</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Hypertrophy & strength</div></div>
+        <div class="ob-goal-card" onclick="selectGoal('lose_fat')" id="goal-lose_fat"><div style="font-size:28px;margin-bottom:8px">🔥</div><div style="font-size:13px;font-weight:700;color:var(--text)">Lose Fat</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Cut & cardio focus</div></div>
+        <div class="ob-goal-card" onclick="selectGoal('get_strong')" id="goal-get_strong"><div style="font-size:28px;margin-bottom:8px">🏆</div><div style="font-size:13px;font-weight:700;color:var(--text)">Get Strong</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Powerlifting focus</div></div>
+        <div class="ob-goal-card" onclick="selectGoal('athletic')" id="goal-athletic"><div style="font-size:28px;margin-bottom:8px">⚡</div><div style="font-size:13px;font-weight:700;color:var(--text)">Athletic</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Speed, power, agility</div></div>
+        <div class="ob-goal-card" onclick="selectGoal('general')" id="goal-general"><div style="font-size:28px;margin-bottom:8px">✨</div><div style="font-size:13px;font-weight:700;color:var(--text)">General Fitness</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Overall health</div></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="obNextStep(2)" id="ob-goal-next" disabled>Continue →</button>
+    </div>
+    <div id="ob-step-2" style="display:none">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px">How many days per week can you train?</div>
+      <div style="display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap">
+        <div class="ob-days-card" onclick="selectDays(3)" id="days-3">3 days</div>
+        <div class="ob-days-card" onclick="selectDays(4)" id="days-4">4 days</div>
+        <div class="ob-days-card" onclick="selectDays(5)" id="days-5">5 days</div>
+        <div class="ob-days-card" onclick="selectDays(6)" id="days-6">6 days</div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="obNextStep(3)" id="ob-days-next" disabled>Continue →</button>
+    </div>
+    <div id="ob-step-3" style="display:none">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Which muscle groups do you want to prioritize?</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Select all that apply — we'll make sure your program hits these more often.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px" id="ob-muscle-grid"></div>
+      <button class="btn btn-primary btn-full" onclick="obNextStep(4)" id="ob-muscles-next" disabled>Build my program →</button>
+    </div>
+    <div id="ob-step-4" style="display:none">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:36px;margin-bottom:8px">✅</div>
+        <div style="font-size:18px;font-weight:800;color:var(--accent);margin-bottom:6px" id="ob-program-name">Your program is ready!</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.6" id="ob-program-desc"></div>
+      </div>
+      <div id="ob-program-preview" style="background:var(--surface2);border-radius:var(--radius-lg);padding:16px;border:1px solid var(--border);margin-bottom:20px"></div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:16px;text-align:center">You can change your split and muscle focus any time in Settings.</div>
+      <button class="btn btn-primary btn-full" onclick="finishOnboarding()" style="font-size:16px;padding:14px">Start training! 💪</button>
+    </div>
+    <div style="display:flex;justify-content:center;gap:8px;margin-top:20px">
+      <div class="ob-dot active" id="ob-dot-1"></div><div class="ob-dot" id="ob-dot-2"></div>
+      <div class="ob-dot" id="ob-dot-3"></div><div class="ob-dot" id="ob-dot-4"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MUSCLE GROUP EDITOR MODAL -->
+<div class="modal-overlay" id="muscle-group-modal">
+  <div class="modal" style="width:480px">
+    <div class="modal-hd"><div class="modal-title">🎯 Edit muscle group focus</div><button class="modal-close" onclick="closeModal('muscle-group-modal')">×</button></div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Update which muscle groups get prioritized in your program.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px" id="muscle-editor-grid"></div>
+    <button class="btn btn-primary btn-full" onclick="saveMuscleGroups()">Save muscle focus</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"><span class="toast-dot"></span><span id="toast-msg"></span></div>
@@ -1086,6 +1160,40 @@ const EXERCISE_DB_DEFAULT_TARGETS = {
   'Biceps':{sets:3,reps:'10-12'},'Triceps':{sets:3,reps:'10-12'},'Quads':{sets:4,reps:'8-12'},
   'Hamstrings/Glutes':{sets:3,reps:'10-12'},'Calves':{sets:4,reps:'15-20'},'Core/Abs':{sets:3,reps:'12-15'},
   'Full Body/HIIT':{sets:5,reps:'40 sec'}
+};
+
+
+// ============================================================
+// EXERCISE MEDIA — Wikimedia Commons photos (CC-BY-SA) + YouTube tutorials
+// ============================================================
+const EXERCISE_MEDIA = {
+  'Barbell Bench Press':{img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Benchpress.png/320px-Benchpress.png',imgCredit:'Wikimedia Commons',video:'https://www.youtube.com/watch?v=vcBig73ojpE',videoLabel:'How to Bench Press (ATHLEAN-X)',muscles:'Chest, Triceps, Front Deltoids',tips:['Retract your shoulder blades and keep them pinched','Bar should touch mid-chest, not neck','Drive feet into the floor for stability']},
+  'Incline Barbell Press':{img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Incline_bench_press.jpg/320px-Incline_bench_press.jpg',imgCredit:'Wikimedia Commons',video:'https://www.youtube.com/watch?v=DbFgADa2PL8',videoLabel:'Incline Bench Press (Jeff Nippard)',muscles:'Upper Chest, Triceps, Shoulders',tips:['Set bench to 30-45°','Keep elbows at 75° to avoid shoulder strain','Control the descent']},
+  'Deadlift':{img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Conventional_deadlift.png/320px-Conventional_deadlift.png',imgCredit:'Wikimedia Commons',video:'https://www.youtube.com/watch?v=op9kVnSso6Q',videoLabel:'How to Deadlift (ATHLEAN-X)',muscles:'Hamstrings, Glutes, Lower Back, Traps',tips:['Bar stays in contact with legs throughout','Hinge at hips first, then bend knees','Keep chest tall and core braced']},
+  'Barbell Row':{img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Bent_over_row.jpg/320px-Bent_over_row.jpg',imgCredit:'Wikimedia Commons',video:'https://www.youtube.com/watch?v=G8l_8chR5BE',videoLabel:'Barbell Row Technique (Jeff Nippard)',muscles:'Lats, Rhomboids, Biceps, Rear Delts',tips:['Hinge to ~45°, spine neutral','Pull bar to lower chest/upper abs','Squeeze shoulder blades at top']},
+  'Barbell Back Squat':{img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Squat_performance.jpg/320px-Squat_performance.jpg',imgCredit:'Wikimedia Commons',video:'https://www.youtube.com/watch?v=ultWZbUMPL8',videoLabel:'How to Squat (ATHLEAN-X)',muscles:'Quads, Glutes, Hamstrings, Core',tips:['Feet shoulder-width, toes slightly out','Break at hips and knees simultaneously','Keep chest tall, knees tracking over toes']},
+  'Barbell Overhead Press':{img:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/OHP.jpg/320px-OHP.jpg',imgCredit:'Wikimedia Commons',video:'https://www.youtube.com/watch?v=2yjwXTZQDDI',videoLabel:'Overhead Press Tutorial (Jeff Nippard)',muscles:'Shoulders, Triceps, Upper Chest',tips:['Grip just outside shoulder width','Bar starts at collarbone, push straight up','Squeeze glutes to protect lower back']},
+  'Pull-ups':{img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Kipping_Pull_Up.jpg/320px-Kipping_Pull_Up.jpg',imgCredit:'Wikimedia Commons',video:'https://www.youtube.com/watch?v=eGo4IYlbE5g',videoLabel:'How to Do Pull-Ups (ATHLEAN-X)',muscles:'Lats, Biceps, Rear Delts',tips:['Full dead hang at bottom','Pull elbows to hips, not just chin to bar','Avoid kipping for strength work']},
+  'Romanian Deadlift':{img:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Romanian_Deadlift.jpg/320px-Romanian_Deadlift.jpg',imgCredit:'Wikimedia Commons',video:'https://www.youtube.com/watch?v=JCXUYuzwNrM',videoLabel:'Romanian Deadlift Form (Jeff Nippard)',muscles:'Hamstrings, Glutes, Lower Back',tips:['Soft knee bend throughout, hinge at hips','Bar stays close to legs — no swinging','Feel the hamstring stretch at bottom']},
+  'Barbell Curl':{img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Barbell_curl.jpg/320px-Barbell_curl.jpg',imgCredit:'Wikimedia Commons',video:'https://www.youtube.com/watch?v=kwG2ipFRgfo',videoLabel:'Barbell Curl Technique (ATHLEAN-X)',muscles:'Biceps, Forearms',tips:['Elbows pinned to sides','Full extension at bottom, full squeeze at top','No swinging or body momentum']},
+  'Lateral Raises':{img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Lateral_raise.jpg/320px-Lateral_raise.jpg',imgCredit:'Wikimedia Commons',video:'https://www.youtube.com/watch?v=3VcKaXpzqRo',videoLabel:'Lateral Raise Tutorial (Jeff Nippard)',muscles:'Side Deltoids',tips:['Lead with elbows, not wrists','Slight forward lean for better activation','Control the descent — 2-3 seconds down']},
+  'Hip Thrust':{img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Barbell_hip_thrust.jpg/320px-Barbell_hip_thrust.jpg',imgCredit:'Wikimedia Commons',video:'https://www.youtube.com/watch?v=SEdqd1n0cvg',videoLabel:'Hip Thrust Form (ATHLEAN-X)',muscles:'Glutes, Hamstrings',tips:['Upper back on bench, bar across hips','Drive through heels, squeeze glutes at top','Full hip extension — do not hyperextend lower back']},
+  'Plank':{img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Front_plank.jpg/320px-Front_plank.jpg',imgCredit:'Wikimedia Commons',video:'https://www.youtube.com/watch?v=pSHjTRCQxIw',videoLabel:'Plank Variations (Jeff Nippard)',muscles:'Core, Shoulders, Glutes',tips:['Squeeze glutes and abs simultaneously','Hips level — do not sag or pike','Breathe steadily, do not hold breath']},
+  'Tricep Rope Pushdown':{img:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Tricep_pushdown.jpg/320px-Tricep_pushdown.jpg',imgCredit:'Wikimedia Commons',video:'https://www.youtube.com/watch?v=-nt-t7p9YzU',videoLabel:'Rope Pushdown Tutorial (ATHLEAN-X)',muscles:'Triceps',tips:['Elbows locked at sides throughout','Split rope apart at bottom for peak contraction','Control the return — do not let weight fly up']},
+  'Leg Press':{img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Leg_press.jpg/320px-Leg_press.jpg',imgCredit:'Wikimedia Commons',video:'https://www.youtube.com/watch?v=IZxyjW7MPJQ',videoLabel:'Leg Press Technique (Jeff Nippard)',muscles:'Quads, Glutes, Hamstrings',tips:['Do not lock knees out at top','Feet higher = more glute and hamstring','Keep lower back pressed into pad throughout']},
+};
+
+const EXERCISE_IMG_FALLBACK = {
+  'Chest':'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Benchpress.png/200px-Benchpress.png',
+  'Back':'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Bent_over_row.jpg/200px-Bent_over_row.jpg',
+  'Shoulders':'https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Lateral_raise.jpg/200px-Lateral_raise.jpg',
+  'Biceps':'https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Barbell_curl.jpg/200px-Barbell_curl.jpg',
+  'Triceps':'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Tricep_pushdown.jpg/200px-Tricep_pushdown.jpg',
+  'Quads':'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Squat_performance.jpg/200px-Squat_performance.jpg',
+  'Hamstrings/Glutes':'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Romanian_Deadlift.jpg/200px-Romanian_Deadlift.jpg',
+  'Calves':'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Benchpress.png/200px-Benchpress.png',
+  'Core/Abs':'https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Front_plank.jpg/200px-Front_plank.jpg',
+  'Full Body/HIIT':'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Squat_performance.jpg/200px-Squat_performance.jpg',
 };
 
 // SPLIT PRESETS — each is an ordered array of workout days (rotates regardless of weekday)
@@ -1397,6 +1505,7 @@ async function onSignedIn(user,showFullLoading){
   loadCustomSplits();
   await refreshDashboard();
   checkNotifications();
+  checkAndShowOnboarding();
   // Clear any stuck live status from a previous session that wasn't properly cleaned up
   setLiveStatus(false,'');
   // Handle invite link — if URL has ?invite=username auto-navigate to social+friends
@@ -1849,9 +1958,42 @@ function renderExerciseDbList(){
     });
   });
   if(!items.length){list.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px">No exercises match your search.</div>';return;}
-  list.innerHTML=items.map(({name,cat})=>`<div class="ex-db-item" onclick="addFromDatabase('${name.replace(/'/g,"\\'")}','${cat}')">
-    <span class="ex-db-item-name">${name}</span><span class="ex-db-item-add">+ Add</span>
-  </div>`).join('');
+  list.innerHTML=items.map(({name,cat})=>{
+    const media=EXERCISE_MEDIA[name]||null;
+    const img=media?.img||EXERCISE_IMG_FALLBACK[cat]||'';
+    return `<div class="ex-db-item" style="align-items:flex-start;padding:10px 12px;gap:10px" onclick="openExerciseDetail('${name.replace(/'/g,"\\'")}','${cat}')">
+      ${img?`<img src="${img}" alt="${name}" style="width:54px;height:54px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1px solid var(--border)" loading="lazy" onerror="this.style.display='none'">`:'<div style="width:54px;height:54px;border-radius:8px;background:var(--surface3);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px">🏋️</div>'}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${name}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${cat}${media?.muscles?' · <span style="color:var(--text2)">'+media.muscles+'</span>':''}</div>
+        ${media?.video?`<a href="${media.video}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="font-size:11px;color:#ff4444;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-top:4px">▶ ${media.videoLabel||'Watch tutorial'}</a>`:''}
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();addFromDatabase('${name.replace(/'/g,"\\'")}','${cat}')" style="flex-shrink:0;align-self:center;margin-left:4px">+ Add</button>
+    </div>`;
+  }).join('');
+}
+
+function openExerciseDetail(name,cat){
+  const media=EXERCISE_MEDIA[name]||null;
+  const img=media?.img||EXERCISE_IMG_FALLBACK[cat]||'';
+  const el=document.getElementById('ex-detail-panel');
+  if(!el)return;
+  el.style.display='block';
+  el.innerHTML=`
+    <div style="background:var(--surface2);border-radius:var(--radius-lg);border:1px solid var(--border);overflow:hidden;margin-bottom:12px">
+      ${img?`<img src="${img}" alt="${name}" style="width:100%;height:160px;object-fit:cover;display:block" loading="lazy" onerror="this.style.display='none'">`:''}
+      <div style="padding:14px">
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">${name}</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:10px">${cat}${media?.muscles?' · '+media.muscles:''}</div>
+        ${media?.tips?.length?`<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Form tips</div>
+        <ul style="margin:0;padding-left:16px;display:flex;flex-direction:column;gap:4px">${media.tips.map(t=>`<li style="font-size:12px;color:var(--text2)">${t}</li>`).join('')}</ul>`:''}
+        ${media?.video?`<a href="${media.video}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:8px;margin-top:12px;padding:10px 14px;background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);border-radius:var(--radius);text-decoration:none;color:#ff4444;font-size:13px;font-weight:600">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="#ff4444"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+          ▶ ${media.videoLabel||'Watch tutorial on YouTube'}</a>`:''}
+        ${media?.imgCredit?`<div style="font-size:10px;color:var(--text3);margin-top:8px">Photo: ${media.imgCredit} (CC-BY-SA)</div>`:''}
+        <button class="btn btn-primary btn-full" onclick="addFromDatabase('${name.replace(/'/g,"\\'")}','${cat}')" style="margin-top:12px">+ Add to workout</button>
+      </div>
+    </div>`;
 }
 
 async function addFromDatabase(name,category){
@@ -2544,6 +2686,10 @@ function initSettingsPage(){
   const btn=document.getElementById('theme-toggle-btn');
   if(btn)btn.textContent=isLight?'🌙 Dark mode':'☀️ Light mode';
   renderTemplatesList();
+  // Muscle group focus display
+  const mfd=document.getElementById('muscle-focus-display');
+  const mf=userProfile.muscle_focus||[];
+  if(mfd){mfd.innerHTML=mf.length?mf.map(m=>`<span style="padding:4px 10px;border-radius:20px;background:var(--accent-dim);border:1px solid var(--accent);font-size:12px;color:var(--accent);font-weight:600">${MUSCLE_ICONS[m]||''} ${m}</span>`).join(''):'<span style="font-size:12px;color:var(--text3)">No specific focus set — click Edit focus to add priorities.</span>';}
 }
 
 // ============================================================
@@ -4575,6 +4721,120 @@ async function saveNotificationSettings(){
   const{error}=await sb.from('profiles').upsert(updates);
   if(!error)toast('Notification preferences saved');
   else toast('Error: '+error.message);
+}
+
+// ============================================================
+// ONBOARDING + MUSCLE GROUP FOCUS
+// ============================================================
+let obGoal=null,obDays=null,obMuscles=[];
+
+const MUSCLE_ICONS={'Chest':'🫁','Back':'🔙','Shoulders':'🤸','Biceps':'💪','Triceps':'🦾','Quads':'🦵','Hamstrings/Glutes':'🍑','Calves':'🦴','Core/Abs':'⚡','Full Body/HIIT':'🔥'};
+
+const GOAL_SPLITS={
+  build_muscle:{label:'Iron24 5-Day Program',split:'iron24_5day',desc:'Classic hypertrophy split targeting each muscle group with maximum volume.'},
+  lose_fat:{label:'Full Body 3-Day Program',split:'full_body',desc:'High-frequency full body sessions combined with HIIT to maximize fat burn.'},
+  get_strong:{label:'Upper/Lower Split',split:'upper_lower',desc:'Powerlifting-focused split built around the big compound lifts.'},
+  athletic:{label:'Push/Pull/Legs',split:'ppl',desc:'Athletic performance split balancing strength, power, and conditioning.'},
+  general:{label:'Full Body 3-Day Program',split:'full_body',desc:'Balanced program hitting every muscle group three times per week.'},
+};
+
+function checkAndShowOnboarding(){
+  const seen=localStorage.getItem('it_onboarding_done_'+(currentUser?.id||''));
+  if(!seen)setTimeout(()=>{document.getElementById('onboarding-modal').style.display='flex';},600);
+}
+
+function selectGoal(goal){
+  obGoal=goal;
+  document.querySelectorAll('.ob-goal-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('goal-'+goal)?.classList.add('selected');
+  document.getElementById('ob-goal-next').disabled=false;
+}
+
+function selectDays(n){
+  obDays=n;
+  document.querySelectorAll('.ob-days-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('days-'+n)?.classList.add('selected');
+  document.getElementById('ob-days-next').disabled=false;
+}
+
+function obNextStep(step){
+  if(step===4&&obMuscles.length===0){toast('Select at least one muscle group');return;}
+  [1,2,3,4].forEach(s=>{
+    const el=document.getElementById('ob-step-'+s);if(el)el.style.display='none';
+    const dot=document.getElementById('ob-dot-'+s);if(dot)dot.classList.remove('active');
+  });
+  const stepEl=document.getElementById('ob-step-'+step);if(stepEl)stepEl.style.display='block';
+  const dotEl=document.getElementById('ob-dot-'+step);if(dotEl)dotEl.classList.add('active');
+  if(step===3){
+    const grid=document.getElementById('ob-muscle-grid');
+    if(grid)grid.innerHTML=Object.keys(MUSCLE_ICONS).map(m=>`
+      <div class="ob-muscle-chip ${obMuscles.includes(m)?'selected':''}" onclick="toggleObMuscle('${m}')" id="ob-muscle-${m.replace('/','_')}">
+        <span style="font-size:20px;display:block;margin-bottom:4px">${MUSCLE_ICONS[m]}</span>
+        <span style="font-size:12px">${m}</span>
+      </div>`).join('');
+  }
+  if(step===4)buildProgramPreview();
+}
+
+function toggleObMuscle(muscle){
+  const idx=obMuscles.indexOf(muscle);
+  if(idx>-1)obMuscles.splice(idx,1);else obMuscles.push(muscle);
+  const chip=document.getElementById('ob-muscle-'+muscle.replace('/','_'));
+  if(chip)chip.classList.toggle('selected',obMuscles.includes(muscle));
+  document.getElementById('ob-muscles-next').disabled=obMuscles.length===0;
+}
+
+function buildProgramPreview(){
+  const goalData=GOAL_SPLITS[obGoal]||GOAL_SPLITS.general;
+  document.getElementById('ob-program-name').textContent=goalData.label;
+  document.getElementById('ob-program-desc').textContent=goalData.desc+(obMuscles.length?' Prioritizing: '+obMuscles.join(', ')+'.':'');
+  const split=SPLIT_PRESETS[goalData.split]||SPLIT_PRESETS.iron24_5day;
+  const preview=document.getElementById('ob-program-preview');
+  if(preview){
+    preview.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Your ${split.days.length}-day program</div>`+
+      split.days.map((d,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#080c14;flex-shrink:0">${i+1}</div>
+        <div><div style="font-size:13px;font-weight:700;color:var(--text)">${d.name}</div><div style="font-size:11px;color:var(--text3)">${d.exercises.length} exercises</div></div>
+      </div>`).join('');
+  }
+}
+
+async function finishOnboarding(){
+  const goalData=GOAL_SPLITS[obGoal]||GOAL_SPLITS.general;
+  await sb.from('profiles').upsert({
+    id:currentUser.id,
+    active_split:goalData.split,
+    fitness_goal:obGoal,
+    muscle_focus:obMuscles,
+    training_days:obDays,
+  });
+  userProfile.active_split=goalData.split;
+  userProfile.fitness_goal=obGoal;
+  userProfile.muscle_focus=obMuscles;
+  localStorage.setItem('it_onboarding_done_'+currentUser.id,'1');
+  document.getElementById('onboarding-modal').style.display='none';
+  toast('🎉 Program set up! Let\'s get to work.');
+  refreshDashboard();
+}
+
+function openMuscleGroupEditor(){
+  const saved=userProfile.muscle_focus||[];
+  const grid=document.getElementById('muscle-editor-grid');
+  if(grid)grid.innerHTML=Object.keys(MUSCLE_ICONS).map(m=>`
+    <div class="ob-muscle-chip ${saved.includes(m)?'selected':''}" onclick="this.classList.toggle('selected')" data-muscle="${m}">
+      <span style="font-size:20px;display:block;margin-bottom:4px">${MUSCLE_ICONS[m]}</span>
+      <span style="font-size:12px">${m}</span>
+    </div>`).join('');
+  openModal('muscle-group-modal');
+}
+
+async function saveMuscleGroups(){
+  const selected=[...document.querySelectorAll('#muscle-editor-grid .ob-muscle-chip.selected')].map(el=>el.dataset.muscle).filter(Boolean);
+  await sb.from('profiles').upsert({id:currentUser.id,muscle_focus:selected});
+  userProfile.muscle_focus=selected;
+  closeModal('muscle-group-modal');
+  toast('Muscle focus updated'+(selected.length?': '+selected.join(', '):''));
+  initSettingsPage();
 }
 
 document.addEventListener('DOMContentLoaded',()=>{

@@ -334,6 +334,19 @@ canvas{width:100%!important;}
 .lb-cat-btn{padding:6px 12px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--font);cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text3);white-space:nowrap;transition:all 0.15s;text-transform:uppercase;letter-spacing:0.04em;touch-action:manipulation;}
 .lb-cat-btn.active,.lb-cat-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
 
+/* ONBOARDING */
+.ob-goal-card{padding:16px 12px;border-radius:var(--radius-lg);border:2px solid var(--border);background:var(--surface2);cursor:pointer;text-align:center;transition:all 0.15s;touch-action:manipulation;}
+.ob-goal-card:hover{border-color:var(--border2);}
+.ob-goal-card.selected{border-color:var(--accent);background:var(--accent-dim);}
+.ob-days-card{flex:1;min-width:70px;padding:14px 10px;border-radius:var(--radius);border:2px solid var(--border);background:var(--surface2);cursor:pointer;text-align:center;font-size:14px;font-weight:700;color:var(--text2);transition:all 0.15s;touch-action:manipulation;}
+.ob-days-card:hover{border-color:var(--border2);color:var(--text);}
+.ob-days-card.selected{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);}
+.ob-muscle-chip{padding:10px 14px;border-radius:var(--radius);border:2px solid var(--border);background:var(--surface2);cursor:pointer;text-align:center;font-size:13px;font-weight:600;color:var(--text2);transition:all 0.15s;touch-action:manipulation;}
+.ob-muscle-chip:hover{border-color:var(--border2);color:var(--text);}
+.ob-muscle-chip.selected{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);}
+.ob-dot{width:8px;height:8px;border-radius:50%;background:var(--surface3);}
+.ob-dot.active{background:var(--accent);}
+
 /* UTILS */
 .mt-8{margin-top:8px;}.mt-16{margin-top:16px;}.mt-20{margin-top:20px;}
 .flex{display:flex;}.items-center{align-items:center;}.justify-between{justify-content:justify-between;}
