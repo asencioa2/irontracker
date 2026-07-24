@@ -1594,24 +1594,19 @@ function showPage(id){
   var mb=document.querySelector('[data-mob="'+id+'"]');
   if(mb){mb.classList.add('active');mb.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}
   window.scrollTo({top:0,behavior:'smooth'});
-  // If leaving workout page without finishing, clear live status
-  const activePage=document.querySelector('.page.active');
-  const wasOnWorkout=activePage&&activePage.id==='page-workout';
-  if(id!=='workout'&&wasOnWorkout){
-    setLiveStatus(false,'');
-    skipRestTimer();
-  }
+  // Stop live poll unless going to social
+  if(id!=='social')stopLivePoll();
+  // If leaving workout, clear live status
+  if(id!=='workout'){setLiveStatus(false,'');skipRestTimer();}
+  // Page-specific init
   if(id==='dashboard')refreshDashboard();
-  else if(id==='workout')initWorkoutPageAndLive();
+  else if(id==='workout'){initWorkoutPageAndLive();loadCardioForToday();}
   else if(id==='progress'){initProgressPage();renderProgressPhotos();}
   else if(id==='nutrition')initNutritionPage();
   else if(id==='tools'){buildToolsCheckin();updateTimerDisplay();}
-  else if(id==='settings')initSettingsPage();
+  else if(id==='settings'){initSettingsPage();loadNotificationSettings();}
   else if(id==='social'){ensureUsername();switchSocialTab('feed');startLivePoll();markNotificationsRead();}
   else if(id==='history')initHistoryPage();
-  else if(id==='workout')loadCardioForToday();
-  else if(id==='settings'){initSettingsPage();loadNotificationSettings();}
-  if(id!=='social')stopLivePoll();
 }
 
 
