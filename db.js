@@ -377,3 +377,353 @@ function buildNameMap(profiles, usernames, currentUserId, currentUserProfile) {
   }
   return map;
 }
+
+// ── Custom exercises ──────────────────────────────────────────
+async function dbGetCustomExercises(userId, dow) {
+  const { data, error } = await sb.from('custom_exercises')
+    .select('*').eq('user_id', userId).eq('dow', dow).order('created_at');
+  if (error) { dbError(error, 'Load custom exercises'); return []; }
+  return data || [];
+}
+
+async function dbAddCustomExercise(dow, name, target) {
+  const user = requireUser();
+  const { error } = await sb.from('custom_exercises')
+    .insert({ user_id: user.id, dow, name, target });
+  if (error) { dbError(error, 'Add exercise'); return false; }
+  return true;
+}
+
+async function dbDeleteCustomExercise(id) {
+  const user = requireUser();
+  const { error } = await sb.from('custom_exercises')
+    .delete().eq('id', id).eq('user_id', user.id);
+  if (error) { dbError(error, 'Delete exercise'); return false; }
+  return true;
+}
+
+async function dbGetHiddenExercises(userId, splitKey, dow) {
+  const { data, error } = await sb.from('hidden_exercises')
+    .select('exercise_name').eq('user_id', userId).eq('split_key', splitKey).eq('dow', dow);
+  if (error) { dbError(error, 'Load hidden exercises'); return []; }
+  return data || [];
+}
+
+async function dbHideExercise(splitKey, dow, exerciseName) {
+  const user = requireUser();
+  const { error } = await sb.from('hidden_exercises')
+    .insert({ user_id: user.id, split_key: splitKey, dow, exercise_name: exerciseName });
+  if (error) { dbError(error, 'Hide exercise'); return false; }
+  return true;
+}
+
+async function dbUnhideExercise(splitKey, dow, exerciseName) {
+  const user = requireUser();
+  const { error } = await sb.from('hidden_exercises')
+    .delete().eq('user_id', user.id).eq('split_key', splitKey)
+    .eq('dow', dow).eq('exercise_name', exerciseName);
+  if (error) { dbError(error, 'Unhide exercise'); return false; }
+  return true;
+}
+
+// ── Workout logs ──────────────────────────────────────────────
+async function dbGetNextSplitIndex(userId, splitLength) {
+  const { data, error } = await sb.from('workout_logs')
+    .select('split_index,date').eq('user_id', userId)
+    .order('date', { ascending: false }).limit(1);
+  if (error) { dbError(error, 'Get split index'); return 0; }
+  if (!data?.length) return 0;
+  return ((data[0].split_index ?? -1) + 1) % splitLength;
+}
+
+async function dbGetRecentWorkoutSets(userId, limit = 10) {
+  const { data, error } = await sb.from('workout_logs')
+    .select('date,sets_data').eq('user_id', userId)
+    .order('date', { ascending: false }).limit(limit);
+  if (error) { dbError(error, 'Load recent workouts'); return []; }
+  return data || [];
+}
+
+async function dbInsertWorkoutLog(log) {
+  const user = requireUser();
+  const { data, error } = await sb.from('workout_logs')
+    .insert({ user_id: user.id, ...log }).select().single();
+  if (error) { dbError(error, 'Save workout'); return null; }
+  return data;
+}
+
+async function dbGetWorkoutLogsForStreak(userIds) {
+  const { data, error } = await sb.from('workout_logs')
+    .select('user_id,date').in('user_id', userIds);
+  if (error) { dbError(error, 'Load streak data'); return []; }
+  return data || [];
+}
+
+// ── Nutrition ─────────────────────────────────────────────────
+async function dbGetNutritionTotals(userId, date) {
+  const { data, error } = await sb.from('nutrition_logs')
+    .select('cal,protein,carbs,fat').eq('user_id', userId).eq('date', date);
+  if (error) { dbError(error, 'Load nutrition totals'); return []; }
+  return data || [];
+}
+
+async function dbInsertNutritionLog(log) {
+  const user = requireUser();
+  const { error } = await sb.from('nutrition_logs')
+    .insert({ user_id: user.id, ...log });
+  if (error) { dbError(error, 'Save food entry'); return false; }
+  return true;
+}
+
+async function dbDeleteNutritionEntry(id) {
+  const user = requireUser();
+  const { error } = await sb.from('nutrition_logs')
+    .delete().eq('id', id).eq('user_id', user.id);
+  if (error) { dbError(error, 'Delete food entry'); return false; }
+  return true;
+}
+
+// ── Weight & measurements ─────────────────────────────────────
+async function dbUpsertWeight(date, weightLbs, notes) {
+  const user = requireUser();
+  const { error } = await sb.from('weight_logs')
+    .upsert({ user_id: user.id, date, weight_lbs: weightLbs, notes },
+      { onConflict: 'user_id,date' });
+  if (error) { dbError(error, 'Save weight'); return false; }
+  return true;
+}
+
+async function dbInsertMeasurements(entry) {
+  const user = requireUser();
+  const { error } = await sb.from('measurements')
+    .insert({ user_id: user.id, date: new Date().toISOString().split('T')[0], ...entry });
+  if (error) { dbError(error, 'Save measurements'); return false; }
+  return true;
+}
+
+// ── Social ────────────────────────────────────────────────────
+async function dbInsertWorkoutPost(post) {
+  const user = requireUser();
+  const { error } = await sb.from('workout_posts')
+    .insert({ user_id: user.id, ...post });
+  if (error) { dbError(error, 'Publish workout'); return false; }
+  return true;
+}
+
+async function dbGetWorkoutPost(postId) {
+  const { data, error } = await sb.from('workout_posts')
+    .select('*').eq('id', postId).single();
+  if (error) { dbError(error, 'Load post'); return null; }
+  return data;
+}
+
+async function dbDeletePost(postId) {
+  const user = requireUser();
+  const { error } = await sb.from('workout_posts')
+    .delete().eq('id', postId).eq('user_id', user.id);
+  if (error) { dbError(error, 'Delete post'); return false; }
+  return true;
+}
+
+async function dbInsertComment(postId, body, displayName, username) {
+  const user = requireUser();
+  const { error } = await sb.from('post_comments').insert({
+    post_id: postId, user_id: user.id, body,
+    display_name: displayName, username,
+    created_at: new Date().toISOString(),
+  });
+  if (error) { dbError(error, 'Add comment'); return false; }
+  return true;
+}
+
+async function dbDeleteComment(id) {
+  const user = requireUser();
+  const { error } = await sb.from('post_comments')
+    .delete().eq('id', id).eq('user_id', user.id);
+  if (error) { dbError(error, 'Delete comment'); return false; }
+  return true;
+}
+
+async function dbGetLikes(postIds) {
+  const { data, error } = await sb.from('post_likes')
+    .select('*').in('post_id', postIds);
+  if (error) return [];
+  return data || [];
+}
+
+async function dbGetCommentCounts(postIds) {
+  const { data, error } = await sb.from('post_comments')
+    .select('post_id').in('post_id', postIds);
+  if (error) return [];
+  return data || [];
+}
+
+// ── Friends ───────────────────────────────────────────────────
+async function dbSendFriendRequest(toUserId) {
+  const user = requireUser();
+  const { error } = await sb.from('friendships')
+    .insert({ requester_id: user.id, addressee_id: toUserId, status: 'pending' });
+  if (error) { dbError(error, 'Send friend request'); return false; }
+  return true;
+}
+
+async function dbAcceptFriendRequest(id) {
+  const { error } = await sb.from('friendships')
+    .update({ status: 'accepted' }).eq('id', id);
+  if (error) { dbError(error, 'Accept request'); return false; }
+  return true;
+}
+
+async function dbDeclineFriendRequest(id) {
+  const { error } = await sb.from('friendships').delete().eq('id', id);
+  if (error) { dbError(error, 'Decline request'); return false; }
+  return true;
+}
+
+async function dbRemoveFriend(friendshipId) {
+  const { error } = await sb.from('friendships').delete().eq('id', friendshipId);
+  if (error) { dbError(error, 'Remove friend'); return false; }
+  return true;
+}
+
+async function dbSearchUsers(query) {
+  const { data, error } = await sb.from('usernames')
+    .select('user_id,username,display_name')
+    .ilike('username', `%${query}%`).limit(10);
+  if (error) { dbError(error, 'Search users'); return []; }
+  return data || [];
+}
+
+async function dbGetPendingRequests(userId) {
+  const { data, error } = await sb.from('friendships')
+    .select('id,requester_id').eq('addressee_id', userId).eq('status', 'pending');
+  if (error) { dbError(error, 'Load pending requests'); return []; }
+  return data || [];
+}
+
+async function dbGetFriendList() {
+  const user = requireUser();
+  const { data: friendships, error } = await sb.from('friendships')
+    .select('id,requester_id,addressee_id')
+    .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
+    .eq('status', 'accepted');
+  if (error) { dbError(error, 'Load friend list'); return []; }
+  return friendships || [];
+}
+
+async function dbCheckExistingFriendship(userId1, userId2) {
+  const { data } = await sb.from('friendships')
+    .select('*')
+    .or(`requester_id.eq.${userId1},addressee_id.eq.${userId1}`)
+    .or(`requester_id.eq.${userId2},addressee_id.eq.${userId2}`)
+    .limit(1);
+  return data?.[0] || null;
+}
+
+async function dbGetUsernames(userIds) {
+  const { data, error } = await sb.from('usernames')
+    .select('user_id,username,display_name').in('user_id', userIds);
+  if (error) { dbError(error, 'Load usernames'); return []; }
+  return data || [];
+}
+
+// ── Notifications ─────────────────────────────────────────────
+async function dbInsertNotifications(notifications) {
+  const { error } = await sb.from('workout_notifications').insert(notifications);
+  if (error) console.warn('[dbInsertNotifications]', error.message);
+  return !error;
+}
+
+async function dbGetFriendNotifPrefs(friendIds) {
+  const { data, error } = await sb.from('profiles')
+    .select('id,notif_friend_workout').in('id', friendIds);
+  if (error) { dbError(error, 'Load notification prefs'); return []; }
+  return data || [];
+}
+
+async function dbGetMyNotifPrefs() {
+  const user = requireUser();
+  const { data } = await sb.from('profiles')
+    .select('notif_broadcast_workout,notif_friend_workout')
+    .eq('id', user.id).single();
+  return data || {};
+}
+
+// ── Custom splits ─────────────────────────────────────────────
+async function dbSaveCustomSplits(splits) {
+  const user = requireUser();
+  const { error } = await sb.from('profiles')
+    .upsert({ id: user.id, custom_splits: splits });
+  if (error) { dbError(error, 'Save custom splits'); return false; }
+  return true;
+}
+
+// ── Tools ─────────────────────────────────────────────────────
+async function dbGetToolsData(userId) {
+  const [logsRes, weightsRes, prsRes] = await Promise.all([
+    sb.from('workout_logs').select('date,volume').eq('user_id', userId)
+      .order('date', { ascending: false }).limit(30),
+    sb.from('weight_logs').select('date,weight_lbs').eq('user_id', userId)
+      .order('date', { ascending: false }).limit(1),
+    sb.from('personal_records').select('exercise,weight_lbs,reps')
+      .eq('user_id', userId),
+  ]);
+  return {
+    logs: logsRes.data || [],
+    latestWeight: weightsRes.data?.[0] || null,
+    prs: prsRes.data || [],
+  };
+}
+
+async function dbUpsertPRRecord(exercise, weightLbs, reps, date, estimated1rm) {
+  const user = requireUser();
+  const { error } = await sb.from('personal_records').upsert({
+    user_id: user.id, exercise,
+    weight_lbs: weightLbs, reps, date,
+    estimated_orm: estimated1rm,
+  }, { onConflict: 'user_id,exercise' });
+  if (error) { dbError(error, 'Save PR'); return false; }
+  return true;
+}
+
+// ── History ───────────────────────────────────────────────────
+async function dbGetAllWorkoutLogs(userId) {
+  const { data, error } = await sb.from('workout_logs')
+    .select('*').eq('user_id', userId)
+    .order('date', { ascending: false });
+  if (error) { dbError(error, 'Load history'); return []; }
+  return data || [];
+}
+
+// ── Export ────────────────────────────────────────────────────
+async function dbExportWorkouts(userId) {
+  const { data, error } = await sb.from('workout_logs')
+    .select('*').eq('user_id', userId).order('date', { ascending: false });
+  if (error) { dbError(error, 'Export workouts'); return []; }
+  return data || [];
+}
+
+async function dbExportNutrition(userId) {
+  const { data, error } = await sb.from('nutrition_logs')
+    .select('*').eq('user_id', userId).order('date', { ascending: false });
+  if (error) { dbError(error, 'Export nutrition'); return []; }
+  return data || [];
+}
+
+async function dbExportWeights(userId) {
+  const { data, error } = await sb.from('weight_logs')
+    .select('*').eq('user_id', userId).order('date', { ascending: false });
+  if (error) { dbError(error, 'Export weights'); return []; }
+  return data || [];
+}
+
+// ── Monthly recap ─────────────────────────────────────────────
+async function dbGetMonthlyRecapData(userId, startDate) {
+  const [logsRes, prsRes] = await Promise.all([
+    sb.from('workout_logs').select('volume,day_name,date')
+      .eq('user_id', userId).gte('date', startDate),
+    sb.from('personal_records').select('exercise,weight_lbs,reps')
+      .eq('user_id', userId),
+  ]);
+  return { logs: logsRes.data || [], prs: prsRes.data || [] };
+}

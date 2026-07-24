@@ -354,3 +354,88 @@ canvas{width:100%!important;}
 .text-accent{color:var(--accent);}.text-mono{font-family:var(--mono);}
 .text-muted{color:var(--text2);}.text-dim{color:var(--text3);}
 .fs-13{font-size:13px;}.fs-12{font-size:12px;}
+
+/* ================================================================
+   COMPONENT CLASSES — replaces common inline styles
+   ================================================================ */
+
+/* Cards and containers */
+.card-accent{background:var(--accent-dim);border-color:var(--accent);}
+.card-sm{padding:Spacing.sm;}
+.card-danger{border-color:rgba(224,92,92,0.3);}
+
+/* Flex helpers */
+.flex{display:flex;}
+.flex-col{display:flex;flex-direction:column;}
+.flex-center{display:flex;align-items:center;justify-content:center;}
+.flex-between{display:flex;align-items:center;justify-content:space-between;}
+.flex-1{flex:1;}
+.gap-4{gap:4px;}
+.gap-8{gap:8px;}
+.gap-12{gap:12px;}
+.gap-16{gap:16px;}
+
+/* Text helpers */
+.text-accent{color:var(--accent);}
+.text-muted{color:var(--text3);}
+.text-bold{font-weight:700;}
+.text-xs{font-size:11px;}
+.text-sm{font-size:12px;}
+.text-base{font-size:13px;}
+.text-mono{font-family:var(--mono);}
+.text-upper{text-transform:uppercase;letter-spacing:0.07em;}
+.text-center{text-align:center;}
+.line-height-lg{line-height:1.6;}
+
+/* Badge/chip */
+.chip{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.chip-accent{background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);}
+.chip-muted{background:var(--surface2);color:var(--text3);border:1px solid var(--border);}
+.chip-amber{background:rgba(201,168,76,0.12);color:var(--amber);border:1px solid rgba(201,168,76,0.3);}
+.chip-red{background:rgba(224,92,92,0.12);color:var(--red);border:1px solid rgba(224,92,92,0.3);}
+
+/* Supplement card priority indicators */
+.priority-essential{border-color:rgba(201,168,76,0.3);}
+.priority-recommended{border-color:rgba(77,143,212,0.3);}
+.priority-optional{border-color:var(--border);}
+
+/* Stat row */
+.stat-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.stat-label{font-size:12px;color:var(--text3);flex:1;}
+.stat-value{font-size:13px;font-weight:700;color:var(--text);font-family:var(--mono);}
+
+/* Avatar circle (social) */
+.avatar-circle{width:36px;height:36px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--accent);flex-shrink:0;}
+.avatar-circle-sm{width:28px;height:28px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--accent);flex-shrink:0;}
+
+/* Live indicator */
+.live-dot{width:10px;height:10px;border-radius:50%;background:var(--red);flex-shrink:0;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+/* Exercise media */
+.ex-thumb{width:54px;height:54px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1px solid var(--border);}
+.ex-thumb-placeholder{width:54px;height:54px;border-radius:8px;background:var(--surface3);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;}
+
+/* Leaderboard rows */
+.lb-row{display:flex;align-items:center;gap:12px;padding:14px 12px;border-radius:var(--radius);background:var(--surface2);border:1px solid var(--border);margin-bottom:8px;}
+.lb-row-me{border-color:var(--accent);background:var(--accent-dim);}
+.lb-medal{font-size:22px;width:32px;text-align:center;flex-shrink:0;}
+.lb-rank{font-size:12px;font-family:var(--mono);color:var(--text3);width:32px;text-align:center;flex-shrink:0;}
+
+/* Onboarding */
+.ob-step-dot{width:8px;height:8px;border-radius:50%;background:var(--surface3);transition:background 0.2s;}
+.ob-step-dot.active{background:var(--accent);}
+
+/* Form helpers */
+.form-row{display:flex;gap:12px;}
+.form-row .form-group{flex:1;}
+
+/* Empty state */
+.empty-state{color:var(--text3);font-size:13px;text-align:center;padding:32px 16px;line-height:1.6;}
+
+/* Section label */
+.section-label-sm{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;}
+
+/* Error/warning banner */
+.banner-warn{padding:12px;background:var(--amber-dim);border:1px solid rgba(232,148,74,0.3);border-radius:var(--radius);font-size:13px;color:var(--amber);line-height:1.5;}
+.banner-info{padding:12px;background:var(--blue-dim);border:1px solid rgba(77,143,212,0.25);border-radius:var(--radius);font-size:13px;color:var(--blue);line-height:1.5;}

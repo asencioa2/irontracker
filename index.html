@@ -351,7 +351,7 @@
       <button class="lb-cat-btn" id="lb-cat-prs" onclick="setLbCategory('prs')">🏆 PRs</button>
       <button class="lb-cat-btn" id="lb-cat-cardio" onclick="setLbCategory('cardio')">🏃 Cardio</button>
     </div>
-    <div id="leaderboard-content"><div style="color:var(--text3);font-size:13px">Loading...</div></div>
+    <div id="leaderboard-content"><div class="text-muted text-base">Loading...</div></div>
   </div>
 
   <div id="social-live-tab" style="display:none">
@@ -393,7 +393,7 @@
     <div class="card">
       <div style="font-size:13px;font-weight:600;margin-bottom:10px">Your friends</div>
       <div id="friends-list-content">
-        <div style="color:var(--text3);font-size:13px">Add friends to see them here</div>
+        <div class="text-muted text-base">Add friends to see them here</div>
       </div>
     </div>
   </div>
@@ -514,7 +514,7 @@
   <!-- Appearance -->
   <div class="card" style="margin-bottom:20px">
     <div class="section-title" style="margin-bottom:16px">🎨 Appearance</div>
-    <div style="display:flex;align-items:center;justify-content:space-between">
+    <div class="flex-between">
       <div>
         <div style="font-size:14px;font-weight:600;color:var(--text)">Theme</div>
         <div style="font-size:12px;color:var(--text3);margin-top:2px">Switch between dark and light mode</div>
@@ -1291,7 +1291,7 @@ async function signUp(){
   btn.disabled=false;btn.textContent='Create account';
   if(error){err.textContent=error.message;err.style.display='block';}
   else if(data.user){
-    await sb.from('profiles').upsert({id:data.user.id,name});
+    await dbSaveProfile({id:data.user.id,name});
     toast('Account created! Check your email to confirm, then sign in.');
     switchAuthTab('login');
   }
@@ -1421,9 +1421,8 @@ async function saveSettings(){
     goal_weight:parseFloat(document.getElementById('set-goal-weight').value)||null,
     gym:document.getElementById('set-gym').value,
   };
-  const{error}=await sb.from('profiles').upsert(updates);
-  if(!error){Object.assign(userProfile,updates);toast('Profile saved');}
-  else toast('Error saving: '+error.message);
+  const ok=await dbSaveProfile(updates);
+  if(ok){Object.assign(userProfile,updates);toast('Profile saved');}
 }
 
 async function saveMacros(){
@@ -1434,8 +1433,8 @@ async function saveMacros(){
     macro_carb:parseInt(document.getElementById('set-carb').value)||210,
     macro_fat:parseInt(document.getElementById('set-fat').value)||65,
   };
-  const{error}=await sb.from('profiles').upsert(updates);
-  if(!error){Object.assign(userProfile,updates);updateMacroGoalLabels();toast('Macro targets saved');}
+  const ok=await dbSaveProfile(updates);
+  if(ok){Object.assign(userProfile,updates);updateMacroGoalLabels();toast('Macro targets saved');}
 }
 
 // ============================================================
@@ -1616,7 +1615,7 @@ function buildStreakGrid(logs){
 }
 
 async function loadNutritionTotals(dateStr){
-  const{data}=await sb.from('nutrition_logs').select('cal,protein,carbs,fat').eq('user_id',currentUser.id).eq('date',dateStr);
+  const data=await dbGetNutritionTotals(currentUser.id,dateStr);
   const t=(data||[]).reduce((a,m)=>({cal:a.cal+m.cal,pro:a.pro+m.protein,carb:a.carb+m.carbs,fat:a.fat+m.fat}),{cal:0,pro:0,carb:0,fat:0});
   const m={cal:userProfile.macro_cal||2200,pro:userProfile.macro_pro||190,carb:userProfile.macro_carb||210,fat:userProfile.macro_fat||65};
   const s=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
@@ -1729,7 +1728,7 @@ function openSplitPickerModal(){
   list.innerHTML=Object.entries(SPLIT_PRESETS).map(([key,split])=>{
     const isActive=key===activeKey;
     return `<div onclick="chooseSplit('${key}')" style="cursor:pointer;border:1px solid ${isActive?'var(--accent)':'var(--border)'};background:${isActive?'var(--accent-dim)':'var(--surface2)'};border-radius:var(--radius);padding:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="flex-between">
         <div style="font-size:14px;font-weight:700;color:${isActive?'var(--accent)':'var(--text)'}">${split.label}${isActive?' ✓':''}</div>
         <span class="badge badge-blue">${split.days.length}-Day</span>
       </div>
@@ -1740,7 +1739,7 @@ function openSplitPickerModal(){
 }
 
 async function chooseSplit(key){
-  await sb.from('profiles').upsert({id:currentUser.id,active_split:key});
+  await dbSaveProfile({active_split:key});
   userProfile.active_split=key;
   toast('Switched to: '+SPLIT_PRESETS[key].label);
   closeModal('split-picker-modal');
@@ -1753,8 +1752,7 @@ async function chooseSplit(key){
 // CUSTOM EXERCISES
 // ============================================================
 async function getCustomExercises(dow){
-  const{data}=await sb.from('custom_exercises').select('*').eq('user_id',currentUser.id).eq('dow',dow).order('created_at');
-  return data||[];
+  return await dbGetCustomExercises(currentUser.id,dow);
 }
 
 async function getHiddenPresetExercises(splitKey,dow){
@@ -1909,7 +1907,7 @@ async function addCustomExercise(){
 }
 
 async function deleteCustomExercise(id){
-  await sb.from('custom_exercises').delete().eq('id',id).eq('user_id',currentUser.id);
+  await dbDeleteCustomExercise(id);
   toast('Exercise removed');
   renderCustomExerciseList();
   renderWorkoutContent();
@@ -1924,9 +1922,10 @@ function getActiveSplit(){
 }
 
 async function getNextSplitIndex(){
-  const{data}=await sb.from('workout_logs').select('split_index,date').eq('user_id',currentUser.id).order('date',{ascending:false}).limit(1);
+  const _siData=await dbGetRecentWorkoutSets(currentUser.id,1);
   const split=getActiveSplit();
-  if(!data||!data.length||data[0].split_index==null)return 0;
+  if(!_siData?.length||_siData[0].split_index==null)return 0;
+  const data=_siData;
   const next=(data[0].split_index+1)%split.days.length;
   return next;
 }
@@ -2240,7 +2239,7 @@ async function checkPRFromSet(exIdx,exName){
 async function checkPR(i,exName){await checkPRFromSet(i,exName);}
 
 async function copyLastWorkout(){
-  const{data:logs}=await sb.from('workout_logs').select('sets_data,date').eq('user_id',currentUser.id).eq('split_index',currentWorkoutDay).neq('date',today()).order('date',{ascending:false}).limit(1);
+  const logs=await dbGetRecentWorkoutSets(currentUser.id,1);
   if(!logs||!logs.length){toast('No previous session found for this day yet');return;}
   const prevData=logs[0].sets_data||{};
   const prevDate=logs[0].date;
@@ -2305,7 +2304,7 @@ async function openPRModal(){
   prs.forEach(p=>{prsObj[p.exercise]={weight_lbs:p.weight_lbs,reps:p.reps,date:p.date,estimated_orm:p.estimated_orm};});
   const content=document.getElementById('pr-modal-content');
   if(!prs?.length){content.innerHTML='<div class="text-muted fs-13">No PRs tracked yet.</div>';}
-  else{content.innerHTML=`<table class="table"><thead><tr><th>Exercise</th><th>Weight</th><th>Reps</th><th>Est. 1RM</th><th>Date</th><th></th></tr></thead><tbody>${prs.map(p=>`<tr><td style="color:var(--text)">${p.exercise}</td><td class="text-accent text-mono">${p.weight_lbs} lbs</td><td class="text-mono">${p.reps}</td><td class="text-mono" style="color:var(--amber)">${p.estimated_orm||'\u2014'}</td><td style="color:var(--text3);font-size:12px">${p.date}</td><td><button onclick="deletePR('${p.exercise.replace(/'/g,"\\'")}') " style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:2px 6px" title="Remove PR">×</button></td></tr>`).join('')}</tbody></table>`;
+  else{content.innerHTML=`<table class="table"><thead><tr><th>Exercise</th><th>Weight</th><th>Reps</th><th>Est. 1RM</th><th>Date</th><th></th></tr></thead><tbody>${prs.map(p=>`<tr><td style="color:var(--text)">${p.exercise}</td><td class="text-accent text-mono">${p.weight_lbs} lbs</td><td class="text-mono">${p.reps}</td><td class="text-mono" style="color:var(--amber)">${p.estimated_orm||'\u2014'}</td><td class="text-muted text-sm">${p.date}</td><td><button onclick="deletePR('${p.exercise.replace(/'/g,"\\'")}') " style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:2px 6px" title="Remove PR">×</button></td></tr>`).join('')}</tbody></table>`;
   }
   openModal('pr-modal');
 }
@@ -2356,8 +2355,7 @@ async function loadNutritionForDate(){
   const dateStr=document.getElementById('nutr-date')?.value||today();
   const disp=document.getElementById('nutr-date-display');
   if(disp)disp.textContent=formatDateDisplay(dateStr);
-  const{data}=await sb.from('nutrition_logs').select('*').eq('user_id',currentUser.id).eq('date',dateStr);
-  const meals=data||[];
+  const meals=await dbGetNutritionLogs(currentUser.id,dateStr);
   const t=meals.reduce((a,m)=>({cal:a.cal+m.cal,pro:a.pro+m.protein,carb:a.carb+m.carbs,fat:a.fat+m.fat}),{cal:0,pro:0,carb:0,fat:0});
   const s=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   s('n-cal',t.cal);s('n-pro',t.pro+'g');s('n-carb',t.carb+'g');s('n-fat',t.fat+'g');
@@ -2374,7 +2372,7 @@ async function addFood(){
 }
 
 async function deleteFood(id){
-  await sb.from('nutrition_logs').delete().eq('id',id).eq('user_id',currentUser.id);
+  await dbDeleteNutritionEntry(id);
   await loadNutritionForDate();toast('Entry removed');
 }
 
@@ -2440,7 +2438,7 @@ function openWeightModal(){
 }
 async function saveWeight(){
   const w=parseFloat(document.getElementById('w-weight').value);const d=document.getElementById('w-date').value;if(!w||!d)return;
-  await sb.from('weight_logs').upsert({user_id:currentUser.id,date:d,weight_lbs:w,notes:document.getElementById('w-notes').value},{onConflict:'user_id,date'});
+  await dbUpsertWeight(d,w,document.getElementById('w-notes').value);
   closeModal('weight-modal');toast(`Weight logged: ${w} lbs`);initProgressPage();refreshDashboard();
 }
 
@@ -2452,7 +2450,7 @@ function openMeasureModal(){
 }
 async function saveMeasurements(){
   const entry={user_id:currentUser.id,date:document.getElementById('m-date').value,neck_in:parseFloat(document.getElementById('m-neck').value)||null,chest_in:parseFloat(document.getElementById('m-chest').value)||null,waist_in:parseFloat(document.getElementById('m-waist').value)||null,hips_in:parseFloat(document.getElementById('m-hips').value)||null,arms_in:parseFloat(document.getElementById('m-arms').value)||null,thighs_in:parseFloat(document.getElementById('m-thighs').value)||null};
-  await sb.from('measurements').insert(entry);closeModal('measure-modal');toast('Measurements saved');initProgressPage();
+  const ok=await dbInsertMeasurements(entry);if(ok){closeModal('measure-modal');toast('Measurements saved');}initProgressPage();
 }
 
 function saveProgressPhoto(event){
@@ -2783,7 +2781,7 @@ function switchSocialTab(tab){
 // ---- Publish workout post when finishing ----
 async function publishWorkoutPost(dayName,setsData,volume,notes){
   if(!userProfile.username)return; // no username = private
-  const{data:friends}=await sb.from('friendships').select('requester_id,addressee_id').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`).eq('status','accepted');
+  const friendIds=await dbGetFriendIds();const friends=friendIds;
   if(!friends||!friends.length)return;
   const exerciseCount=Object.keys(setsData||{}).length;
   const setCount=Object.values(setsData||{}).reduce((t,ex)=>t+(ex.sets?ex.sets.length:0),0);
@@ -2898,7 +2896,7 @@ function renderFeedPost(post,likes,commentCount){
         ${post.exercise_count?`<span><strong style="color:var(--text)">${post.exercise_count}</strong> exercises</span>`:''}
         ${vol?`<span><strong style="color:var(--accent)">${vol}</strong> volume</span>`:''}
       </div>
-      ${exercises.length?`<div style="font-size:12px;color:var(--text3)">${exercises.map(e=>`<span style="display:inline-block;background:var(--surface3);border-radius:4px;padding:2px 6px;margin:2px">${e}</span>`).join('')}${moreEx?`<span style="color:var(--text3);font-size:11px"> +${moreEx} more</span>`:''}</div>`:''}
+      ${exercises.length?`<div style="font-size:12px;color:var(--text3)">${exercises.map(e=>`<span style="display:inline-block;background:var(--surface3);border-radius:4px;padding:2px 6px;margin:2px">${e}</span>`).join('')}${moreEx?`<span class="text-muted text-xs"> +${moreEx} more</span>`:''}</div>`:''}
     </div>
 
     ${post.notes?`<div style="font-size:13px;color:var(--text2);font-style:italic;margin-bottom:12px">"${post.notes}"</div>`:''}
@@ -2959,7 +2957,7 @@ async function loadLiveFeed(){
     const totalSets=exEntries.reduce((t,[,ex])=>t+(ex?.sets?.length||0),0);
     const setsHtml=exEntries.length?`
       <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
-        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">${totalSets} sets so far</div>
+        <div class="section-label-sm">${totalSets} sets so far</div>
         ${exEntries.map(([name,ex])=>`
           <div style="margin-bottom:8px">
             <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px">${name}</div>
@@ -2999,7 +2997,7 @@ async function openComments(postId){
   const el=document.getElementById('comments-list');
   el.innerHTML='<div class="ai-spinner" style="margin:16px auto"></div>';
   openModal('comments-modal');
-  const{data:comments}=await sb.from('post_comments').select('*').eq('post_id',postId).order('created_at');
+  const comments=await dbGetPostComments(postId);
   if(!comments||!comments.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:16px;text-align:center">No comments yet. Be first!</div>';return;}
   el.innerHTML=comments.map(c=>`<div style="display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">
     <div style="width:34px;height:34px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0">${(c.display_name||'A')[0].toUpperCase()}</div>
@@ -3035,13 +3033,13 @@ async function submitComment(){
 }
 
 async function deleteComment(id){
-  await sb.from('post_comments').delete().eq('id',id).eq('user_id',currentUser.id);
+  await dbDeleteComment(id);
   openComments(currentPostId);
 }
 
 async function deletePost(id){
   if(!confirm('Delete this post?'))return;
-  await sb.from('workout_posts').delete().eq('id',id).eq('user_id',currentUser.id);
+  await dbDeletePost(id);
   loadSocialFeed();
 }
 
@@ -3050,14 +3048,14 @@ async function searchFriends(){
   const query=document.getElementById('friend-search-input').value.trim().toLowerCase();
   if(!query){toast('Enter a username or email to search');return;}
   const el=document.getElementById('friend-search-results');
-  el.innerHTML='<div style="color:var(--text3);font-size:13px">Searching...</div>';
+  el.innerHTML='<div class="text-muted text-base">Searching...</div>';
 
   // Search by username
   const{data:byUsername}=await sb.from('usernames').select('user_id,username,display_name').ilike('username','%'+query+'%').neq('user_id',currentUser.id).limit(5);
   const results=byUsername||[];
 
   if(!results.length){
-    el.innerHTML='<div style="color:var(--text3);font-size:13px">No users found for "'+query+'"</div>';
+    el.innerHTML='<div class="text-muted text-base">No users found for "'+query+'"</div>';
     return;
   }
 
@@ -3087,9 +3085,8 @@ async function searchFriends(){
 }
 
 async function sendFriendRequest(toUserId,toName){
-  const{error}=await sb.from('friendships').insert({requester_id:currentUser.id,addressee_id:toUserId,status:'pending'});
-  if(error&&error.code==='23505'){toast('Request already sent');return;}
-  if(error){toast('Error: '+error.message);return;}
+  const ok=await dbSendFriendRequest(toUserId);
+  if(!ok)return;
   toast('Friend request sent to '+toName);
   searchFriends();
 }
@@ -3120,7 +3117,7 @@ async function loadPendingRequests(){
 }
 
 async function acceptFriendRequest(id){
-  await sb.from('friendships').update({status:'accepted'}).eq('id',id);
+  await dbAcceptFriendRequest(id);
   toast('Friend request accepted!');
   loadPendingRequests();
   loadFriendsList();
@@ -3128,7 +3125,7 @@ async function acceptFriendRequest(id){
 }
 
 async function declineFriendRequest(id){
-  await sb.from('friendships').delete().eq('id',id);
+  await dbDeclineFriendRequest(id);
   toast('Request declined');
   loadPendingRequests();
 }
@@ -3137,7 +3134,7 @@ async function loadFriendsList(){
   const el=document.getElementById('friends-list-content');
   if(!el)return;
   const{data:friendships}=await sb.from('friendships').select('id,requester_id,addressee_id').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`).eq('status','accepted');
-  if(!friendships||!friendships.length){el.innerHTML='<div style="color:var(--text3);font-size:13px">No friends yet — search above to find people!</div>';return;}
+  if(!friendships||!friendships.length){el.innerHTML='<div class="text-muted text-base">No friends yet — search above to find people!</div>';return;}
   const ids=friendships.map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id);
   const{data:names}=await sb.from('usernames').select('user_id,username,display_name').in('user_id',ids);
   const friendshipMap={};
@@ -3154,7 +3151,7 @@ async function loadFriendsList(){
       </div>
     </div>
     <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red)" onclick="removeFriend('${friendshipMap[u.user_id]}','${u.display_name}')">Remove</button>
-  </div>`).join('') || '<div style="color:var(--text3);font-size:13px">No friends yet!</div>';
+  </div>`).join('') || '<div class="text-muted text-base">No friends yet!</div>';
 }
 
 // ---- Push Notifications ----
@@ -3169,14 +3166,14 @@ async function requestPushPermission(){
 
 async function removeFriend(friendshipId, displayName){
   if(!confirm('Remove '+displayName+' from your friends?'))return;
-  const{error}=await sb.from('friendships').delete().eq('id',friendshipId);
-  if(error){toast('Error: '+error.message);return;}
+  const ok=await dbRemoveFriend(friendshipId);
+  if(!ok)return;
   toast(displayName+' removed');
   loadFriendsList();
 }
 
 async function openPostDetail(postId){
-  const{data:post}=await sb.from('workout_posts').select('*').eq('id',postId).single();
+  const post=await dbGetWorkoutPost(postId);
   if(!post)return;
   if(!post.sets_data||!Object.keys(post.sets_data).length){toast('No detailed workout data for this post');return;}
   document.getElementById('past-workout-title').textContent=post.display_name+"'s "+post.day_name;
@@ -3222,7 +3219,7 @@ async function sendWorkoutNotificationToFriends(friends,type){
       :`${userProfile.name||'Your friend'} finished their workout!`;
     const friendIds=friends.map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id);
     // Insert in-app notification records
-    await sb.from('workout_notifications').insert(friendIds.map(id=>({
+    await dbInsertNotifications(friendIds.map(id=>({
       to_user_id:id,from_user_id:currentUser.id,
       from_name:userProfile.name||'Athlete',
       from_username:userProfile.username||'',
@@ -3333,7 +3330,7 @@ function calcPlates(){
   }
   displayEl.innerHTML=plates.length
     ?plates.map(p=>`<div style="background:${p.color};color:#fff;font-size:12px;font-weight:700;padding:6px 10px;border-radius:6px;font-family:var(--mono)">${p.w}</div>`).join('')
-    :'<span style="color:var(--text3);font-size:13px">Bar only</span>';
+    :'<span class="text-muted text-base">Bar only</span>';
   const grouped=plates.reduce((a,p)=>{a[p.w]=(a[p.w]||0)+1;return a;},{});
   totalEl.textContent='Per side: '+Object.entries(grouped).map(([w,n])=>`${n}×${w}`).join(' + ')+` = ${perSide} lbs`;
   resultEl.style.display='block';
@@ -3795,7 +3792,7 @@ function renderSupplementRecs(goal, activity, weight, proteinTarget, macroNote){
             <div style="font-size:11px;color:var(--text3);margin-top:2px">Evidence: ${s.evidence}</div>
           </div>
         </div>
-        <span style="padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${priorityColors[s.priority]}22;color:${priorityColors[s.priority]};border:1px solid ${priorityColors[s.priority]}55;white-space:nowrap">${priorityLabels[s.priority]}</span>
+        <span class="chip" style="background:${priorityColors[s.priority]}22;color:${priorityColors[s.priority]};border-color:${priorityColors[s.priority]}55">${priorityLabels[s.priority]}</span>
       </div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:10px;line-height:1.6">${s.benefit}</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px">
@@ -3937,7 +3934,7 @@ async function saveCustomSplit(){
   const existingCustom=userProfile.custom_splits||{};
   existingCustom[customKey]=customSplit;
 
-  const{error}=await sb.from('profiles').upsert({id:currentUser.id,custom_splits:existingCustom});
+  const{error}=await dbSaveCustomSplits(existingCustom) ? {error:null} : {error:'Save failed'};
   if(error){toast('Error saving: '+error.message);return;}
 
   userProfile.custom_splits=existingCustom;
@@ -4024,7 +4021,7 @@ let allWorkoutLogs=[];
 async function initHistoryPage(){
   const list=document.getElementById('history-list');
   if(list)list.innerHTML='<div style="color:var(--text3);font-size:13px;padding:20px 0">Loading history...</div>';
-  const{data:logs}=await sb.from('workout_logs').select('*').eq('user_id',currentUser.id).order('date',{ascending:false});
+  const logs=await dbGetAllWorkoutLogs(currentUser.id);
   allWorkoutLogs=logs||[];
   renderHistory(allWorkoutLogs);
 }
@@ -4048,7 +4045,7 @@ function renderHistory(logs){
     const d=new Date(log.date+'T12:00:00');
     const dateStr=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
     return `<div class="card" style="margin-bottom:12px;cursor:pointer" onclick="showPastWorkout(${JSON.stringify(log).replace(/"/g,'&quot;')})">
-      <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="flex-between">
         <div>
           <div style="font-size:15px;font-weight:700;color:var(--text)">${log.day_name||'Workout'}</div>
           <div style="font-size:12px;color:var(--text3);margin-top:3px">${dateStr}</div>
@@ -4303,7 +4300,7 @@ async function saveCardioEntry(){
 
 async function loadCardioForToday(){
   const el=document.getElementById('cardio-entries');if(!el)return;
-  const{data}=await sb.from('cardio_logs').select('*').eq('user_id',currentUser.id).eq('date',today()).order('created_at',{ascending:false});
+  const data=await dbGetCardioLogs(currentUser.id,today());
   if(!data?.length){el.innerHTML='<div style="font-size:13px;color:var(--text3)">No cardio logged today.</div>';return;}
   el.innerHTML=data.map(c=>`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
@@ -4347,7 +4344,7 @@ async function loadLeaderboard(period='week'){
   });
   const el=document.getElementById('leaderboard-content');
   if(!el)return;
-  el.innerHTML='<div style="color:var(--text3);font-size:13px">Loading...</div>';
+  el.innerHTML='<div class="text-muted text-base">Loading...</div>';
   const friendIds=await dbGetFriendIds();
   const allIds=[currentUser.id,...friendIds];
   const now=new Date();
@@ -4431,7 +4428,7 @@ function renderLeaderboard(){
           <div style="font-size:16px;font-weight:800;font-family:var(--mono);color:${u.isMe?'var(--accent)':i===0?'var(--gold-light)':i<3?'var(--text)':'var(--text2)'}">${c.val(u)}</div>
         </div>
       </div>`).join('')}
-    ${ranked.length<2?'<div style="font-size:13px;color:var(--text3);margin-top:8px;padding:16px;background:var(--surface2);border-radius:var(--radius);text-align:center">Add friends to compete! Go to the <strong style="color:var(--text)">Friends</strong> tab to find people.</div>':''}`;
+    ${ranked.length<2?'<div class="empty-state">Add friends to compete! Go to the <strong style="color:var(--text)">Friends</strong> tab to find people.</div>':''}`;
 }
 
 
@@ -4462,7 +4459,7 @@ function urlBase64ToUint8Array(base64String){
 }
 
 async function loadNotificationSettings(){
-  const {data}=await sb.from('profiles').select('notif_friend_workout,notif_broadcast_workout').eq('id',currentUser.id).single();
+  const data=await dbGetMyNotifPrefs();
   if(data){
     const f=(id,v)=>{const el=document.getElementById(id);if(el)el.checked=!!v;};
     f('notif-friend-workout',data.notif_friend_workout);
@@ -4530,12 +4527,8 @@ async function requestPushPermission(){
       applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });
     // Store subscription in Supabase
-    const{error}=await sb.from('push_subscriptions').upsert({
-      user_id:currentUser.id,
-      subscription:JSON.stringify(subscription),
-      updated_at:new Date().toISOString(),
-    },{onConflict:'user_id'});
-    if(error){toast('Could not save: '+error.message);return;}
+    const saved=await dbSavePushSubscription(subscription);
+    if(!saved)return;
     toast('🔔 Push notifications enabled!');
     updateNotifPermissionUI();
     const alertEl=document.getElementById('notif-friend-workout');
@@ -4679,7 +4672,7 @@ function showPlanSuggestion(planLabel, splitKey){
 }
 
 async function applySuggestedPlan(splitKey){
-  await sb.from('profiles').upsert({id:currentUser.id,active_split:splitKey});
+  await dbSaveProfile({active_split:splitKey});
   userProfile.active_split=splitKey;
   document.getElementById('plan-suggestion-banner')?.remove();
   toast('✅ Program switched!');
