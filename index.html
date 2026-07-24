@@ -1098,9 +1098,10 @@
         <div style="font-size:18px;font-weight:800;color:var(--accent);margin-bottom:6px" id="ob-program-name">Your program is ready!</div>
         <div style="font-size:13px;color:var(--text2);line-height:1.6" id="ob-program-desc"></div>
       </div>
-      <div id="ob-program-preview" style="background:var(--surface2);border-radius:var(--radius-lg);padding:16px;border:1px solid var(--border);margin-bottom:20px"></div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:16px;text-align:center">We'll suggest a program based on your goal — you can switch to it or keep what you have.</div>
-      <button class="btn btn-primary btn-full" onclick="finishOnboarding()" style="font-size:16px;padding:14px">Finish setup 💪</button>
+      <div id="ob-program-preview" style="background:var(--surface2);border-radius:var(--radius-lg);padding:16px;border:1px solid var(--border);margin-bottom:16px"></div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:16px;text-align:center;line-height:1.5">💡 This is just a suggestion based on your goal.<br>Your current program won't change unless you choose to switch.</div>
+      <button class="btn btn-primary btn-full" onclick="finishOnboarding(true)" style="font-size:15px;padding:13px;margin-bottom:10px">Switch to this program</button>
+      <button class="btn btn-ghost btn-full" onclick="finishOnboarding(false)" style="font-size:14px;padding:11px">Nevermind, keep my current program</button>
     </div>
     <div style="display:flex;justify-content:center;gap:8px;margin-top:20px">
       <div class="ob-dot active" id="ob-dot-1"></div><div class="ob-dot" id="ob-dot-2"></div>
@@ -4739,8 +4740,8 @@ const MUSCLE_ICONS={'Chest':'🫁','Back':'🔙','Shoulders':'🤸','Biceps':'�
 
 const GOAL_SPLITS={
   build_muscle:{label:'Iron24 5-Day Program',split:'iron24_5day',desc:'Classic hypertrophy split targeting each muscle group with maximum volume.'},
-  lose_fat:{label:'Push/Pull/Legs',split:'ppl',desc:'High-frequency PPL split — great for burning calories while maintaining muscle.'},
-  get_strong:{label:'Iron24 5-Day Program',split:'iron24_5day',desc:'Compound-heavy program built around progressive overload on the big lifts.'},
+  lose_fat:{label:'Iron24 5-Day Program',split:'iron24_5day',desc:'Strength training preserves muscle while you cut. Combine with cardio for best results.'},
+  get_strong:{label:'Upper/Lower Split',split:'upper_lower',desc:'Powerlifting-focused split built around heavy compound movements.'},
   athletic:{label:'Push/Pull/Legs',split:'ppl',desc:'PPL balances pushing, pulling, and leg work for well-rounded athletic performance.'},
   general:{label:'Push/Pull/Legs',split:'ppl',desc:'Balanced program hitting every muscle group with consistent frequency.'},
 };
@@ -4812,31 +4813,27 @@ function buildProgramPreview(){
   }
 }
 
-async function finishOnboarding(){
+async function finishOnboarding(switchPlan){
   if(!obGoal){toast('Please select a goal first');obNextStep(1);return;}
   if(!obDays){toast('Please select training days');obNextStep(2);return;}
   if(!obMuscles.length){toast('Please select at least one muscle group');obNextStep(3);return;}
   const goalData=GOAL_SPLITS[obGoal]||GOAL_SPLITS.general;
-  // Save goal + muscle focus only — never auto-switch their split
-  await sb.from('profiles').upsert({
-    id:currentUser.id,
-    fitness_goal:obGoal,
-    muscle_focus:obMuscles,
-    training_days:obDays,
-  });
+  // Always save goal + muscle focus
+  const updates={id:currentUser.id,fitness_goal:obGoal,muscle_focus:obMuscles,training_days:obDays};
+  // Only switch split if user clicked "Switch to this program"
+  if(switchPlan){updates.active_split=goalData.split;}
+  await sb.from('profiles').upsert(updates);
   userProfile.fitness_goal=obGoal;
   userProfile.muscle_focus=obMuscles;
+  if(switchPlan)userProfile.active_split=goalData.split;
   localStorage.setItem('it_onboarding_done_'+currentUser.id,'1');
   document.getElementById('onboarding-modal').style.display='none';
-  refreshDashboard();
-  // Show a non-blocking suggestion banner if a different split is recommended
-  const suggestedSplit=goalData.split;
-  const currentSplit=userProfile.active_split||'';
-  if(currentSplit!==suggestedSplit){
-    showPlanSuggestion(goalData.label, suggestedSplit);
+  if(switchPlan){
+    toast('✅ Switched to '+goalData.label+'!');
   }else{
-    toast('🎉 Profile set up! You\'re already on the recommended program.');
+    toast('🎉 Profile set up! Your current program is unchanged.');
   }
+  refreshDashboard();
 }
 
 function showPlanSuggestion(planLabel, splitKey){
