@@ -1479,11 +1479,17 @@ async function confirmDeleteAccount(){
     // Attempt to delete the actual auth account via RPC (requires the delete_own_account() function in Supabase)
     const{error:rpcError}=await sb.rpc('delete_own_account');
     if(rpcError){
-      console.warn('Auth account deletion RPC failed (data was still wiped):',rpcError);
-      toast('Your data was deleted. Signing you out — contact support to fully remove your login.');
-    }else{
-      toast('Account deleted.');
+      console.warn('Auth account deletion RPC failed:',rpcError);
+      // Data is wiped but auth row remains — user can re-register with same email and get a blank account
+      // This means delete_own_account() function is not installed in Supabase yet
+      loading(false);
+      alert('⚠️ Your workout data was deleted, but your login could not be fully removed.\n\nTo fix this: go to Supabase → SQL Editor and run the "add_delete_account_function.sql" migration. Until then, signing up again with the same email will create a blank account.');
+      await sb.auth.signOut();
+      showAuthScreen();
+      closeModal('delete-account-modal');
+      return;
     }
+    toast('Account fully deleted.');
     await sb.auth.signOut();
     showAuthScreen();
     closeModal('delete-account-modal');
