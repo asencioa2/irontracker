@@ -1510,6 +1510,7 @@ async function onSignedIn(user,showFullLoading){
   await loadProfile();
   loadCustomSplits();
   await refreshDashboard();
+  showPage('dashboard'); // Always land on dashboard on sign in
   checkNotifications();
   checkAndShowOnboarding();
   // Clear any stuck live status from a previous session that wasn't properly cleaned up
@@ -4747,10 +4748,12 @@ const GOAL_SPLITS={
 function checkAndShowOnboarding(){
   // Already completed onboarding on this device
   if(localStorage.getItem('it_onboarding_done_'+(currentUser?.id||'')))return;
-  // Existing user — they have a fitness_goal or active_split already set in the DB
-  if(userProfile.fitness_goal||userProfile.active_split)return;
-  // Truly new user — no goal, no split set yet
-  setTimeout(()=>{document.getElementById('onboarding-modal').style.display='flex';},600);
+  // Existing user — they have explicitly saved a fitness_goal (set only via onboarding)
+  // Note: active_split is null for new users AND defaults to 'iron24_5day' in code, 
+  // so we only use fitness_goal as the reliable indicator
+  if(userProfile.fitness_goal)return;
+  // Truly new user — show onboarding
+  setTimeout(()=>{document.getElementById('onboarding-modal').style.display='flex';},800);
 }
 
 function selectGoal(goal){
