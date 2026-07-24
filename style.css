@@ -335,6 +335,7 @@ canvas{width:100%!important;}
 .lb-cat-btn.active,.lb-cat-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
 
 /* ONBOARDING */
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
 .ob-goal-card{padding:16px 12px;border-radius:var(--radius-lg);border:2px solid var(--border);background:var(--surface2);cursor:pointer;text-align:center;transition:all 0.15s;touch-action:manipulation;}
 .ob-goal-card:hover{border-color:var(--border2);}
 .ob-goal-card.selected{border-color:var(--accent);background:var(--accent-dim);}

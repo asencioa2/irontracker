@@ -4738,10 +4738,10 @@ const MUSCLE_ICONS={'Chest':'🫁','Back':'🔙','Shoulders':'🤸','Biceps':'�
 
 const GOAL_SPLITS={
   build_muscle:{label:'Iron24 5-Day Program',split:'iron24_5day',desc:'Classic hypertrophy split targeting each muscle group with maximum volume.'},
-  lose_fat:{label:'Full Body 3-Day Program',split:'full_body',desc:'High-frequency full body sessions combined with HIIT to maximize fat burn.'},
-  get_strong:{label:'Upper/Lower Split',split:'upper_lower',desc:'Powerlifting-focused split built around the big compound lifts.'},
-  athletic:{label:'Push/Pull/Legs',split:'ppl',desc:'Athletic performance split balancing strength, power, and conditioning.'},
-  general:{label:'Full Body 3-Day Program',split:'full_body',desc:'Balanced program hitting every muscle group three times per week.'},
+  lose_fat:{label:'Push/Pull/Legs',split:'ppl',desc:'High-frequency PPL split — great for burning calories while maintaining muscle.'},
+  get_strong:{label:'Iron24 5-Day Program',split:'iron24_5day',desc:'Compound-heavy program built around progressive overload on the big lifts.'},
+  athletic:{label:'Push/Pull/Legs',split:'ppl',desc:'PPL balances pushing, pulling, and leg work for well-rounded athletic performance.'},
+  general:{label:'Push/Pull/Legs',split:'ppl',desc:'Balanced program hitting every muscle group with consistent frequency.'},
 };
 
 function checkAndShowOnboarding(){
@@ -4810,6 +4810,9 @@ function buildProgramPreview(){
 }
 
 async function finishOnboarding(){
+  if(!obGoal){toast('Please select a goal first');obNextStep(1);return;}
+  if(!obDays){toast('Please select training days');obNextStep(2);return;}
+  if(!obMuscles.length){toast('Please select at least one muscle group');obNextStep(3);return;}
   const goalData=GOAL_SPLITS[obGoal]||GOAL_SPLITS.general;
   // Save goal + muscle focus only — never auto-switch their split
   await sb.from('profiles').upsert({
