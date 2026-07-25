@@ -1128,6 +1128,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="data.js"></script>
 <script src="db.js"></script>
+<script src="utils.js"></script>
 <script>
 // ============================================================
 // CONFIG — replace these two values after creating your Supabase project
@@ -1139,8 +1140,31 @@ const SUPABASE_ANON_KEY = 'sb_publishable_kRu6Aj5VcguGpml03aSMjg_t38z2YCi';
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// ── App State — organized namespaces replace scattered globals ──
+// auth state
 let currentUser = null;
 let userProfile = {};
+
+// workout state (grouped)
+const workoutState = {
+  day: null,           // replaces currentWorkoutDay
+  sets: {},            // replaces workoutSets  
+  restDuration: 60,    // replaces workoutRestDuration
+  restRemaining: 0,    // replaces workoutRestRemaining
+  restInterval: null,  // replaces workoutRestInterval
+  prCache: {},         // replaces sessionPRCache
+};
+
+// ui state (grouped)
+const uiState = {
+  timerDuration: 60,      // replaces timerDuration
+  current1RM: null,       // replaces current1RM
+  currentPostId: null,    // replaces currentPostId
+  liveInterval: null,     // replaces liveInterval
+  feedPollInterval: null, // replaces feedPollInterval
+  currentTemplateId: null,// replaces currentTemplateId
+  barcodeData: null,      // replaces barcodeFoundData
+};
 let weightChart = null, volumeChart = null;
 let currentWorkoutDay = null;
 let workoutSets = {};
@@ -1173,7 +1197,7 @@ let current1RM = null;
 // QUICK_MEALS → see data.js
 
 
-function today(){return new Date().toISOString().split('T')[0];}
+// today → utils.js
 function todayDOW(){return new Date().getDay();}
 function toast(msg){const t=document.getElementById('toast');document.getElementById('toast-msg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
 function loading(show,msg='Loading...'){const o=document.getElementById('loading-overlay');document.getElementById('loading-msg').textContent=msg;o.style.display=show?'flex':'none';}
@@ -1558,25 +1582,9 @@ async function refreshDashboard(){
   checkMonthlyRecap();
 }
 
-function getWeekStart(){
-  const d=new Date();const day=d.getDay();const diff=d.getDate()-day+(day===0?-6:1);
-  d.setDate(diff);return d.toISOString().split('T')[0];
-}
+// getWeekStart → utils.js
 
-function calcStreak(logs,restDays){
-  if(!logs.length)return 0;
-  const done=new Set(logs.map(l=>l.date));
-  const rested=new Set((restDays||[]).map(r=>r.date));
-  let streak=0;const d=new Date();
-  for(let i=0;i<60;i++){
-    const ds=d.toISOString().split('T')[0];
-    if(done.has(ds)){streak++;d.setDate(d.getDate()-1);}
-    else if(rested.has(ds)){d.setDate(d.getDate()-1);continue;} // rest day doesn't break streak
-    else if(i===0){d.setDate(d.getDate()-1);continue;}
-    else break;
-  }
-  return streak;
-}
+// calcStreak → utils.js
 
 function buildSplitProgressStrip(logs,restDays){
   const container=document.getElementById('dash-week-strip');
@@ -1661,13 +1669,7 @@ async function loadNutritionTotals(dateStr){
 // ============================================================
 // WATER TRACKER
 // ============================================================
-function getWaterGoalOz(weights){
-  // Check for user-set custom goal first
-  const customGoal=localStorage.getItem('water_goal_oz_'+(currentUser?.id||''));
-  if(customGoal)return parseInt(customGoal);
-  if(weights&&weights.length){const w=weights[weights.length-1].weight_lbs;return Math.round(w*0.55);}
-  return 100;
-}
+// getWaterGoalOz → utils.js
 
 function openWaterGoalModal(){
   const current=getWaterGoalOz();
@@ -1716,11 +1718,7 @@ function addCustomWater(){
   if(input)input.value='';
 }
 
-function formatVolume(vol){
-  // vol is stored as sum of (weight × reps) per set — display cleanly
-  if(vol>=1000)return (vol/1000).toFixed(1)+'k';
-  return vol.toString();
-}
+// formatVolume → utils.js
 
 // ============================================================
 // WEEKLY CHECK-IN
@@ -1790,14 +1788,14 @@ async function getCustomExercises(dow){
 }
 
 async function getHiddenPresetExercises(splitKey,dow){
-  const{data}=await sb.from('hidden_exercises').select('exercise_name').eq('user_id',currentUser.id).eq('split_key',splitKey).eq('dow',dow);
-  return new Set((data||[]).map(h=>h.exercise_name));
+  const hidden=await dbGetHiddenExercises(currentUser.id,splitKey,dow);
+  return new Set(hidden.map(h=>h.exercise_name));
 }
 
 async function hidePresetExercise(exName){
   if(!confirm(`Remove "${exName}" from this day's workout? You can restore it anytime from the + Add exercise menu.`))return;
   const splitKey=userProfile.active_split||'iron24_5day';
-  await sb.from('hidden_exercises').insert({user_id:currentUser.id,split_key:splitKey,dow:currentWorkoutDay,exercise_name:exName});
+  await dbHideExercise(splitKey,currentWorkoutDay,exName);
   toast('Removed: '+exName);
   renderCustomExerciseList();
   renderWorkoutContent();
@@ -1805,7 +1803,7 @@ async function hidePresetExercise(exName){
 
 async function unhidePresetExercise(exName){
   const splitKey=userProfile.active_split||'iron24_5day';
-  await sb.from('hidden_exercises').delete().eq('user_id',currentUser.id).eq('split_key',splitKey).eq('dow',currentWorkoutDay).eq('exercise_name',exName);
+  await dbUnhideExercise(splitKey,currentWorkoutDay,exName);
   toast('Restored: '+exName);
   renderCustomExerciseList();
   renderWorkoutContent();
@@ -2193,7 +2191,7 @@ async function autoPRCheck(exName,w,r){
   const isPR=!existing||w>existing.weight_lbs||(w===existing.weight_lbs&&r>existing.reps);
   if(isPR){
     const newPR={user_id:currentUser.id,exercise:exName,weight_lbs:w,reps:r,estimated_orm:orm,date:today()};
-    await sb.from('personal_records').upsert(newPR,{onConflict:'user_id,exercise'});
+    await dbUpsertPRRecord(newPR.exercise,newPR.weight_lbs,newPR.reps,newPR.date,newPR.estimated_orm);
     sessionPRCache[exName]=newPR;
     toast('\ud83c\udfc6 NEW PR \u2014 '+exName+': '+w+'lbs \xd7 '+r);
     return true;
@@ -2263,7 +2261,7 @@ async function checkPRFromSet(exIdx,exName){
   const orm=Math.round(w*(1+r/30));
   const{data:existing}=await sb.from('personal_records').select('*').eq('user_id',currentUser.id).eq('exercise',exName).single();
   if(!existing||w>existing.weight_lbs||(w===existing.weight_lbs&&r>existing.reps)){
-    await sb.from('personal_records').upsert({user_id:currentUser.id,exercise:exName,weight_lbs:w,reps:r,estimated_orm:orm,date:today()},{onConflict:'user_id,exercise'});
+    await dbUpsertPRRecord(exName,w,r,today(),orm);
     toast('New PR on '+exName+': '+w+'lbs x '+r);
   }else{
     toast('Not a PR yet. Current best: '+existing.weight_lbs+'lbs x '+existing.reps);
@@ -2342,9 +2340,7 @@ async function finishWorkout(){
 }
 
 async function logRestDay(){
-  const{data:existing}=await sb.from('rest_days').select('id').eq('user_id',currentUser.id).eq('date',today()).limit(1);
-  if(existing&&existing.length){toast('Already logged today as a rest day');return;}
-  await sb.from('rest_days').insert({user_id:currentUser.id,date:today()});
+  await dbLogRestDay(today());
   invalidateDashboard();
   toast('\ud83d\ude34 Rest day logged \u2014 your split stays on Day '+(currentWorkoutDay+1)+' for next time');
   refreshDashboard();
@@ -2366,14 +2362,7 @@ async function openPRModal(){
 // ============================================================
 // NUTRITION PAGE
 // ============================================================
-function formatDateDisplay(dateStr){
-  const t=today();
-  const yest=new Date();yest.setDate(yest.getDate()-1);
-  const yesterStr=yest.toISOString().split('T')[0];
-  if(dateStr===t)return 'Today — '+new Date(dateStr+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-  if(dateStr===yesterStr)return 'Yesterday — '+new Date(dateStr+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-  return new Date(dateStr+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
-}
+// formatDateDisplay → utils.js
 
 function shiftNutrDate(delta){
   const el=document.getElementById('nutr-date');
@@ -2421,8 +2410,8 @@ async function loadNutritionForDate(){
 async function addFood(){
   const name=document.getElementById('f-name').value.trim();if(!name)return;
   const dateStr=document.getElementById('nutr-date')?.value||today();
-  const{error}=await sb.from('nutrition_logs').insert({user_id:currentUser.id,date:dateStr,food_name:name,meal:document.getElementById('f-meal').value,cal:parseInt(document.getElementById('f-cal').value)||0,protein:parseInt(document.getElementById('f-pro').value)||0,carbs:parseInt(document.getElementById('f-carb').value)||0,fat:parseInt(document.getElementById('f-fat').value)||0});
-  if(!error){closeModal('food-modal');await loadNutritionForDate();await loadNutritionTotals(today());toast(`Added: ${name}`);}
+  const ok=await dbInsertNutritionLog({date:dateStr,food_name:name,meal:document.getElementById('f-meal').value,cal:parseInt(document.getElementById('f-cal').value)||0,protein:parseInt(document.getElementById('f-pro').value)||0,carbs:parseInt(document.getElementById('f-carb').value)||0,fat:parseInt(document.getElementById('f-fat').value)||0});
+  if(ok){closeModal('food-modal');await loadNutritionForDate();await loadNutritionTotals(today());toast(`Added: ${name}`);}
 }
 
 async function deleteFood(id){
@@ -2545,32 +2534,19 @@ function toggleTimer(){
 function resetTimer(){if(timerInterval){clearInterval(timerInterval);timerInterval=null;}timerRemaining=timerDuration;timerRunning=false;updateTimerDisplay();document.getElementById('timer-btn').textContent='Start';document.getElementById('timer-status').textContent='Ready';}
 function updateTimerDisplay(){const m=Math.floor(timerRemaining/60).toString().padStart(2,'0');const s=(timerRemaining%60).toString().padStart(2,'0');const el=document.getElementById('timer-display');if(el)el.textContent=`${m}:${s}`;const bar=document.getElementById('timer-bar');if(bar)bar.style.width=Math.round(timerRemaining/timerDuration*100)+'%';}
 
-function calc1RM(){
-  const w=parseFloat(document.getElementById('orm-weight')?.value);const r=parseInt(document.getElementById('orm-reps')?.value);
-  if(!w||!r||r<1)return;const orm=Math.round(w*(1+r/30));current1RM={w,r,orm};
-  document.getElementById('orm-result').style.display='block';document.getElementById('orm-save-btn').style.display='inline-flex';
-  document.getElementById('orm-value').textContent=orm+' lbs';
-  document.getElementById('orm-breakdown').textContent=`${w} lbs x ${r} reps  90%: ${Math.round(orm*0.9)}  80%: ${Math.round(orm*0.8)}  70%: ${Math.round(orm*0.7)}`;
-}
+// calc1RM → utils.js
 async function save1RM(){
   if(!current1RM)return;const name=document.getElementById('orm-exercise').value.trim()||'Unknown exercise';
-  await sb.from('personal_records').upsert({user_id:currentUser.id,exercise:name,weight_lbs:current1RM.w,reps:current1RM.r,estimated_orm:current1RM.orm,date:today()},{onConflict:'user_id,exercise'});
+  await dbUpsertPRRecord(name,current1RM.w,current1RM.r,today(),current1RM.orm);
   toast(`Saved 1RM for ${name}: ${current1RM.orm} lbs`);
 }
 
-function calcBF(){
-  const h=parseFloat(document.getElementById('bf-height')?.value);const neck=parseFloat(document.getElementById('bf-neck')?.value);const waist=parseFloat(document.getElementById('bf-waist')?.value);const weight=parseFloat(document.getElementById('bf-weight')?.value);
-  if(!h||!neck||!waist||!weight)return;
-  const bf=86.010*Math.log10(waist-neck)-70.041*Math.log10(h)+36.76;const bfR=Math.max(2,Math.min(50,Math.round(bf*10)/10));
-  const fatLbs=Math.round(weight*bfR/100*10)/10;const leanLbs=Math.round((weight-fatLbs)*10)/10;
-  document.getElementById('bf-result').style.display='block';document.getElementById('bf-pct').textContent=bfR+'%';document.getElementById('bf-fat-lbs').textContent=fatLbs+' lbs';document.getElementById('bf-lean-lbs').textContent=leanLbs+' lbs';
-  const cat=document.getElementById('bf-category');let label,bg,color;
-  if(bfR<6){label='Essential fat';bg='var(--red-dim)';color='var(--red)';}else if(bfR<14){label='Athletic';bg='var(--accent-dim)';color='var(--accent)';}else if(bfR<18){label='Fitness';bg='var(--blue-dim)';color='var(--blue)';}else if(bfR<25){label='Average';bg='var(--amber-dim)';color='var(--amber)';}else{label='Above average';bg='var(--red-dim)';color='var(--red)';}
-  cat.style.background=bg;cat.style.color=color;cat.textContent=label;
-}
+// calcBF → utils.js
 
 async function buildToolsCheckin(){
-  const[logs,weights,prs]=await Promise.all([sb.from('workout_logs').select('date,volume').eq('user_id',currentUser.id),sb.from('weight_logs').select('date,weight_lbs').eq('user_id',currentUser.id).order('date'),sb.from('personal_records').select('*').eq('user_id',currentUser.id)]);
+  const[logsR,weightsR,prsR]=await Promise.all([sb.from('workout_logs').select('date,volume').eq('user_id',currentUser.id),sb.from('weight_logs').select('date,weight_lbs').eq('user_id',currentUser.id).order('date'),sb.from('personal_records').select('*').eq('user_id',currentUser.id)]);
+  [logsR,weightsR,prsR].forEach((r,i)=>r.error&&console.warn('[tools fetch '+i+']',r.error.message));
+  const logs=logsR,weights=weightsR,prs=prsR;
   const weekStart=getWeekStart();const thisWeek=(logs.data||[]).filter(l=>l.date>=weekStart);const uniqueDays=[...new Set(thisWeek.map(l=>l.date))];const totalVol=thisWeek.reduce((s,l)=>s+(l.volume||0),0);
   const w=weights.data||[];let wc=null;if(w.length>=2)wc=(w[w.length-1].weight_lbs-w[w.length-2].weight_lbs).toFixed(1);
   const weekPRs=(prs.data||[]).filter(p=>p.date>=weekStart);
@@ -2752,12 +2728,8 @@ async function confirmBarcodeFood(){
   if(!barcodeFoundData)return;
   const meal=document.getElementById('f-meal-scan').value;
   const dateStr=document.getElementById('nutr-date')?.value||today();
-  const{error}=await sb.from('nutrition_logs').insert({
-    user_id:currentUser.id,date:dateStr,
-    food_name:barcodeFoundData.name,meal,
-    cal:barcodeFoundData.cal,protein:barcodeFoundData.protein,
-    carbs:barcodeFoundData.carbs,fat:barcodeFoundData.fat
-  });
+  const bOk=await dbInsertNutritionLog({date:dateStr,food_name:barcodeFoundData.name,meal,cal:barcodeFoundData.cal,protein:barcodeFoundData.protein,carbs:barcodeFoundData.carbs,fat:barcodeFoundData.fat});
+  const error=bOk?null:{message:'Save failed'};
   if(!error){
     closeModal('food-modal');
     stopBarcodeScanner();
@@ -3372,42 +3344,7 @@ function toggleTheme(){
 // PLATE_SIZES → see data.js
 
 
-function calcPlates(){
-  const target=parseFloat(document.getElementById('plate-target')?.value)||0;
-  const barWeight=parseFloat(document.getElementById('plate-bar')?.value)||45;
-  const resultEl=document.getElementById('plate-result');
-  const errorEl=document.getElementById('plate-error');
-  const displayEl=document.getElementById('plate-display');
-  const totalEl=document.getElementById('plate-total');
-
-  if(!target){resultEl.style.display='none';errorEl.style.display='none';return;}
-  if(target<barWeight){
-    resultEl.style.display='none';
-    errorEl.textContent=`Target must be at least ${barWeight} lbs (bar weight)`;
-    errorEl.style.display='block';return;
-  }
-  const perSide=(target-barWeight)/2;
-  if(perSide%1!==0&&perSide%0.5!==0){
-    // Check if achievable with standard plates
-  }
-  errorEl.style.display='none';
-  let remaining=perSide;
-  const plates=[];
-  for(const p of PLATE_SIZES){
-    while(remaining>=p.w){plates.push(p);remaining=Math.round((remaining-p.w)*100)/100;}
-  }
-  if(remaining>0.01){
-    errorEl.textContent=`Can't make exactly ${target} lbs with standard plates. Closest: ${target-remaining*2} lbs`;
-    errorEl.style.display='block';
-    resultEl.style.display='none';return;
-  }
-  displayEl.innerHTML=plates.length
-    ?plates.map(p=>`<div style="background:${p.color};color:#fff;font-size:12px;font-weight:700;padding:6px 10px;border-radius:6px;font-family:var(--mono)">${p.w}</div>`).join('')
-    :'<span class="text-muted text-base">Bar only</span>';
-  const grouped=plates.reduce((a,p)=>{a[p.w]=(a[p.w]||0)+1;return a;},{});
-  totalEl.textContent='Per side: '+Object.entries(grouped).map(([w,n])=>`${n}×${w}`).join(' + ')+` = ${perSide} lbs`;
-  resultEl.style.display='block';
-}
+// calcPlates → utils.js
 
 // ============================================================
 // EXPORT TO CSV
@@ -3563,36 +3500,7 @@ function deleteCurrentTemplate(){
 
 let planResults=null; // store calculated results for apply button
 
-function parseHeightInput(val){
-  // Accept formats: 5'10", 5'10, 5-10, 510, 70 (pure inches)
-  val=val.trim();
-  let inches=0;
-  // Try ft'in" format: 5'10" or 5'10
-  const ftIn=val.match(/^(\d+)[''`](\d+)/);
-  if(ftIn){inches=parseInt(ftIn[1])*12+parseInt(ftIn[2]);}
-  // Try ft-in format: 5-10
-  else if(val.match(/^\d+-\d+$/)){const p=val.split('-');inches=parseInt(p[0])*12+parseInt(p[1]);}
-  // Try pure number (assume inches if >=48, feet if <8)
-  else if(val.match(/^\d+\.?\d*$/)){
-    const n=parseFloat(val);
-    inches=n<8?Math.round(n*12):Math.round(n); // e.g. "5.9" as feet, "69" as inches
-  }
-  const hiddenEl=document.getElementById('set-height');
-  const hint=document.getElementById('height-hint');
-  if(inches>=48&&inches<=96){
-    if(hiddenEl)hiddenEl.value=inches;
-    const ft=Math.floor(inches/12);const inn=inches%12;
-    if(hint)hint.textContent=`✓ ${ft}ft ${inn}in = ${inches} inches`;
-    hint.style.color='var(--accent)';
-  }else if(val.length>0){
-    if(hiddenEl)hiddenEl.value='';
-    if(hint)hint.textContent="Try: 5'10\" or just 70 inches";
-    hint.style.color='var(--red)';
-  }else{
-    if(hiddenEl)hiddenEl.value='';
-    if(hint){hint.textContent="Enter height like 5'10\" or 70 inches";hint.style.color="var(--text3)";}
-  }
-}
+// parseHeightInput → utils.js
 
 function generateMyPlan(){
   // Read values — prefer live field values, fall back to saved profile
@@ -3690,18 +3598,21 @@ function generateMyPlan(){
     macroNote = `Balanced macros for body recomposition — losing fat while building muscle simultaneously. Protein is prioritised for muscle retention and satiety. Works best with consistent training.`;
   }
 
-  // Store for apply button
+  // Store for apply button then render
   planResults = { cal: targetCal, pro: protein, carb: carbs, fat };
+  renderPlanResults({ bmr, tdee, targetCal, trueTotal, protein, carbs, fat, fiber,
+    proteinCals, carbCals, fatCals, calNote, timeToGoal, macroNote, goal, activity, currentWeight });
+}
 
-  // ── Render stats ──────────────────────────────────────────────────────
+// ── Renders the My Plan results UI — separated from calculation logic ────
+function renderPlanResults({ bmr, tdee, targetCal, trueTotal, protein, carbs, fat, fiber,
+    proteinCals, carbCals, fatCals, calNote, timeToGoal, macroNote, goal, activity, currentWeight }) {
   const s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   s('plan-bmr', bmr.toLocaleString());
   s('plan-tdee', tdee.toLocaleString());
   s('plan-target-cal', targetCal.toLocaleString());
   s('plan-cal-note', calNote);
   s('plan-time', timeToGoal);
-
-  // Macro cards
   const macroGrid = document.getElementById('plan-macros-grid');
   const pctOf = (cals) => Math.round(cals / trueTotal * 100);
   const macros = [
@@ -3717,14 +3628,9 @@ function generateMyPlan(){
       <div class="stat-value text-mono" style="font-size:20px;color:${m.color}">${m.val.toLocaleString()}<span class="stat-unit" style="font-size:13px">${m.unit}</span></div>
       <div style="font-size:10px;color:var(--text3);margin-top:3px">${m.extra}</div>
     </div>`).join('');
-
   const macroNoteEl = document.getElementById('plan-macro-note');
   if (macroNoteEl) macroNoteEl.textContent = macroNote;
-
-  // Supplements
   renderSupplementRecs(goal, activity, currentWeight, protein);
-
-  // Show
   document.getElementById('my-plan-results').style.display = 'block';
   document.getElementById('my-plan-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
   toast('✅ Your plan is ready!');
@@ -3733,118 +3639,7 @@ function generateMyPlan(){
 
 function renderSupplementRecs(goal, activity, weight, proteinTarget, macroNote){
   // All supplements with evidence ratings and goal relevance
-  const allSupplements=[
-    {
-      name:'Creatine Monohydrate',
-      icon:'💪',
-      dose:'3-5g daily',
-      timing:'Any time (consistency matters)',
-      goals:['cut','bulk','maintain'],
-      priority:'essential',
-      evidence:'⭐⭐⭐⭐⭐',
-      benefit:'The most researched supplement in sports science. Increases strength, power output, and muscle mass. Helps preserve muscle during a cut. No loading phase needed.',
-      note:'Take every day — even on rest days.',
-    },
-    {
-      name:'Protein Powder (Whey or Plant)',
-      icon:'🥛',
-      dose:`${Math.max(0,Math.round(proteinTarget*0.3))}g per shake`,
-      timing:'Post-workout or between meals',
-      goals:['bulk','cut','maintain'],
-      priority: proteinTarget>180?'essential':'recommended',
-      evidence:'⭐⭐⭐⭐⭐',
-      benefit:`You need ${proteinTarget}g protein daily. If you struggle to hit that from food alone, protein powder is the most convenient way to close the gap. Whey is absorbed fastest post-workout.`,
-      note:'Not needed if you hit protein targets from whole food.',
-    },
-    {
-      name:'Caffeine / Pre-workout',
-      icon:'⚡',
-      dose:'150-300mg caffeine',
-      timing:'30-45 min before training',
-      goals:['cut','bulk','maintain'],
-      priority:'recommended',
-      evidence:'⭐⭐⭐⭐⭐',
-      benefit:'Clinically proven to improve strength, endurance, and focus. Particularly useful on a cut when lower calories can leave you feeling sluggish before training.',
-      note:'Avoid after 2pm to protect sleep quality.',
-    },
-    {
-      name:'Omega-3 Fish Oil',
-      icon:'🐟',
-      dose:'2-3g EPA+DHA daily',
-      timing:'With meals',
-      goals:['cut','bulk','maintain'],
-      priority:'recommended',
-      evidence:'⭐⭐⭐⭐',
-      benefit:'Reduces inflammation from heavy training, supports joint health, and may improve muscle protein synthesis. Also has cardiovascular and cognitive benefits.',
-      note:'Look for a product with at least 1g EPA+DHA combined per serving.',
-    },
-    {
-      name:'Vitamin D3 + K2',
-      icon:'☀️',
-      dose:'2000-5000 IU D3 daily',
-      timing:'Morning with fat-containing meal',
-      goals:['cut','bulk','maintain'],
-      priority:'recommended',
-      evidence:'⭐⭐⭐⭐',
-      benefit:'Most people — especially those who train indoors — are Vitamin D deficient. D3 supports testosterone production, bone density, immune function, and muscle recovery.',
-      note:'K2 (100-200mcg) helps direct calcium to bones rather than arteries.',
-    },
-    {
-      name:'Magnesium Glycinate',
-      icon:'😴',
-      dose:'300-400mg elemental magnesium',
-      timing:'30-60 min before bed',
-      goals:['cut','bulk','maintain'],
-      priority:'recommended',
-      evidence:'⭐⭐⭐⭐',
-      benefit:'Heavy training depletes magnesium. Low levels hurt sleep quality, muscle recovery, and energy production. Glycinate form is easiest on the stomach and best absorbed.',
-      note:'Avoid magnesium oxide — it\'s poorly absorbed.',
-    },
-    {
-      name:'Beta-Alanine',
-      icon:'🔥',
-      dose:'3.2-6.4g daily',
-      timing:'Split doses throughout day',
-      goals:['bulk','maintain'],
-      priority: activity>=1.725?'recommended':'optional',
-      evidence:'⭐⭐⭐⭐',
-      benefit:'Buffers lactic acid in muscles, delaying fatigue during high-rep training and HIIT. Most effective for sets lasting 60-240 seconds.',
-      note:'Causes harmless tingling (paresthesia). Split doses to reduce this.',
-    },
-    {
-      name:'Zinc + Magnesium (ZMA)',
-      icon:'🌙',
-      dose:'ZMA supplement as directed',
-      timing:'Before bed on empty stomach',
-      goals:['bulk'],
-      priority:'optional',
-      evidence:'⭐⭐⭐',
-      benefit:'Zinc supports testosterone production and immune function. Combined with magnesium and B6, ZMA may improve sleep quality and recovery in lifters with low zinc/magnesium levels.',
-      note:'Not needed if already taking magnesium and getting adequate zinc from diet.',
-    },
-    {
-      name:'L-Carnitine',
-      icon:'🔥',
-      dose:'1-2g daily',
-      timing:'With meals',
-      goals:['cut'],
-      priority:'optional',
-      evidence:'⭐⭐⭐',
-      benefit:'May enhance fat oxidation during exercise. Most effective when combined with a caloric deficit and cardio. Evidence is moderate — not a magic fat burner.',
-      note:'Acetyl-L-Carnitine form also has cognitive benefits.',
-    },
-    {
-      name:'Electrolytes',
-      icon:'💧',
-      dose:'1 serving during/after training',
-      timing:'During workout or post-workout',
-      goals:['cut','bulk','maintain'],
-      priority: activity>=1.55?'recommended':'optional',
-      evidence:'⭐⭐⭐⭐',
-      benefit:'Heavy training and sweating deplete sodium, potassium, and magnesium. Electrolytes maintain performance, prevent cramping, and support recovery. Especially important on a cut where carb restriction reduces glycogen and water retention.',
-      note:'Coconut water + a pinch of sea salt is a cheap alternative.',
-    },
-  ];
+  const allSupplements=SUPPLEMENT_DATA; // → data.js
 
   // Filter and sort by relevance
   const priorityOrder={essential:0,recommended:1,optional:2};
