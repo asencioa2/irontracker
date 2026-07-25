@@ -194,3 +194,21 @@ const GOAL_SPLITS={
   general:{label:'Push/Pull/Legs',split:'ppl',desc:'Balanced program hitting every muscle group with consistent frequency.'},
 };
 
+
+// ── Unit conversion constants ────────────────────────────────
+// Use these instead of raw numbers throughout the codebase
+const UNITS = {
+  ML_PER_OZ:       29.5735,   // millilitres per fluid ounce
+  KG_PER_LB:       0.453592,  // kilograms per pound
+  CM_PER_INCH:     2.54,      // centimetres per inch
+  KCAL_PER_LB_FAT: 3500,      // dietary calories per pound of body fat
+};
+
+// Activity multipliers for TDEE (Mifflin-St Jeor)
+const ACTIVITY_MULTIPLIERS = {
+  sedentary:    1.2,    // desk job, little exercise
+  light:        1.375,  // 1-3 days/week
+  moderate:     1.55,   // 3-5 days/week
+  active:       1.725,  // 6-7 days/week hard training
+  very_active:  1.9,    // physical job + training
+};
