@@ -208,6 +208,7 @@
 
   <!-- Inline rest timer — auto-starts after each set -->
   <div id="workout-rest-timer" style="display:none;margin-bottom:16px">
+    <!-- Auto-start is ON by default — toggle in the timer header -->
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:10px">
@@ -327,6 +328,7 @@
     <button class="food-tab-btn active" id="social-tab-feed" onclick="switchSocialTab('feed')">🏋️ Feed</button>
     <button class="food-tab-btn" id="social-tab-live" onclick="switchSocialTab('live')">🔴 Live</button>
     <button class="food-tab-btn" id="social-tab-leaderboard" onclick="switchSocialTab('leaderboard')">🏆 Leaderboard</button>
+    <button class="food-tab-btn" id="social-tab-challenges" onclick="switchSocialTab('challenges')">⚡ Challenges</button>
     <button class="food-tab-btn" id="social-tab-friends" onclick="switchSocialTab('friends')">👥 Friends</button>
   </div>
 
@@ -338,6 +340,10 @@
   </div>
 
   <!-- LEADERBOARD TAB -->
+  <div id="social-challenges-tab" style="display:none">
+    <div id="social-challenges-content"><div style="color:var(--text3);font-size:13px">Loading...</div></div>
+  </div>
+
   <div id="social-leaderboard-tab" style="display:none">
     <!-- Period picker -->
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
@@ -1113,6 +1119,38 @@
   </div>
 </div>
 
+
+<!-- WORKOUT SHARE CARD MODAL -->
+<div class="modal-overlay" id="share-card-modal">
+  <div class="modal" style="width:500px;max-width:96vw">
+    <div class="modal-hd">
+      <div class="modal-title">📸 Share your workout</div>
+      <button class="modal-close" onclick="closeModal('share-card-modal')">×</button>
+    </div>
+    <div id="share-card-preview" style="background:linear-gradient(135deg,#080c14 0%,#0e1422 100%);border-radius:16px;padding:28px;margin-bottom:16px;border:1px solid rgba(201,168,76,0.3)">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <div style="font-size:28px">🏋️</div>
+        <div>
+          <div style="font-size:20px;font-weight:800;color:#c9a84c;font-family:'Syne',sans-serif" id="share-card-title">Workout Complete</div>
+          <div style="font-size:13px;color:#8a96b0" id="share-card-date"></div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-size:11px;color:#8a96b0;text-transform:uppercase;letter-spacing:0.1em">IronTracker</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px" id="share-card-stats"></div>
+      <div id="share-card-exercises" style="margin-bottom:16px"></div>
+      <div id="share-card-prs" style="display:none;margin-bottom:12px"></div>
+      <div style="font-size:11px;color:#4a5470;text-align:center;margin-top:12px">irontracker-five.vercel.app</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="downloadShareCard()">💾 Save image</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="copyShareText()">📋 Copy text</button>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-top:10px;text-align:center">Screenshot the card above and share to Instagram, Twitter, or anywhere else</div>
+  </div>
+</div>
+
 <!-- MUSCLE GROUP EDITOR MODAL -->
 <div class="modal-overlay" id="muscle-group-modal">
   <div class="modal" style="width:480px">
@@ -1489,7 +1527,7 @@ function showPage(id){
   // Page-specific init
   if(id==='dashboard')refreshDashboard();
   else if(id==='workout'){initWorkoutPageAndLive();loadCardioForToday();}
-  else if(id==='progress'){initProgressPage();renderProgressPhotos();}
+  else if(id==='progress'){initProgressPage();renderProgressPhotos();renderMuscleHeatmap('week');}
   else if(id==='nutrition')initNutritionPage();
   else if(id==='tools'){buildToolsCheckin();updateTimerDisplay();}
   else if(id==='settings'){initSettingsPage();loadNotificationSettings();}
@@ -2084,9 +2122,11 @@ async function renderWorkoutContent(){
     }
 
     const n=ex.name.replace(/'/g,"\'").replace(/`/g,"'");
-    html+=`<div class="card" style="margin-bottom:10px;padding:14px">
+    html+=`<div class="card ex-drag-card" style="margin-bottom:10px;padding:14px" draggable="true" data-ex-name="${ex.name}" ondragstart="onExDragStart(event,'${n}')" ondragover="onExDragOver(event)" ondrop="onExDrop(event,'${n}')" ondragend="onExDragEnd(event)">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-        <div style="flex:1;padding-right:8px">
+        <div style="flex:1;padding-right:8px;display:flex;align-items:flex-start;gap:8px">
+          <span class="drag-handle" title="Drag to reorder" style="cursor:grab;color:var(--text3);font-size:18px;line-height:1;padding-top:2px;flex-shrink:0;user-select:none">⠿</span>
+          <div>
           <div style="font-size:14px;font-weight:600;color:var(--text)">${ex.name}${prTag}${custTag}</div>
           <div style="font-size:11px;color:var(--text3);margin-top:2px">Target: ${ex.sets} x ${ex.target}${lastTag}</div>
         </div>
@@ -2126,6 +2166,61 @@ async function renderWorkoutContent(){
 
 function getSessionKey(){return `it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`;}
 function saveSession(){localStorage.setItem(getSessionKey(),JSON.stringify(workoutSets));}
+
+
+// ============================================================
+// FEATURE 2: EXERCISE DRAG-AND-DROP REORDERING
+// ============================================================
+let _dragSrcEx = null;
+
+function onExDragStart(event, exName) {
+  _dragSrcEx = exName;
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', exName);
+  event.currentTarget.style.opacity = '0.4';
+}
+
+function onExDragOver(event) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+  event.currentTarget.style.borderColor = 'var(--accent)';
+  return false;
+}
+
+function onExDragEnd(event) {
+  event.currentTarget.style.opacity = '1';
+  event.currentTarget.style.borderColor = '';
+  document.querySelectorAll('.ex-drag-card').forEach(c => {
+    c.style.borderColor = '';
+    c.style.opacity = '1';
+  });
+}
+
+function onExDrop(event, targetExName) {
+  event.stopPropagation();
+  event.currentTarget.style.borderColor = '';
+  if (!_dragSrcEx || _dragSrcEx === targetExName) return false;
+  // Reorder allEx array in workoutSets order
+  const split = getActiveSplit();
+  const sched = split.days[currentWorkoutDay];
+  if (!sched) return;
+  // Build current order from DOM
+  const cards = [...document.querySelectorAll('.ex-drag-card')];
+  const currentOrder = cards.map(c => c.dataset.exName).filter(Boolean);
+  const srcIdx = currentOrder.indexOf(_dragSrcEx);
+  const tgtIdx = currentOrder.indexOf(targetExName);
+  if (srcIdx < 0 || tgtIdx < 0) return;
+  // Reorder
+  currentOrder.splice(srcIdx, 1);
+  currentOrder.splice(tgtIdx, 0, _dragSrcEx);
+  // Store custom order in workoutSets metadata
+  if (!workoutSets.__order) workoutSets.__order = {};
+  workoutSets.__order[currentWorkoutDay] = currentOrder;
+  saveSession();
+  renderWorkoutContent();
+  _dragSrcEx = null;
+  return false;
+}
 
 // ── Workout-page rest timer ────────────────────────────────────────────────
 let workoutRestDuration=90;
@@ -2336,6 +2431,8 @@ async function finishWorkout(){
   publishWorkoutPost(dayName,workoutSets,totalVolume,notes);
   setLiveStatus(false,dayName);
   setSaving('workout',false);
+  // Show share card option after workout
+  setTimeout(()=>openShareCard(dayName,workoutSets,totalVolume), 800);
   initWorkoutPage();
 }
 
@@ -2791,12 +2888,13 @@ function copyInviteLink(){
 
 // ---- Social Tab Switching ----
 function switchSocialTab(tab){
-  ['feed','live','leaderboard','friends'].forEach(t=>{
+  ['feed','live','leaderboard','challenges','friends'].forEach(t=>{
     document.getElementById('social-'+t+'-tab').style.display=t===tab?'block':'none';
     document.getElementById('social-tab-'+t).classList.toggle('active',t===tab);
   });
   if(tab==='feed')loadSocialFeed();
   if(tab==='leaderboard'){window._lbStats=null;loadLeaderboard(currentLbPeriod||'week');}
+  if(tab==='challenges'){document.getElementById('social-challenges-content').innerHTML='';openChallengesTab();}
   if(tab==='live')loadLiveFeed();
   if(tab==='friends'){loadFriendsList();loadPendingRequests();}
 }
@@ -4580,6 +4678,175 @@ function resetServingSize(){
   document.getElementById('f-serving-size').value='';
   updateWaterOzPreview();
   storeBaseServingMacros();
+}
+
+// ============================================================
+// FEATURE 3: SHAREABLE WORKOUT CARD
+// ============================================================
+function openShareCard(dayName, sets, volume) {
+  const prList = Object.entries(sessionPRCache||{});
+  const exercises = Object.entries(sets||{}).filter(([k])=>k!=='__order');
+  const totalSets = exercises.reduce((t,[,ex])=>t+(ex.sets?.length||0),0);
+  document.getElementById('share-card-title').textContent = dayName || 'Workout Complete';
+  document.getElementById('share-card-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('share-card-stats').innerHTML = [
+    {label:'Volume',val:volume>0?(volume/1000).toFixed(1)+'k lbs':'—'},
+    {label:'Exercises',val:String(exercises.length)},
+    {label:'Sets',val:String(totalSets)},
+  ].map(s=>`<div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#c9a84c;font-family:var(--mono)">${s.val}</div><div style="font-size:10px;color:#8a96b0;text-transform:uppercase;letter-spacing:0.08em;margin-top:4px">${s.label}</div></div>`).join('');
+  const topEx = exercises.slice(0,5);
+  document.getElementById('share-card-exercises').innerHTML = topEx.map(([name,ex])=>{
+    const best=(ex.sets||[]).reduce((b,s)=>(!b||s.w>b.w)?s:b,null);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06)"><span style="font-size:13px;color:#eef0f5;font-weight:600">${name}</span><span style="font-size:12px;color:#8a96b0;font-family:var(--mono)">${ex.sets?.length||0} sets${best?` · ${best.w}lbs×${best.r}`:''}</span></div>`;
+  }).join('')+(exercises.length>5?`<div style="font-size:11px;color:#8a96b0;padding:6px 0">+${exercises.length-5} more exercises</div>`:'');
+  const prsEl=document.getElementById('share-card-prs');
+  if(prsEl){
+    if(prList.length>0){
+      prsEl.style.display='block';
+      prsEl.innerHTML=`<div style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:10px;padding:12px"><div style="font-size:11px;font-weight:700;color:#c9a84c;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">🏆 New PRs today</div>${prList.map(([ex,pr])=>`<div style="font-size:13px;color:#eef0f5">${ex}: <strong style="color:#c9a84c">${pr.w}lbs × ${pr.r} reps</strong></div>`).join('')}</div>`;
+    } else { prsEl.style.display='none'; }
+  }
+  openModal('share-card-modal');
+}
+
+function copyShareText() {
+  const title=document.getElementById('share-card-title')?.textContent||'Workout';
+  const date=document.getElementById('share-card-date')?.textContent||'';
+  const stats=[...document.querySelectorAll('#share-card-stats > div')].map(d=>{
+    const v=d.querySelector('div:first-child')?.textContent||'';
+    const l=d.querySelector('div:last-child')?.textContent||'';
+    return `${v} ${l}`;
+  }).join(' · ');
+  const prEls=[...document.querySelectorAll('#share-card-prs div[style*="font-size:13px"]')];
+  const prText=prEls.length>0?'\n🏆 PRs: '+prEls.map(e=>e.textContent).join(', '):'';
+  const text=`💪 ${title} — ${date}\n${stats}${prText}\n\nLogged with IronTracker`;
+  navigator.clipboard.writeText(text).then(()=>toast('✅ Copied to clipboard!')).catch(()=>toast('Select and copy the text manually'));
+}
+
+function downloadShareCard() {
+  toast('📸 Screenshot the card above to save it');
+}
+
+// ============================================================
+// FEATURE 4: MUSCLE HEATMAP
+// ============================================================
+const MUSCLE_EXERCISE_MAP = {
+  'Chest':['Barbell Bench Press','Incline Barbell Press','Incline Dumbbell Press','Cable Chest Fly','Push-up Burnout','Close-Grip Bench Press','Dumbbell Bench Press','Pec Deck','Chest Dip'],
+  'Back':['Deadlift','Barbell Row','Weighted Pull-ups','Pull-ups','Cable Row','Lat Pulldown','T-Bar Row','Single-Arm DB Row','Face Pull'],
+  'Shoulders':['Barbell Overhead Press','Dumbbell Shoulder Press','Lateral Raises','Front Raise','Arnold Press','Machine Shoulder Press','Upright Row'],
+  'Biceps':['Barbell Curl','Dumbbell Curl','Hammer Curl','Preacher Curl','Cable Curl','Incline DB Curl','Concentration Curl'],
+  'Triceps':['Close-Grip Bench Press','Tricep Rope Pushdown','Overhead Tricep Extension','Skull Crushers','Diamond Push-ups','Dip','Tricep Kickback'],
+  'Quads':['Barbell Back Squat','Front Squat','Leg Press','Hack Squat','Bulgarian Split Squat','Lunges','Leg Extension'],
+  'Hamstrings/Glutes':['Romanian Deadlift','Hip Thrust','Leg Curl','Nordic Curl','Good Morning','Glute Bridge','Sumo Deadlift'],
+  'Calves':['Standing Calf Raise','Seated Calf Raise','Donkey Calf Raise','Jump Rope'],
+  'Core/Abs':['Plank','Ab Wheel','Hanging Leg Raise','Cable Crunch','Russian Twist','Decline Sit-up','Side Plank'],
+  'Full Body/HIIT':['Deadlift','Barbell Back Squat','Clean','Thruster','Burpee','Kettlebell Swing'],
+};
+
+async function renderMuscleHeatmap(period='week') {
+  ['week','month'].forEach(p=>{
+    const btn=document.getElementById('hm-'+p+'-btn');
+    if(!btn)return;
+    btn.style.borderColor=p===period?'var(--accent)':'';
+    btn.style.color=p===period?'var(--accent)':'';
+  });
+  const el=document.getElementById('muscle-heatmap-grid');
+  if(!el)return;
+  el.innerHTML='<div style="color:var(--text3);font-size:12px">Loading...</div>';
+  const d=new Date();
+  d.setDate(d.getDate()-(period==='week'?7:30));
+  const startDate=d.toISOString().split('T')[0];
+  const{data:logs,error}=await sb.from('workout_logs').select('sets_data,date').eq('user_id',currentUser.id).gte('date',startDate);
+  if(error){el.innerHTML='<div class="empty-state">Could not load data</div>';return;}
+  const muscleSets={};
+  Object.keys(MUSCLE_ICONS).forEach(m=>muscleSets[m]=0);
+  (logs||[]).forEach(log=>{
+    Object.entries(log.sets_data||{}).forEach(([exName,exData])=>{
+      const setCount=exData?.sets?.length||0;
+      if(!setCount)return;
+      Object.entries(MUSCLE_EXERCISE_MAP).forEach(([muscle,exercises])=>{
+        if(exercises.some(e=>exName.toLowerCase().includes(e.toLowerCase())||e.toLowerCase().includes(exName.toLowerCase()))){
+          muscleSets[muscle]=(muscleSets[muscle]||0)+setCount;
+        }
+      });
+    });
+  });
+  const maxSets=Math.max(1,...Object.values(muscleSets));
+  el.innerHTML=Object.entries(muscleSets).map(([muscle,sets])=>{
+    const intensity=sets/maxSets;
+    const bg=sets===0?'var(--surface3)':`rgba(201,168,76,${Math.max(0.15,intensity).toFixed(2)})`;
+    const textColor=intensity>0.6?'#080c14':sets>0?'var(--accent)':'var(--text3)';
+    const label=sets===0?'Not trained':`${sets} set${sets!==1?'s':''}`;
+    return `<div style="background:${bg};border-radius:var(--radius);padding:12px;transition:background 0.3s" title="${muscle}: ${label}"><div style="font-size:20px;margin-bottom:4px">${MUSCLE_ICONS[muscle]||'💪'}</div><div style="font-size:12px;font-weight:700;color:${textColor}">${muscle}</div><div style="font-size:11px;color:${sets>0?textColor:'var(--text3)'};margin-top:2px;opacity:0.8">${label}</div></div>`;
+  }).join('');
+}
+
+// ============================================================
+// FEATURE 5: FRIEND CHALLENGES
+// ============================================================
+async function openChallengesTab() {
+  const el=document.getElementById('social-challenges-content');
+  if(!el)return;
+  el.innerHTML='<div style="color:var(--text3);font-size:13px">Loading...</div>';
+  const{data:challenges,error}=await sb.from('challenges').select('*').or(`creator_id.eq.${currentUser.id},opponent_id.eq.${currentUser.id}`).order('created_at',{ascending:false});
+  if(error){el.innerHTML='<div class="empty-state">Could not load challenges.<br><small>Make sure the challenges table is created in Supabase.</small></div>';return;}
+  const createBtn=`<button class="btn btn-primary btn-full" onclick="openCreateChallenge()" style="margin-bottom:16px">⚡ Create a challenge</button>`;
+  if(!challenges?.length){el.innerHTML=createBtn+'<div class="empty-state">No challenges yet.<br>Challenge a friend to compete on volume, sessions, or PRs!</div>';return;}
+  el.innerHTML=createBtn+(challenges||[]).map(c=>{
+    const isCreator=c.creator_id===currentUser.id;
+    const myScore=isCreator?c.creator_score:c.opponent_score;
+    const theirScore=isCreator?c.opponent_score:c.creator_score;
+    const theirName=isCreator?(c.opponent_name||'Friend'):(c.creator_name||'Friend');
+    const end=new Date(c.ends_at);
+    const daysLeft=Math.max(0,Math.ceil((end-new Date())/86400000));
+    const ended=daysLeft===0;
+    const isWinning=myScore>theirScore;
+    const isTied=myScore===theirScore;
+    const statusColor=ended?'var(--text3)':isWinning?'var(--accent)':isTied?'var(--amber)':'var(--red)';
+    const statusLabel=ended?(myScore>theirScore?'🏆 You won!':myScore<theirScore?'😤 They won':'🤝 Tied'):(isWinning?'🔥 You\'re ahead':isTied?'⚡ Tied':'😤 Behind');
+    const catLabel=c.category==='volume'?'🏋️ Volume battle':c.category==='sessions'?'📅 Session battle':'🏆 PR battle';
+    return `<div style="background:var(--surface2);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;border:1px solid ${ended?'var(--border)':statusColor+'44'}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div><div style="font-size:13px;font-weight:700;color:var(--text)">${catLabel}</div><div style="font-size:11px;color:var(--text3)">vs ${theirName} · ${ended?'Ended':'Ends in '+daysLeft+' day'+(daysLeft!==1?'s':'')}</div></div>
+        <div style="font-size:12px;font-weight:700;color:${statusColor}">${statusLabel}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">
+        <div style="text-align:center;padding:10px;background:var(--accent-dim);border-radius:var(--radius);border:1px solid var(--accent)"><div style="font-size:18px;font-weight:800;color:var(--accent);font-family:var(--mono)">${myScore||0}</div><div style="font-size:10px;color:var(--text3)">You</div></div>
+        <div style="font-size:16px;color:var(--text3);text-align:center">vs</div>
+        <div style="text-align:center;padding:10px;background:var(--surface3);border-radius:var(--radius)"><div style="font-size:18px;font-weight:800;color:var(--text);font-family:var(--mono)">${theirScore||0}</div><div style="font-size:10px;color:var(--text3)">${theirName}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openCreateChallenge() {
+  const wrap=document.createElement('div');
+  wrap.className='modal-overlay';wrap.id='create-challenge-wrap';wrap.style.display='flex';
+  wrap.innerHTML=`<div class="modal" style="width:440px">
+    <div class="modal-hd"><div class="modal-title">⚡ New challenge</div><button class="modal-close" onclick="document.getElementById('create-challenge-wrap').remove()">×</button></div>
+    <div class="form-group"><label>Category</label><select id="chall-cat"><option value="volume">🏋️ Most volume (lbs lifted)</option><option value="sessions">📅 Most sessions</option><option value="prs">🏆 Most new PRs</option></select></div>
+    <div class="form-group"><label>Duration</label><select id="chall-dur"><option value="7">1 week</option><option value="14">2 weeks</option><option value="30">1 month</option></select></div>
+    <div class="form-group"><label>Opponent username</label><input type="text" id="chall-opp" placeholder="@username"></div>
+    <button class="btn btn-primary btn-full" onclick="createChallenge()">Send challenge ⚡</button>
+  </div>`;
+  wrap.onclick=e=>{if(e.target===wrap)wrap.remove();};
+  document.body.appendChild(wrap);
+}
+
+async function createChallenge() {
+  const category=document.getElementById('chall-cat')?.value;
+  const days=parseInt(document.getElementById('chall-dur')?.value||'7');
+  const oppUsername=(document.getElementById('chall-opp')?.value||'').trim().replace('@','');
+  if(!oppUsername){toast('Enter an opponent username');return;}
+  const{data:opp}=await sb.from('usernames').select('user_id,display_name').eq('username',oppUsername).single();
+  if(!opp){toast('User @'+oppUsername+' not found');return;}
+  const endsAt=new Date();endsAt.setDate(endsAt.getDate()+days);
+  const{data:me}=await sb.from('usernames').select('display_name').eq('user_id',currentUser.id).single();
+  const{error}=await sb.from('challenges').insert({creator_id:currentUser.id,creator_name:me?.display_name||'You',opponent_id:opp.user_id,opponent_name:opp.display_name,category,ends_at:endsAt.toISOString(),status:'active',creator_score:0,opponent_score:0});
+  if(error){toast('Could not create: '+error.message);return;}
+  document.getElementById('create-challenge-wrap')?.remove();
+  toast('⚡ Challenge sent to @'+oppUsername+'!');
+  openChallengesTab();
 }
 
 // ── Online/offline status ─────────────────────────────────────
