@@ -208,7 +208,6 @@
 
   <!-- Inline rest timer — auto-starts after each set -->
   <div id="workout-rest-timer" style="display:none;margin-bottom:16px">
-    <!-- Auto-start is ON by default — toggle in the timer header -->
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:10px">
@@ -1119,7 +1118,6 @@
   </div>
 </div>
 
-
 <!-- WORKOUT SHARE CARD MODAL -->
 <div class="modal-overlay" id="share-card-modal">
   <div class="modal" style="width:500px;max-width:96vw">
@@ -1134,9 +1132,7 @@
           <div style="font-size:20px;font-weight:800;color:#c9a84c;font-family:'Syne',sans-serif" id="share-card-title">Workout Complete</div>
           <div style="font-size:13px;color:#8a96b0" id="share-card-date"></div>
         </div>
-        <div style="margin-left:auto;text-align:right">
-          <div style="font-size:11px;color:#8a96b0;text-transform:uppercase;letter-spacing:0.1em">IronTracker</div>
-        </div>
+        <div style="margin-left:auto"><div style="font-size:11px;color:#8a96b0;text-transform:uppercase;letter-spacing:0.1em">IronTracker</div></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px" id="share-card-stats"></div>
       <div id="share-card-exercises" style="margin-bottom:16px"></div>
@@ -1147,7 +1143,7 @@
       <button class="btn btn-primary" style="flex:1" onclick="downloadShareCard()">💾 Save image</button>
       <button class="btn btn-ghost" style="flex:1" onclick="copyShareText()">📋 Copy text</button>
     </div>
-    <div style="font-size:12px;color:var(--text3);margin-top:10px;text-align:center">Screenshot the card above and share to Instagram, Twitter, or anywhere else</div>
+    <div style="font-size:12px;color:var(--text3);margin-top:10px;text-align:center">Screenshot the card above to share to Instagram, Twitter, or anywhere</div>
   </div>
 </div>
 
@@ -1166,7 +1162,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="data.js"></script>
 <script src="db.js"></script>
-<script src="utils.js"></script>
 <script>
 // ============================================================
 // CONFIG — replace these two values after creating your Supabase project
@@ -1178,31 +1173,8 @@ const SUPABASE_ANON_KEY = 'sb_publishable_kRu6Aj5VcguGpml03aSMjg_t38z2YCi';
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ── App State — organized namespaces replace scattered globals ──
-// auth state
 let currentUser = null;
 let userProfile = {};
-
-// workout state (grouped)
-const workoutState = {
-  day: null,           // replaces currentWorkoutDay
-  sets: {},            // replaces workoutSets  
-  restDuration: 60,    // replaces workoutRestDuration
-  restRemaining: 0,    // replaces workoutRestRemaining
-  restInterval: null,  // replaces workoutRestInterval
-  prCache: {},         // replaces sessionPRCache
-};
-
-// ui state (grouped)
-const uiState = {
-  timerDuration: 60,      // replaces timerDuration
-  current1RM: null,       // replaces current1RM
-  currentPostId: null,    // replaces currentPostId
-  liveInterval: null,     // replaces liveInterval
-  feedPollInterval: null, // replaces feedPollInterval
-  currentTemplateId: null,// replaces currentTemplateId
-  barcodeData: null,      // replaces barcodeFoundData
-};
 let weightChart = null, volumeChart = null;
 let currentWorkoutDay = null;
 let workoutSets = {};
@@ -1235,7 +1207,7 @@ let current1RM = null;
 // QUICK_MEALS → see data.js
 
 
-// today → utils.js
+function today(){return new Date().toISOString().split('T')[0];}
 function todayDOW(){return new Date().getDay();}
 function toast(msg){const t=document.getElementById('toast');document.getElementById('toast-msg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
 function loading(show,msg='Loading...'){const o=document.getElementById('loading-overlay');document.getElementById('loading-msg').textContent=msg;o.style.display=show?'flex':'none';}
@@ -1620,9 +1592,25 @@ async function refreshDashboard(){
   checkMonthlyRecap();
 }
 
-// getWeekStart → utils.js
+function getWeekStart(){
+  const d=new Date();const day=d.getDay();const diff=d.getDate()-day+(day===0?-6:1);
+  d.setDate(diff);return d.toISOString().split('T')[0];
+}
 
-// calcStreak → utils.js
+function calcStreak(logs,restDays){
+  if(!logs.length)return 0;
+  const done=new Set(logs.map(l=>l.date));
+  const rested=new Set((restDays||[]).map(r=>r.date));
+  let streak=0;const d=new Date();
+  for(let i=0;i<60;i++){
+    const ds=d.toISOString().split('T')[0];
+    if(done.has(ds)){streak++;d.setDate(d.getDate()-1);}
+    else if(rested.has(ds)){d.setDate(d.getDate()-1);continue;} // rest day doesn't break streak
+    else if(i===0){d.setDate(d.getDate()-1);continue;}
+    else break;
+  }
+  return streak;
+}
 
 function buildSplitProgressStrip(logs,restDays){
   const container=document.getElementById('dash-week-strip');
@@ -1707,7 +1695,13 @@ async function loadNutritionTotals(dateStr){
 // ============================================================
 // WATER TRACKER
 // ============================================================
-// getWaterGoalOz → utils.js
+function getWaterGoalOz(weights){
+  // Check for user-set custom goal first
+  const customGoal=localStorage.getItem('water_goal_oz_'+(currentUser?.id||''));
+  if(customGoal)return parseInt(customGoal);
+  if(weights&&weights.length){const w=weights[weights.length-1].weight_lbs;return Math.round(w*0.55);}
+  return 100;
+}
 
 function openWaterGoalModal(){
   const current=getWaterGoalOz();
@@ -1756,7 +1750,11 @@ function addCustomWater(){
   if(input)input.value='';
 }
 
-// formatVolume → utils.js
+function formatVolume(vol){
+  // vol is stored as sum of (weight × reps) per set — display cleanly
+  if(vol>=1000)return (vol/1000).toFixed(1)+'k';
+  return vol.toString();
+}
 
 // ============================================================
 // WEEKLY CHECK-IN
@@ -1826,14 +1824,14 @@ async function getCustomExercises(dow){
 }
 
 async function getHiddenPresetExercises(splitKey,dow){
-  const hidden=await dbGetHiddenExercises(currentUser.id,splitKey,dow);
-  return new Set(hidden.map(h=>h.exercise_name));
+  const{data}=await sb.from('hidden_exercises').select('exercise_name').eq('user_id',currentUser.id).eq('split_key',splitKey).eq('dow',dow);
+  return new Set((data||[]).map(h=>h.exercise_name));
 }
 
 async function hidePresetExercise(exName){
   if(!confirm(`Remove "${exName}" from this day's workout? You can restore it anytime from the + Add exercise menu.`))return;
   const splitKey=userProfile.active_split||'iron24_5day';
-  await dbHideExercise(splitKey,currentWorkoutDay,exName);
+  await sb.from('hidden_exercises').insert({user_id:currentUser.id,split_key:splitKey,dow:currentWorkoutDay,exercise_name:exName});
   toast('Removed: '+exName);
   renderCustomExerciseList();
   renderWorkoutContent();
@@ -1841,7 +1839,7 @@ async function hidePresetExercise(exName){
 
 async function unhidePresetExercise(exName){
   const splitKey=userProfile.active_split||'iron24_5day';
-  await dbUnhideExercise(splitKey,currentWorkoutDay,exName);
+  await sb.from('hidden_exercises').delete().eq('user_id',currentUser.id).eq('split_key',splitKey).eq('dow',currentWorkoutDay).eq('exercise_name',exName);
   toast('Restored: '+exName);
   renderCustomExerciseList();
   renderWorkoutContent();
@@ -2122,13 +2120,14 @@ async function renderWorkoutContent(){
     }
 
     const n=ex.name.replace(/'/g,"\'").replace(/`/g,"'");
-    html+=`<div class="card ex-drag-card" style="margin-bottom:10px;padding:14px" draggable="true" data-ex-name="${ex.name}" ondragstart="onExDragStart(event,'${n}')" ondragover="onExDragOver(event)" ondrop="onExDrop(event,'${n}')" ondragend="onExDragEnd(event)">
+    html+=`<div class="card ex-drag-card" style="margin-bottom:10px;padding:14px" data-ex-name="${n}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-        <div style="flex:1;padding-right:8px;display:flex;align-items:flex-start;gap:8px">
-          <span class="drag-handle" title="Drag to reorder" style="cursor:grab;color:var(--text3);font-size:18px;line-height:1;padding-top:2px;flex-shrink:0;user-select:none">⠿</span>
-          <div>
-          <div style="font-size:14px;font-weight:600;color:var(--text)">${ex.name}${prTag}${custTag}</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">Target: ${ex.sets} x ${ex.target}${lastTag}</div>
+        <div style="flex:1;padding-right:8px;display:flex;align-items:flex-start;gap:6px">
+          <span class="drag-handle" title="Drag to reorder" style="cursor:grab;color:var(--text3);font-size:16px;line-height:1.6;flex-shrink:0;user-select:none;padding-top:1px">⠿</span>
+          <div style="min-width:0;flex:1">
+            <div style="font-size:14px;font-weight:600;color:var(--text)">${ex.name}${prTag}${custTag}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Target: ${ex.sets} x ${ex.target}${lastTag}</div>
+          </div>
         </div>
         ${delBtn}
       </div>
@@ -2162,65 +2161,18 @@ async function renderWorkoutContent(){
     <textarea id="workout-notes" rows="2" style="resize:none;width:100%;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:13px" placeholder="How did the session feel overall?">${savedNotes}</textarea>
   </div>`;
   if(contentEl)contentEl.innerHTML=html;
+  // Wire drag-and-drop AFTER innerHTML is set (avoids template literal backtick issues)
+  document.querySelectorAll('.ex-drag-card').forEach(card=>{
+    card.setAttribute('draggable','true');
+    card.addEventListener('dragstart', e=>onExDragStart(e, card.dataset.exName));
+    card.addEventListener('dragover',  e=>onExDragOver(e));
+    card.addEventListener('drop',      e=>onExDrop(e, card.dataset.exName));
+    card.addEventListener('dragend',   e=>onExDragEnd(e));
+  });
 }
 
 function getSessionKey(){return `it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`;}
 function saveSession(){localStorage.setItem(getSessionKey(),JSON.stringify(workoutSets));}
-
-
-// ============================================================
-// FEATURE 2: EXERCISE DRAG-AND-DROP REORDERING
-// ============================================================
-let _dragSrcEx = null;
-
-function onExDragStart(event, exName) {
-  _dragSrcEx = exName;
-  event.dataTransfer.effectAllowed = 'move';
-  event.dataTransfer.setData('text/plain', exName);
-  event.currentTarget.style.opacity = '0.4';
-}
-
-function onExDragOver(event) {
-  event.preventDefault();
-  event.dataTransfer.dropEffect = 'move';
-  event.currentTarget.style.borderColor = 'var(--accent)';
-  return false;
-}
-
-function onExDragEnd(event) {
-  event.currentTarget.style.opacity = '1';
-  event.currentTarget.style.borderColor = '';
-  document.querySelectorAll('.ex-drag-card').forEach(c => {
-    c.style.borderColor = '';
-    c.style.opacity = '1';
-  });
-}
-
-function onExDrop(event, targetExName) {
-  event.stopPropagation();
-  event.currentTarget.style.borderColor = '';
-  if (!_dragSrcEx || _dragSrcEx === targetExName) return false;
-  // Reorder allEx array in workoutSets order
-  const split = getActiveSplit();
-  const sched = split.days[currentWorkoutDay];
-  if (!sched) return;
-  // Build current order from DOM
-  const cards = [...document.querySelectorAll('.ex-drag-card')];
-  const currentOrder = cards.map(c => c.dataset.exName).filter(Boolean);
-  const srcIdx = currentOrder.indexOf(_dragSrcEx);
-  const tgtIdx = currentOrder.indexOf(targetExName);
-  if (srcIdx < 0 || tgtIdx < 0) return;
-  // Reorder
-  currentOrder.splice(srcIdx, 1);
-  currentOrder.splice(tgtIdx, 0, _dragSrcEx);
-  // Store custom order in workoutSets metadata
-  if (!workoutSets.__order) workoutSets.__order = {};
-  workoutSets.__order[currentWorkoutDay] = currentOrder;
-  saveSession();
-  renderWorkoutContent();
-  _dragSrcEx = null;
-  return false;
-}
 
 // ── Workout-page rest timer ────────────────────────────────────────────────
 let workoutRestDuration=90;
@@ -2286,7 +2238,7 @@ async function autoPRCheck(exName,w,r){
   const isPR=!existing||w>existing.weight_lbs||(w===existing.weight_lbs&&r>existing.reps);
   if(isPR){
     const newPR={user_id:currentUser.id,exercise:exName,weight_lbs:w,reps:r,estimated_orm:orm,date:today()};
-    await dbUpsertPRRecord(newPR.exercise,newPR.weight_lbs,newPR.reps,newPR.date,newPR.estimated_orm);
+    await sb.from('personal_records').upsert(newPR,{onConflict:'user_id,exercise'});
     sessionPRCache[exName]=newPR;
     toast('\ud83c\udfc6 NEW PR \u2014 '+exName+': '+w+'lbs \xd7 '+r);
     return true;
@@ -2356,7 +2308,7 @@ async function checkPRFromSet(exIdx,exName){
   const orm=Math.round(w*(1+r/30));
   const{data:existing}=await sb.from('personal_records').select('*').eq('user_id',currentUser.id).eq('exercise',exName).single();
   if(!existing||w>existing.weight_lbs||(w===existing.weight_lbs&&r>existing.reps)){
-    await dbUpsertPRRecord(exName,w,r,today(),orm);
+    await sb.from('personal_records').upsert({user_id:currentUser.id,exercise:exName,weight_lbs:w,reps:r,estimated_orm:orm,date:today()},{onConflict:'user_id,exercise'});
     toast('New PR on '+exName+': '+w+'lbs x '+r);
   }else{
     toast('Not a PR yet. Current best: '+existing.weight_lbs+'lbs x '+existing.reps);
@@ -2431,13 +2383,14 @@ async function finishWorkout(){
   publishWorkoutPost(dayName,workoutSets,totalVolume,notes);
   setLiveStatus(false,dayName);
   setSaving('workout',false);
-  // Show share card option after workout
-  setTimeout(()=>openShareCard(dayName,workoutSets,totalVolume), 800);
+  setTimeout(()=>openShareCard(dayName,workoutSets,totalVolume),800);
   initWorkoutPage();
 }
 
 async function logRestDay(){
-  await dbLogRestDay(today());
+  const{data:existing}=await sb.from('rest_days').select('id').eq('user_id',currentUser.id).eq('date',today()).limit(1);
+  if(existing&&existing.length){toast('Already logged today as a rest day');return;}
+  await sb.from('rest_days').insert({user_id:currentUser.id,date:today()});
   invalidateDashboard();
   toast('\ud83d\ude34 Rest day logged \u2014 your split stays on Day '+(currentWorkoutDay+1)+' for next time');
   refreshDashboard();
@@ -2459,7 +2412,14 @@ async function openPRModal(){
 // ============================================================
 // NUTRITION PAGE
 // ============================================================
-// formatDateDisplay → utils.js
+function formatDateDisplay(dateStr){
+  const t=today();
+  const yest=new Date();yest.setDate(yest.getDate()-1);
+  const yesterStr=yest.toISOString().split('T')[0];
+  if(dateStr===t)return 'Today — '+new Date(dateStr+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  if(dateStr===yesterStr)return 'Yesterday — '+new Date(dateStr+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  return new Date(dateStr+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+}
 
 function shiftNutrDate(delta){
   const el=document.getElementById('nutr-date');
@@ -2507,8 +2467,8 @@ async function loadNutritionForDate(){
 async function addFood(){
   const name=document.getElementById('f-name').value.trim();if(!name)return;
   const dateStr=document.getElementById('nutr-date')?.value||today();
-  const ok=await dbInsertNutritionLog({date:dateStr,food_name:name,meal:document.getElementById('f-meal').value,cal:parseInt(document.getElementById('f-cal').value)||0,protein:parseInt(document.getElementById('f-pro').value)||0,carbs:parseInt(document.getElementById('f-carb').value)||0,fat:parseInt(document.getElementById('f-fat').value)||0});
-  if(ok){closeModal('food-modal');await loadNutritionForDate();await loadNutritionTotals(today());toast(`Added: ${name}`);}
+  const{error}=await sb.from('nutrition_logs').insert({user_id:currentUser.id,date:dateStr,food_name:name,meal:document.getElementById('f-meal').value,cal:parseInt(document.getElementById('f-cal').value)||0,protein:parseInt(document.getElementById('f-pro').value)||0,carbs:parseInt(document.getElementById('f-carb').value)||0,fat:parseInt(document.getElementById('f-fat').value)||0});
+  if(!error){closeModal('food-modal');await loadNutritionForDate();await loadNutritionTotals(today());toast(`Added: ${name}`);}
 }
 
 async function deleteFood(id){
@@ -2631,19 +2591,32 @@ function toggleTimer(){
 function resetTimer(){if(timerInterval){clearInterval(timerInterval);timerInterval=null;}timerRemaining=timerDuration;timerRunning=false;updateTimerDisplay();document.getElementById('timer-btn').textContent='Start';document.getElementById('timer-status').textContent='Ready';}
 function updateTimerDisplay(){const m=Math.floor(timerRemaining/60).toString().padStart(2,'0');const s=(timerRemaining%60).toString().padStart(2,'0');const el=document.getElementById('timer-display');if(el)el.textContent=`${m}:${s}`;const bar=document.getElementById('timer-bar');if(bar)bar.style.width=Math.round(timerRemaining/timerDuration*100)+'%';}
 
-// calc1RM → utils.js
+function calc1RM(){
+  const w=parseFloat(document.getElementById('orm-weight')?.value);const r=parseInt(document.getElementById('orm-reps')?.value);
+  if(!w||!r||r<1)return;const orm=Math.round(w*(1+r/30));current1RM={w,r,orm};
+  document.getElementById('orm-result').style.display='block';document.getElementById('orm-save-btn').style.display='inline-flex';
+  document.getElementById('orm-value').textContent=orm+' lbs';
+  document.getElementById('orm-breakdown').textContent=`${w} lbs x ${r} reps  90%: ${Math.round(orm*0.9)}  80%: ${Math.round(orm*0.8)}  70%: ${Math.round(orm*0.7)}`;
+}
 async function save1RM(){
   if(!current1RM)return;const name=document.getElementById('orm-exercise').value.trim()||'Unknown exercise';
-  await dbUpsertPRRecord(name,current1RM.w,current1RM.r,today(),current1RM.orm);
+  await sb.from('personal_records').upsert({user_id:currentUser.id,exercise:name,weight_lbs:current1RM.w,reps:current1RM.r,estimated_orm:current1RM.orm,date:today()},{onConflict:'user_id,exercise'});
   toast(`Saved 1RM for ${name}: ${current1RM.orm} lbs`);
 }
 
-// calcBF → utils.js
+function calcBF(){
+  const h=parseFloat(document.getElementById('bf-height')?.value);const neck=parseFloat(document.getElementById('bf-neck')?.value);const waist=parseFloat(document.getElementById('bf-waist')?.value);const weight=parseFloat(document.getElementById('bf-weight')?.value);
+  if(!h||!neck||!waist||!weight)return;
+  const bf=86.010*Math.log10(waist-neck)-70.041*Math.log10(h)+36.76;const bfR=Math.max(2,Math.min(50,Math.round(bf*10)/10));
+  const fatLbs=Math.round(weight*bfR/100*10)/10;const leanLbs=Math.round((weight-fatLbs)*10)/10;
+  document.getElementById('bf-result').style.display='block';document.getElementById('bf-pct').textContent=bfR+'%';document.getElementById('bf-fat-lbs').textContent=fatLbs+' lbs';document.getElementById('bf-lean-lbs').textContent=leanLbs+' lbs';
+  const cat=document.getElementById('bf-category');let label,bg,color;
+  if(bfR<6){label='Essential fat';bg='var(--red-dim)';color='var(--red)';}else if(bfR<14){label='Athletic';bg='var(--accent-dim)';color='var(--accent)';}else if(bfR<18){label='Fitness';bg='var(--blue-dim)';color='var(--blue)';}else if(bfR<25){label='Average';bg='var(--amber-dim)';color='var(--amber)';}else{label='Above average';bg='var(--red-dim)';color='var(--red)';}
+  cat.style.background=bg;cat.style.color=color;cat.textContent=label;
+}
 
 async function buildToolsCheckin(){
-  const[logsR,weightsR,prsR]=await Promise.all([sb.from('workout_logs').select('date,volume').eq('user_id',currentUser.id),sb.from('weight_logs').select('date,weight_lbs').eq('user_id',currentUser.id).order('date'),sb.from('personal_records').select('*').eq('user_id',currentUser.id)]);
-  [logsR,weightsR,prsR].forEach((r,i)=>r.error&&console.warn('[tools fetch '+i+']',r.error.message));
-  const logs=logsR,weights=weightsR,prs=prsR;
+  const[logs,weights,prs]=await Promise.all([sb.from('workout_logs').select('date,volume').eq('user_id',currentUser.id),sb.from('weight_logs').select('date,weight_lbs').eq('user_id',currentUser.id).order('date'),sb.from('personal_records').select('*').eq('user_id',currentUser.id)]);
   const weekStart=getWeekStart();const thisWeek=(logs.data||[]).filter(l=>l.date>=weekStart);const uniqueDays=[...new Set(thisWeek.map(l=>l.date))];const totalVol=thisWeek.reduce((s,l)=>s+(l.volume||0),0);
   const w=weights.data||[];let wc=null;if(w.length>=2)wc=(w[w.length-1].weight_lbs-w[w.length-2].weight_lbs).toFixed(1);
   const weekPRs=(prs.data||[]).filter(p=>p.date>=weekStart);
@@ -2825,8 +2798,12 @@ async function confirmBarcodeFood(){
   if(!barcodeFoundData)return;
   const meal=document.getElementById('f-meal-scan').value;
   const dateStr=document.getElementById('nutr-date')?.value||today();
-  const bOk=await dbInsertNutritionLog({date:dateStr,food_name:barcodeFoundData.name,meal,cal:barcodeFoundData.cal,protein:barcodeFoundData.protein,carbs:barcodeFoundData.carbs,fat:barcodeFoundData.fat});
-  const error=bOk?null:{message:'Save failed'};
+  const{error}=await sb.from('nutrition_logs').insert({
+    user_id:currentUser.id,date:dateStr,
+    food_name:barcodeFoundData.name,meal,
+    cal:barcodeFoundData.cal,protein:barcodeFoundData.protein,
+    carbs:barcodeFoundData.carbs,fat:barcodeFoundData.fat
+  });
   if(!error){
     closeModal('food-modal');
     stopBarcodeScanner();
@@ -3442,7 +3419,42 @@ function toggleTheme(){
 // PLATE_SIZES → see data.js
 
 
-// calcPlates → utils.js
+function calcPlates(){
+  const target=parseFloat(document.getElementById('plate-target')?.value)||0;
+  const barWeight=parseFloat(document.getElementById('plate-bar')?.value)||45;
+  const resultEl=document.getElementById('plate-result');
+  const errorEl=document.getElementById('plate-error');
+  const displayEl=document.getElementById('plate-display');
+  const totalEl=document.getElementById('plate-total');
+
+  if(!target){resultEl.style.display='none';errorEl.style.display='none';return;}
+  if(target<barWeight){
+    resultEl.style.display='none';
+    errorEl.textContent=`Target must be at least ${barWeight} lbs (bar weight)`;
+    errorEl.style.display='block';return;
+  }
+  const perSide=(target-barWeight)/2;
+  if(perSide%1!==0&&perSide%0.5!==0){
+    // Check if achievable with standard plates
+  }
+  errorEl.style.display='none';
+  let remaining=perSide;
+  const plates=[];
+  for(const p of PLATE_SIZES){
+    while(remaining>=p.w){plates.push(p);remaining=Math.round((remaining-p.w)*100)/100;}
+  }
+  if(remaining>0.01){
+    errorEl.textContent=`Can't make exactly ${target} lbs with standard plates. Closest: ${target-remaining*2} lbs`;
+    errorEl.style.display='block';
+    resultEl.style.display='none';return;
+  }
+  displayEl.innerHTML=plates.length
+    ?plates.map(p=>`<div style="background:${p.color};color:#fff;font-size:12px;font-weight:700;padding:6px 10px;border-radius:6px;font-family:var(--mono)">${p.w}</div>`).join('')
+    :'<span class="text-muted text-base">Bar only</span>';
+  const grouped=plates.reduce((a,p)=>{a[p.w]=(a[p.w]||0)+1;return a;},{});
+  totalEl.textContent='Per side: '+Object.entries(grouped).map(([w,n])=>`${n}×${w}`).join(' + ')+` = ${perSide} lbs`;
+  resultEl.style.display='block';
+}
 
 // ============================================================
 // EXPORT TO CSV
@@ -3598,7 +3610,36 @@ function deleteCurrentTemplate(){
 
 let planResults=null; // store calculated results for apply button
 
-// parseHeightInput → utils.js
+function parseHeightInput(val){
+  // Accept formats: 5'10", 5'10, 5-10, 510, 70 (pure inches)
+  val=val.trim();
+  let inches=0;
+  // Try ft'in" format: 5'10" or 5'10
+  const ftIn=val.match(/^(\d+)[''`](\d+)/);
+  if(ftIn){inches=parseInt(ftIn[1])*12+parseInt(ftIn[2]);}
+  // Try ft-in format: 5-10
+  else if(val.match(/^\d+-\d+$/)){const p=val.split('-');inches=parseInt(p[0])*12+parseInt(p[1]);}
+  // Try pure number (assume inches if >=48, feet if <8)
+  else if(val.match(/^\d+\.?\d*$/)){
+    const n=parseFloat(val);
+    inches=n<8?Math.round(n*12):Math.round(n); // e.g. "5.9" as feet, "69" as inches
+  }
+  const hiddenEl=document.getElementById('set-height');
+  const hint=document.getElementById('height-hint');
+  if(inches>=48&&inches<=96){
+    if(hiddenEl)hiddenEl.value=inches;
+    const ft=Math.floor(inches/12);const inn=inches%12;
+    if(hint)hint.textContent=`✓ ${ft}ft ${inn}in = ${inches} inches`;
+    hint.style.color='var(--accent)';
+  }else if(val.length>0){
+    if(hiddenEl)hiddenEl.value='';
+    if(hint)hint.textContent="Try: 5'10\" or just 70 inches";
+    hint.style.color='var(--red)';
+  }else{
+    if(hiddenEl)hiddenEl.value='';
+    if(hint){hint.textContent="Enter height like 5'10\" or 70 inches";hint.style.color="var(--text3)";}
+  }
+}
 
 function generateMyPlan(){
   // Read values — prefer live field values, fall back to saved profile
@@ -3696,21 +3737,18 @@ function generateMyPlan(){
     macroNote = `Balanced macros for body recomposition — losing fat while building muscle simultaneously. Protein is prioritised for muscle retention and satiety. Works best with consistent training.`;
   }
 
-  // Store for apply button then render
+  // Store for apply button
   planResults = { cal: targetCal, pro: protein, carb: carbs, fat };
-  renderPlanResults({ bmr, tdee, targetCal, trueTotal, protein, carbs, fat, fiber,
-    proteinCals, carbCals, fatCals, calNote, timeToGoal, macroNote, goal, activity, currentWeight });
-}
 
-// ── Renders the My Plan results UI — separated from calculation logic ────
-function renderPlanResults({ bmr, tdee, targetCal, trueTotal, protein, carbs, fat, fiber,
-    proteinCals, carbCals, fatCals, calNote, timeToGoal, macroNote, goal, activity, currentWeight }) {
+  // ── Render stats ──────────────────────────────────────────────────────
   const s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   s('plan-bmr', bmr.toLocaleString());
   s('plan-tdee', tdee.toLocaleString());
   s('plan-target-cal', targetCal.toLocaleString());
   s('plan-cal-note', calNote);
   s('plan-time', timeToGoal);
+
+  // Macro cards
   const macroGrid = document.getElementById('plan-macros-grid');
   const pctOf = (cals) => Math.round(cals / trueTotal * 100);
   const macros = [
@@ -3726,9 +3764,14 @@ function renderPlanResults({ bmr, tdee, targetCal, trueTotal, protein, carbs, fa
       <div class="stat-value text-mono" style="font-size:20px;color:${m.color}">${m.val.toLocaleString()}<span class="stat-unit" style="font-size:13px">${m.unit}</span></div>
       <div style="font-size:10px;color:var(--text3);margin-top:3px">${m.extra}</div>
     </div>`).join('');
+
   const macroNoteEl = document.getElementById('plan-macro-note');
   if (macroNoteEl) macroNoteEl.textContent = macroNote;
+
+  // Supplements
   renderSupplementRecs(goal, activity, currentWeight, protein);
+
+  // Show
   document.getElementById('my-plan-results').style.display = 'block';
   document.getElementById('my-plan-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
   toast('✅ Your plan is ready!');
@@ -3737,7 +3780,118 @@ function renderPlanResults({ bmr, tdee, targetCal, trueTotal, protein, carbs, fa
 
 function renderSupplementRecs(goal, activity, weight, proteinTarget, macroNote){
   // All supplements with evidence ratings and goal relevance
-  const allSupplements=SUPPLEMENT_DATA; // → data.js
+  const allSupplements=[
+    {
+      name:'Creatine Monohydrate',
+      icon:'💪',
+      dose:'3-5g daily',
+      timing:'Any time (consistency matters)',
+      goals:['cut','bulk','maintain'],
+      priority:'essential',
+      evidence:'⭐⭐⭐⭐⭐',
+      benefit:'The most researched supplement in sports science. Increases strength, power output, and muscle mass. Helps preserve muscle during a cut. No loading phase needed.',
+      note:'Take every day — even on rest days.',
+    },
+    {
+      name:'Protein Powder (Whey or Plant)',
+      icon:'🥛',
+      dose:`${Math.max(0,Math.round(proteinTarget*0.3))}g per shake`,
+      timing:'Post-workout or between meals',
+      goals:['bulk','cut','maintain'],
+      priority: proteinTarget>180?'essential':'recommended',
+      evidence:'⭐⭐⭐⭐⭐',
+      benefit:`You need ${proteinTarget}g protein daily. If you struggle to hit that from food alone, protein powder is the most convenient way to close the gap. Whey is absorbed fastest post-workout.`,
+      note:'Not needed if you hit protein targets from whole food.',
+    },
+    {
+      name:'Caffeine / Pre-workout',
+      icon:'⚡',
+      dose:'150-300mg caffeine',
+      timing:'30-45 min before training',
+      goals:['cut','bulk','maintain'],
+      priority:'recommended',
+      evidence:'⭐⭐⭐⭐⭐',
+      benefit:'Clinically proven to improve strength, endurance, and focus. Particularly useful on a cut when lower calories can leave you feeling sluggish before training.',
+      note:'Avoid after 2pm to protect sleep quality.',
+    },
+    {
+      name:'Omega-3 Fish Oil',
+      icon:'🐟',
+      dose:'2-3g EPA+DHA daily',
+      timing:'With meals',
+      goals:['cut','bulk','maintain'],
+      priority:'recommended',
+      evidence:'⭐⭐⭐⭐',
+      benefit:'Reduces inflammation from heavy training, supports joint health, and may improve muscle protein synthesis. Also has cardiovascular and cognitive benefits.',
+      note:'Look for a product with at least 1g EPA+DHA combined per serving.',
+    },
+    {
+      name:'Vitamin D3 + K2',
+      icon:'☀️',
+      dose:'2000-5000 IU D3 daily',
+      timing:'Morning with fat-containing meal',
+      goals:['cut','bulk','maintain'],
+      priority:'recommended',
+      evidence:'⭐⭐⭐⭐',
+      benefit:'Most people — especially those who train indoors — are Vitamin D deficient. D3 supports testosterone production, bone density, immune function, and muscle recovery.',
+      note:'K2 (100-200mcg) helps direct calcium to bones rather than arteries.',
+    },
+    {
+      name:'Magnesium Glycinate',
+      icon:'😴',
+      dose:'300-400mg elemental magnesium',
+      timing:'30-60 min before bed',
+      goals:['cut','bulk','maintain'],
+      priority:'recommended',
+      evidence:'⭐⭐⭐⭐',
+      benefit:'Heavy training depletes magnesium. Low levels hurt sleep quality, muscle recovery, and energy production. Glycinate form is easiest on the stomach and best absorbed.',
+      note:'Avoid magnesium oxide — it\'s poorly absorbed.',
+    },
+    {
+      name:'Beta-Alanine',
+      icon:'🔥',
+      dose:'3.2-6.4g daily',
+      timing:'Split doses throughout day',
+      goals:['bulk','maintain'],
+      priority: activity>=1.725?'recommended':'optional',
+      evidence:'⭐⭐⭐⭐',
+      benefit:'Buffers lactic acid in muscles, delaying fatigue during high-rep training and HIIT. Most effective for sets lasting 60-240 seconds.',
+      note:'Causes harmless tingling (paresthesia). Split doses to reduce this.',
+    },
+    {
+      name:'Zinc + Magnesium (ZMA)',
+      icon:'🌙',
+      dose:'ZMA supplement as directed',
+      timing:'Before bed on empty stomach',
+      goals:['bulk'],
+      priority:'optional',
+      evidence:'⭐⭐⭐',
+      benefit:'Zinc supports testosterone production and immune function. Combined with magnesium and B6, ZMA may improve sleep quality and recovery in lifters with low zinc/magnesium levels.',
+      note:'Not needed if already taking magnesium and getting adequate zinc from diet.',
+    },
+    {
+      name:'L-Carnitine',
+      icon:'🔥',
+      dose:'1-2g daily',
+      timing:'With meals',
+      goals:['cut'],
+      priority:'optional',
+      evidence:'⭐⭐⭐',
+      benefit:'May enhance fat oxidation during exercise. Most effective when combined with a caloric deficit and cardio. Evidence is moderate — not a magic fat burner.',
+      note:'Acetyl-L-Carnitine form also has cognitive benefits.',
+    },
+    {
+      name:'Electrolytes',
+      icon:'💧',
+      dose:'1 serving during/after training',
+      timing:'During workout or post-workout',
+      goals:['cut','bulk','maintain'],
+      priority: activity>=1.55?'recommended':'optional',
+      evidence:'⭐⭐⭐⭐',
+      benefit:'Heavy training and sweating deplete sodium, potassium, and magnesium. Electrolytes maintain performance, prevent cramping, and support recovery. Especially important on a cut where carb restriction reduces glycogen and water retention.',
+      note:'Coconut water + a pinch of sea salt is a cheap alternative.',
+    },
+  ];
 
   // Filter and sort by relevance
   const priorityOrder={essential:0,recommended:1,optional:2};
@@ -4681,29 +4835,84 @@ function resetServingSize(){
 }
 
 // ============================================================
+// FEATURE 2: EXERCISE DRAG-AND-DROP REORDERING
+// ============================================================
+let _dragSrcEx = null;
+
+function onExDragStart(e, exName) {
+  _dragSrcEx = exName;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', exName);
+  e.currentTarget.style.opacity = '0.4';
+}
+
+function onExDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.style.borderColor = 'var(--accent)';
+}
+
+function onExDragEnd(e) {
+  e.currentTarget.style.opacity = '1';
+  e.currentTarget.style.borderColor = '';
+  document.querySelectorAll('.ex-drag-card').forEach(c => {
+    c.style.borderColor = '';
+    c.style.opacity = '1';
+  });
+}
+
+function onExDrop(e, targetExName) {
+  e.stopPropagation();
+  e.currentTarget.style.borderColor = '';
+  if (!_dragSrcEx || _dragSrcEx === targetExName) return;
+  const cards = [...document.querySelectorAll('.ex-drag-card')];
+  const currentOrder = cards.map(c => c.dataset.exName).filter(Boolean);
+  const srcIdx = currentOrder.indexOf(_dragSrcEx);
+  const tgtIdx = currentOrder.indexOf(targetExName);
+  if (srcIdx < 0 || tgtIdx < 0) return;
+  currentOrder.splice(srcIdx, 1);
+  currentOrder.splice(tgtIdx, 0, _dragSrcEx);
+  if (!workoutSets.__order) workoutSets.__order = {};
+  workoutSets.__order[currentWorkoutDay] = currentOrder;
+  saveSession();
+  renderWorkoutContent();
+  _dragSrcEx = null;
+}
+
+// ============================================================
 // FEATURE 3: SHAREABLE WORKOUT CARD
 // ============================================================
 function openShareCard(dayName, sets, volume) {
   const prList = Object.entries(sessionPRCache||{});
   const exercises = Object.entries(sets||{}).filter(([k])=>k!=='__order');
   const totalSets = exercises.reduce((t,[,ex])=>t+(ex.sets?.length||0),0);
-  document.getElementById('share-card-title').textContent = dayName || 'Workout Complete';
-  document.getElementById('share-card-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-  document.getElementById('share-card-stats').innerHTML = [
-    {label:'Volume',val:volume>0?(volume/1000).toFixed(1)+'k lbs':'—'},
-    {label:'Exercises',val:String(exercises.length)},
-    {label:'Sets',val:String(totalSets)},
-  ].map(s=>`<div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#c9a84c;font-family:var(--mono)">${s.val}</div><div style="font-size:10px;color:#8a96b0;text-transform:uppercase;letter-spacing:0.08em;margin-top:4px">${s.label}</div></div>`).join('');
-  const topEx = exercises.slice(0,5);
-  document.getElementById('share-card-exercises').innerHTML = topEx.map(([name,ex])=>{
+  const titleEl = document.getElementById('share-card-title');
+  const dateEl = document.getElementById('share-card-date');
+  const statsEl = document.getElementById('share-card-stats');
+  const exEl = document.getElementById('share-card-exercises');
+  const prsEl = document.getElementById('share-card-prs');
+  if(!titleEl)return;
+  titleEl.textContent = dayName || 'Workout Complete';
+  dateEl.textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  statsEl.innerHTML = [
+    {label:'Volume', val: volume>0?(volume/1000).toFixed(1)+'k lbs':'—'},
+    {label:'Exercises', val: String(exercises.length)},
+    {label:'Sets', val: String(totalSets)},
+  ].map(s=>'<div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:10px;padding:12px;text-align:center">' +
+    '<div style="font-size:20px;font-weight:800;color:#c9a84c;font-family:var(--mono)">'+s.val+'</div>' +
+    '<div style="font-size:10px;color:#8a96b0;text-transform:uppercase;letter-spacing:0.08em;margin-top:4px">'+s.label+'</div></div>').join('');
+  exEl.innerHTML = exercises.slice(0,5).map(([name,ex])=>{
     const best=(ex.sets||[]).reduce((b,s)=>(!b||s.w>b.w)?s:b,null);
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06)"><span style="font-size:13px;color:#eef0f5;font-weight:600">${name}</span><span style="font-size:12px;color:#8a96b0;font-family:var(--mono)">${ex.sets?.length||0} sets${best?` · ${best.w}lbs×${best.r}`:''}</span></div>`;
-  }).join('')+(exercises.length>5?`<div style="font-size:11px;color:#8a96b0;padding:6px 0">+${exercises.length-5} more exercises</div>`:'');
-  const prsEl=document.getElementById('share-card-prs');
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06)">' +
+      '<span style="font-size:13px;color:#eef0f5;font-weight:600">'+name+'</span>' +
+      '<span style="font-size:12px;color:#8a96b0;font-family:var(--mono)">'+(ex.sets?.length||0)+' sets'+(best?' · '+best.w+'lbs×'+best.r:'')+'</span></div>';
+  }).join('')+(exercises.length>5?'<div style="font-size:11px;color:#8a96b0;padding:6px 0">+'+( exercises.length-5)+' more</div>':'');
   if(prsEl){
     if(prList.length>0){
       prsEl.style.display='block';
-      prsEl.innerHTML=`<div style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:10px;padding:12px"><div style="font-size:11px;font-weight:700;color:#c9a84c;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">🏆 New PRs today</div>${prList.map(([ex,pr])=>`<div style="font-size:13px;color:#eef0f5">${ex}: <strong style="color:#c9a84c">${pr.w}lbs × ${pr.r} reps</strong></div>`).join('')}</div>`;
+      prsEl.innerHTML='<div style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:10px;padding:12px">' +
+        '<div style="font-size:11px;font-weight:700;color:#c9a84c;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">🏆 New PRs today</div>' +
+        prList.map(([ex,pr])=>'<div style="font-size:13px;color:#eef0f5">'+ex+': <strong style="color:#c9a84c">'+pr.w+'lbs × '+pr.r+' reps</strong></div>').join('')+'</div>';
     } else { prsEl.style.display='none'; }
   }
   openModal('share-card-modal');
@@ -4715,27 +4924,23 @@ function copyShareText() {
   const stats=[...document.querySelectorAll('#share-card-stats > div')].map(d=>{
     const v=d.querySelector('div:first-child')?.textContent||'';
     const l=d.querySelector('div:last-child')?.textContent||'';
-    return `${v} ${l}`;
+    return v+' '+l;
   }).join(' · ');
-  const prEls=[...document.querySelectorAll('#share-card-prs div[style*="font-size:13px"]')];
-  const prText=prEls.length>0?'\n🏆 PRs: '+prEls.map(e=>e.textContent).join(', '):'';
-  const text=`💪 ${title} — ${date}\n${stats}${prText}\n\nLogged with IronTracker`;
-  navigator.clipboard.writeText(text).then(()=>toast('✅ Copied to clipboard!')).catch(()=>toast('Select and copy the text manually'));
+  const text='💪 '+title+' — '+date+'\n'+stats+'\n\nLogged with IronTracker';
+  navigator.clipboard.writeText(text).then(()=>toast('✅ Copied!')).catch(()=>toast('Select and copy manually'));
 }
 
-function downloadShareCard() {
-  toast('📸 Screenshot the card above to save it');
-}
+function downloadShareCard(){toast('📸 Screenshot the card above to save it');}
 
 // ============================================================
 // FEATURE 4: MUSCLE HEATMAP
 // ============================================================
 const MUSCLE_EXERCISE_MAP = {
-  'Chest':['Barbell Bench Press','Incline Barbell Press','Incline Dumbbell Press','Cable Chest Fly','Push-up Burnout','Close-Grip Bench Press','Dumbbell Bench Press','Pec Deck','Chest Dip'],
+  'Chest':['Barbell Bench Press','Incline Barbell Press','Incline Dumbbell Press','Cable Chest Fly','Push-up Burnout','Close-Grip Bench Press','Dumbbell Bench Press','Pec Deck'],
   'Back':['Deadlift','Barbell Row','Weighted Pull-ups','Pull-ups','Cable Row','Lat Pulldown','T-Bar Row','Single-Arm DB Row','Face Pull'],
-  'Shoulders':['Barbell Overhead Press','Dumbbell Shoulder Press','Lateral Raises','Front Raise','Arnold Press','Machine Shoulder Press','Upright Row'],
-  'Biceps':['Barbell Curl','Dumbbell Curl','Hammer Curl','Preacher Curl','Cable Curl','Incline DB Curl','Concentration Curl'],
-  'Triceps':['Close-Grip Bench Press','Tricep Rope Pushdown','Overhead Tricep Extension','Skull Crushers','Diamond Push-ups','Dip','Tricep Kickback'],
+  'Shoulders':['Barbell Overhead Press','Dumbbell Shoulder Press','Lateral Raises','Front Raise','Arnold Press','Upright Row'],
+  'Biceps':['Barbell Curl','Dumbbell Curl','Hammer Curl','Preacher Curl','Cable Curl','Incline DB Curl'],
+  'Triceps':['Close-Grip Bench Press','Tricep Rope Pushdown','Overhead Tricep Extension','Skull Crushers','Diamond Push-ups','Dip'],
   'Quads':['Barbell Back Squat','Front Squat','Leg Press','Hack Squat','Bulgarian Split Squat','Lunges','Leg Extension'],
   'Hamstrings/Glutes':['Romanian Deadlift','Hip Thrust','Leg Curl','Nordic Curl','Good Morning','Glute Bridge','Sumo Deadlift'],
   'Calves':['Standing Calf Raise','Seated Calf Raise','Donkey Calf Raise','Jump Rope'],
@@ -4743,7 +4948,8 @@ const MUSCLE_EXERCISE_MAP = {
   'Full Body/HIIT':['Deadlift','Barbell Back Squat','Clean','Thruster','Burpee','Kettlebell Swing'],
 };
 
-async function renderMuscleHeatmap(period='week') {
+async function renderMuscleHeatmap(period) {
+  period = period || 'week';
   ['week','month'].forEach(p=>{
     const btn=document.getElementById('hm-'+p+'-btn');
     if(!btn)return;
@@ -4753,20 +4959,18 @@ async function renderMuscleHeatmap(period='week') {
   const el=document.getElementById('muscle-heatmap-grid');
   if(!el)return;
   el.innerHTML='<div style="color:var(--text3);font-size:12px">Loading...</div>';
-  const d=new Date();
-  d.setDate(d.getDate()-(period==='week'?7:30));
+  const d=new Date();d.setDate(d.getDate()-(period==='week'?7:30));
   const startDate=d.toISOString().split('T')[0];
   const{data:logs,error}=await sb.from('workout_logs').select('sets_data,date').eq('user_id',currentUser.id).gte('date',startDate);
-  if(error){el.innerHTML='<div class="empty-state">Could not load data</div>';return;}
+  if(error){el.innerHTML='<div class="empty-state">Could not load</div>';return;}
   const muscleSets={};
   Object.keys(MUSCLE_ICONS).forEach(m=>muscleSets[m]=0);
   (logs||[]).forEach(log=>{
     Object.entries(log.sets_data||{}).forEach(([exName,exData])=>{
-      const setCount=exData?.sets?.length||0;
-      if(!setCount)return;
+      const sc=exData?.sets?.length||0;if(!sc)return;
       Object.entries(MUSCLE_EXERCISE_MAP).forEach(([muscle,exercises])=>{
         if(exercises.some(e=>exName.toLowerCase().includes(e.toLowerCase())||e.toLowerCase().includes(exName.toLowerCase()))){
-          muscleSets[muscle]=(muscleSets[muscle]||0)+setCount;
+          muscleSets[muscle]=(muscleSets[muscle]||0)+sc;
         }
       });
     });
@@ -4774,10 +4978,13 @@ async function renderMuscleHeatmap(period='week') {
   const maxSets=Math.max(1,...Object.values(muscleSets));
   el.innerHTML=Object.entries(muscleSets).map(([muscle,sets])=>{
     const intensity=sets/maxSets;
-    const bg=sets===0?'var(--surface3)':`rgba(201,168,76,${Math.max(0.15,intensity).toFixed(2)})`;
-    const textColor=intensity>0.6?'#080c14':sets>0?'var(--accent)':'var(--text3)';
-    const label=sets===0?'Not trained':`${sets} set${sets!==1?'s':''}`;
-    return `<div style="background:${bg};border-radius:var(--radius);padding:12px;transition:background 0.3s" title="${muscle}: ${label}"><div style="font-size:20px;margin-bottom:4px">${MUSCLE_ICONS[muscle]||'💪'}</div><div style="font-size:12px;font-weight:700;color:${textColor}">${muscle}</div><div style="font-size:11px;color:${sets>0?textColor:'var(--text3)'};margin-top:2px;opacity:0.8">${label}</div></div>`;
+    const bg=sets===0?'var(--surface3)':'rgba(201,168,76,'+Math.max(0.15,intensity).toFixed(2)+')';
+    const tc=intensity>0.6?'#080c14':sets>0?'var(--accent)':'var(--text3)';
+    const label=sets===0?'Not trained':sets+' set'+(sets!==1?'s':'');
+    return '<div style="background:'+bg+';border-radius:var(--radius);padding:12px;transition:background 0.3s" title="'+muscle+': '+label+'">' +
+      '<div style="font-size:20px;margin-bottom:4px">'+(MUSCLE_ICONS[muscle]||'💪')+'</div>' +
+      '<div style="font-size:12px;font-weight:700;color:'+tc+'">'+muscle+'</div>' +
+      '<div style="font-size:11px;color:'+(sets>0?tc:'var(--text3)')+';margin-top:2px;opacity:0.8">'+label+'</div></div>';
   }).join('');
 }
 
@@ -4788,9 +4995,9 @@ async function openChallengesTab() {
   const el=document.getElementById('social-challenges-content');
   if(!el)return;
   el.innerHTML='<div style="color:var(--text3);font-size:13px">Loading...</div>';
-  const{data:challenges,error}=await sb.from('challenges').select('*').or(`creator_id.eq.${currentUser.id},opponent_id.eq.${currentUser.id}`).order('created_at',{ascending:false});
-  if(error){el.innerHTML='<div class="empty-state">Could not load challenges.<br><small>Make sure the challenges table is created in Supabase.</small></div>';return;}
-  const createBtn=`<button class="btn btn-primary btn-full" onclick="openCreateChallenge()" style="margin-bottom:16px">⚡ Create a challenge</button>`;
+  const{data:challenges,error}=await sb.from('challenges').select('*').or('creator_id.eq.'+currentUser.id+',opponent_id.eq.'+currentUser.id).order('created_at',{ascending:false});
+  if(error){el.innerHTML='<div class="empty-state">Could not load challenges.<br><small>Run add_challenges.sql in Supabase first.</small></div>';return;}
+  const createBtn='<button class="btn btn-primary btn-full" onclick="openCreateChallenge()" style="margin-bottom:16px">⚡ Create a challenge</button>';
   if(!challenges?.length){el.innerHTML=createBtn+'<div class="empty-state">No challenges yet.<br>Challenge a friend to compete on volume, sessions, or PRs!</div>';return;}
   el.innerHTML=createBtn+(challenges||[]).map(c=>{
     const isCreator=c.creator_id===currentUser.id;
@@ -4800,35 +5007,32 @@ async function openChallengesTab() {
     const end=new Date(c.ends_at);
     const daysLeft=Math.max(0,Math.ceil((end-new Date())/86400000));
     const ended=daysLeft===0;
-    const isWinning=myScore>theirScore;
-    const isTied=myScore===theirScore;
-    const statusColor=ended?'var(--text3)':isWinning?'var(--accent)':isTied?'var(--amber)':'var(--red)';
-    const statusLabel=ended?(myScore>theirScore?'🏆 You won!':myScore<theirScore?'😤 They won':'🤝 Tied'):(isWinning?'🔥 You\'re ahead':isTied?'⚡ Tied':'😤 Behind');
-    const catLabel=c.category==='volume'?'🏋️ Volume battle':c.category==='sessions'?'📅 Session battle':'🏆 PR battle';
-    return `<div style="background:var(--surface2);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;border:1px solid ${ended?'var(--border)':statusColor+'44'}">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div><div style="font-size:13px;font-weight:700;color:var(--text)">${catLabel}</div><div style="font-size:11px;color:var(--text3)">vs ${theirName} · ${ended?'Ended':'Ends in '+daysLeft+' day'+(daysLeft!==1?'s':'')}</div></div>
-        <div style="font-size:12px;font-weight:700;color:${statusColor}">${statusLabel}</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">
-        <div style="text-align:center;padding:10px;background:var(--accent-dim);border-radius:var(--radius);border:1px solid var(--accent)"><div style="font-size:18px;font-weight:800;color:var(--accent);font-family:var(--mono)">${myScore||0}</div><div style="font-size:10px;color:var(--text3)">You</div></div>
-        <div style="font-size:16px;color:var(--text3);text-align:center">vs</div>
-        <div style="text-align:center;padding:10px;background:var(--surface3);border-radius:var(--radius)"><div style="font-size:18px;font-weight:800;color:var(--text);font-family:var(--mono)">${theirScore||0}</div><div style="font-size:10px;color:var(--text3)">${theirName}</div></div>
-      </div>
-    </div>`;
+    const isWinning=myScore>theirScore,isTied=myScore===theirScore;
+    const sc=ended?'var(--text3)':isWinning?'var(--accent)':isTied?'var(--amber)':'var(--red)';
+    const sl=ended?(myScore>theirScore?'🏆 You won!':myScore<theirScore?'😤 They won':'🤝 Tied'):(isWinning?'🔥 Ahead':isTied?'⚡ Tied':'😤 Behind');
+    const cl=c.category==='volume'?'🏋️ Volume':c.category==='sessions'?'📅 Sessions':'🏆 PRs';
+    return '<div style="background:var(--surface2);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;border:1px solid '+(ended?'var(--border)':sc+'44')+'">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
+      '<div><div style="font-size:13px;font-weight:700;color:var(--text)">'+cl+' battle</div>' +
+      '<div style="font-size:11px;color:var(--text3)">vs '+theirName+' · '+(ended?'Ended':'Ends in '+daysLeft+' day'+(daysLeft!==1?'s':''))+'</div></div>' +
+      '<div style="font-size:12px;font-weight:700;color:'+sc+'">'+sl+'</div></div>' +
+      '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">' +
+      '<div style="text-align:center;padding:10px;background:var(--accent-dim);border-radius:var(--radius);border:1px solid var(--accent)"><div style="font-size:18px;font-weight:800;color:var(--accent);font-family:var(--mono)">'+(myScore||0)+'</div><div style="font-size:10px;color:var(--text3)">You</div></div>' +
+      '<div style="font-size:16px;color:var(--text3);text-align:center">vs</div>' +
+      '<div style="text-align:center;padding:10px;background:var(--surface3);border-radius:var(--radius)"><div style="font-size:18px;font-weight:800;color:var(--text);font-family:var(--mono)">'+(theirScore||0)+'</div><div style="font-size:10px;color:var(--text3)">'+theirName+'</div></div>' +
+      '</div></div>';
   }).join('');
 }
 
 function openCreateChallenge() {
   const wrap=document.createElement('div');
   wrap.className='modal-overlay';wrap.id='create-challenge-wrap';wrap.style.display='flex';
-  wrap.innerHTML=`<div class="modal" style="width:440px">
-    <div class="modal-hd"><div class="modal-title">⚡ New challenge</div><button class="modal-close" onclick="document.getElementById('create-challenge-wrap').remove()">×</button></div>
-    <div class="form-group"><label>Category</label><select id="chall-cat"><option value="volume">🏋️ Most volume (lbs lifted)</option><option value="sessions">📅 Most sessions</option><option value="prs">🏆 Most new PRs</option></select></div>
-    <div class="form-group"><label>Duration</label><select id="chall-dur"><option value="7">1 week</option><option value="14">2 weeks</option><option value="30">1 month</option></select></div>
-    <div class="form-group"><label>Opponent username</label><input type="text" id="chall-opp" placeholder="@username"></div>
-    <button class="btn btn-primary btn-full" onclick="createChallenge()">Send challenge ⚡</button>
-  </div>`;
+  wrap.innerHTML='<div class="modal" style="width:440px">' +
+    '<div class="modal-hd"><div class="modal-title">⚡ New challenge</div><button class="modal-close" onclick="document.getElementById(\'create-challenge-wrap\').remove()">×</button></div>' +
+    '<div class="form-group"><label>Category</label><select id="chall-cat"><option value="volume">🏋️ Most volume (lbs)</option><option value="sessions">📅 Most sessions</option><option value="prs">🏆 Most new PRs</option></select></div>' +
+    '<div class="form-group"><label>Duration</label><select id="chall-dur"><option value="7">1 week</option><option value="14">2 weeks</option><option value="30">1 month</option></select></div>' +
+    '<div class="form-group"><label>Opponent username</label><input type="text" id="chall-opp" placeholder="@username"></div>' +
+    '<button class="btn btn-primary btn-full" onclick="createChallenge()">Send challenge ⚡</button></div>';
   wrap.onclick=e=>{if(e.target===wrap)wrap.remove();};
   document.body.appendChild(wrap);
 }
