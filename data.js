@@ -186,13 +186,7 @@ const CARDIO_TYPES = ['Running','Cycling','Walking','Rowing','Jump Rope','Swimmi
 
 const MUSCLE_ICONS={'Chest':'🫁','Back':'🔙','Shoulders':'🤸','Biceps':'💪','Triceps':'🦾','Quads':'🦵','Hamstrings/Glutes':'🍑','Calves':'🦴','Core/Abs':'⚡','Full Body/HIIT':'🔥'};
 
-const GOAL_SPLITS={
-  build_muscle:{label:'Iron24 5-Day Program',split:'iron24_5day',desc:'Classic hypertrophy split targeting each muscle group with maximum volume.'},
-  lose_fat:{label:'Iron24 5-Day Program',split:'iron24_5day',desc:'Strength training preserves muscle while you cut. Combine with cardio for best results.'},
-  get_strong:{label:'Upper/Lower Split',split:'upper_lower',desc:'Powerlifting-focused split built around heavy compound movements.'},
-  athletic:{label:'Push/Pull/Legs',split:'ppl',desc:'PPL balances pushing, pulling, and leg work for well-rounded athletic performance.'},
-  general:{label:'Push/Pull/Legs',split:'ppl',desc:'Balanced program hitting every muscle group with consistent frequency.'},
-};
+
 
 
 // ── Unit conversion constants ────────────────────────────────
