@@ -2360,10 +2360,13 @@ async function finishWorkout(){
   const notes=document.getElementById('workout-notes')?.value||'';
   localStorage.setItem(`it_notes_${currentUser.id}_${currentWorkoutDay}_${today()}`,notes);
   let totalVolume=0;let totalSets=0;
-  Object.values(workoutSets).forEach(ex=>{
-    if(ex&&ex.sets){ex.sets.forEach(s=>{totalVolume+=(s.w||0)*(s.r||0);totalSets++;});}
+  const cleanSets={};
+  Object.entries(workoutSets).forEach(([k,v])=>{
+    if(k==='__order')return;
+    cleanSets[k]=v;
+    if(v&&v.sets){v.sets.forEach(s=>{totalVolume+=(s.w||0)*(s.r||0);totalSets++;});}
   });
-  if(totalSets===0&&!confirm('No sets logged. Save anyway?'))return;
+  if(totalSets===0&&!confirm('No sets logged. Save anyway?')){setSaving('workout',false);return;}
   const dayName=sched?sched.name:'Custom workout';
   const{error}=await sb.from('workout_logs').insert({
     user_id:currentUser.id,
@@ -2371,19 +2374,19 @@ async function finishWorkout(){
     dow:todayDOW(),
     split_index:currentWorkoutDay,
     day_name:dayName,
-    sets_data:workoutSets,
+    sets_data:cleanSets,
     volume:totalVolume,
     notes
   });
-  if(error){toast('Error saving workout: '+error.message);return;}
+  if(error){toast('Error saving workout: '+error.message);setSaving('workout',false);return;}
   localStorage.removeItem(`it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`);
   invalidateDashboard();
   toast(`\u2705 ${dayName} saved! Next up: Day ${((currentWorkoutDay+1)%split.days.length)+1}`);
   // Publish to social feed
-  publishWorkoutPost(dayName,workoutSets,totalVolume,notes);
+  publishWorkoutPost(dayName,cleanSets,totalVolume,notes);
   setLiveStatus(false,dayName);
   setSaving('workout',false);
-  setTimeout(()=>openShareCard(dayName,workoutSets,totalVolume),800);
+  setTimeout(()=>openShareCard(dayName,cleanSets,totalVolume),800);
   initWorkoutPage();
 }
 
@@ -2881,9 +2884,7 @@ function switchSocialTab(tab){
 
 // ---- Publish workout post when finishing ----
 async function publishWorkoutPost(dayName,setsData,volume,notes){
-  if(!userProfile.username)return; // no username = private
-  const friendIds=await dbGetFriendIds();const friends=friendIds;
-  if(!friends||!friends.length)return;
+  if(!userProfile.username)return; // no username = private, skip
   const exerciseCount=Object.keys(setsData||{}).length;
   const setCount=Object.values(setsData||{}).reduce((t,ex)=>t+(ex.sets?ex.sets.length:0),0);
   await sb.from('workout_posts').insert({
@@ -2898,8 +2899,11 @@ async function publishWorkoutPost(dayName,setsData,volume,notes){
     notes:notes||null,
     posted_at:new Date().toISOString()
   });
-  // Send push notification to friends
-  sendWorkoutNotificationToFriends(friends,'finished');
+  // Notify friends (only if they exist)
+  const friendIds=await dbGetFriendIds();
+  if(friendIds&&friendIds.length){
+    sendWorkoutNotificationToFriends(friendIds,'finished');
+  }
 }
 
 // ---- Live status ----
@@ -2940,18 +2944,13 @@ async function loadSocialFeed(){
   // Get accepted friends
   const friendIds=await dbGetFriendIds();
 
-  if(!friendIds.length){
-    el.innerHTML='<div style="text-align:center;color:var(--text3);padding:40px;font-size:13px"><div style="font-size:32px;margin-bottom:12px">👥</div>Add friends to see their workouts here.</div>';
-    return;
-  }
-
-  // Load posts from friends + own posts
-  const allIds=[...friendIds,currentUser.id];
+  // Load posts from friends + own posts (always include self)
+  const allIds=[...new Set([...friendIds, currentUser.id])];
   const{data:posts,error:postsErr}=await sb.from('workout_posts').select('*').in('user_id',allIds).order('posted_at',{ascending:false}).limit(30);
   if(postsErr){el.innerHTML='<div style="color:var(--text3);padding:20px;text-align:center">Could not load feed. Please try again.</div>';return;}
 
   if(!posts||!posts.length){
-    el.innerHTML='<div style="text-align:center;color:var(--text3);padding:40px;font-size:13px">No workouts posted yet. Finish a workout to share it!</div>';
+    el.innerHTML='<div style="text-align:center;color:var(--text3);padding:40px;font-size:13px">'+(friendIds.length?'No workouts posted yet. Finish a workout to share it!':'Finish a workout to see it here, or add friends to see their posts too.')+'</div>';
     return;
   }
 
