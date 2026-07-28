@@ -1436,6 +1436,12 @@ async function loadProfile(){
     f('set-cal',data.macro_cal);f('set-pro',data.macro_pro);f('set-carb',data.macro_carb);f('set-fat',data.macro_fat);
     updateMacroGoalLabels();
   }
+  // Always load username so publishWorkoutPost works without visiting Social tab first
+  const{data:unData}=await sb.from('usernames').select('username,display_name').eq('user_id',currentUser.id).single();
+  if(unData){
+    userProfile.username=unData.username;
+    userProfile.display_name=unData.display_name;
+  }
 }
 
 function updateMacroGoalLabels(){
@@ -2378,7 +2384,8 @@ async function finishWorkout(){
     volume:totalVolume,
     notes
   });
-  if(error){toast('Error saving workout: '+error.message);setSaving('workout',false);return;}
+  if(error){toast('Error saving workout: '+error.message);console.error('[finishWorkout] workout_logs insert failed:',error);setSaving('workout',false);return;}
+  console.log('[finishWorkout] workout saved successfully, sets:',totalSets,'volume:',totalVolume);
   localStorage.removeItem(`it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`);
   invalidateDashboard();
   toast(`\u2705 ${dayName} saved! Next up: Day ${((currentWorkoutDay+1)%split.days.length)+1}`);
@@ -2884,13 +2891,15 @@ function switchSocialTab(tab){
 
 // ---- Publish workout post when finishing ----
 async function publishWorkoutPost(dayName,setsData,volume,notes){
-  if(!userProfile.username)return; // no username = private, skip
+  // Post with whatever display name we have — username optional
+  const displayName=userProfile.display_name||userProfile.name||currentUser.email?.split('@')[0]||'Athlete';
+  const username=userProfile.username||null;
   const exerciseCount=Object.keys(setsData||{}).length;
   const setCount=Object.values(setsData||{}).reduce((t,ex)=>t+(ex.sets?ex.sets.length:0),0);
-  await sb.from('workout_posts').insert({
+  const{error}=await sb.from('workout_posts').insert({
     user_id:currentUser.id,
-    username:userProfile.username,
-    display_name:userProfile.name||'Athlete',
+    username,
+    display_name:displayName,
     day_name:dayName,
     sets_data:setsData,
     volume:Math.round(volume),
@@ -2899,6 +2908,7 @@ async function publishWorkoutPost(dayName,setsData,volume,notes){
     notes:notes||null,
     posted_at:new Date().toISOString()
   });
+  if(error){console.warn('[publishWorkoutPost]',error.message);}
   // Notify friends (only if they exist)
   const friendIds=await dbGetFriendIds();
   if(friendIds&&friendIds.length){
@@ -5071,24 +5081,41 @@ document.addEventListener('DOMContentLoaded',()=>{
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('/sw.js').then(reg=>{
       console.log('[IronTracker] SW registered:', reg.scope);
-      // When a new SW is waiting, activate it immediately
+
+      // When a new SW installs, it calls skipWaiting() itself.
+      // This listener is a fallback in case it needs a nudge.
       reg.addEventListener('updatefound',()=>{
         const newWorker=reg.installing;
         if(!newWorker)return;
         newWorker.addEventListener('statechange',()=>{
           if(newWorker.state==='installed'&&navigator.serviceWorker.controller){
-            // New version available — tell SW to take over, then reload
-            newWorker.postMessage('SKIP_WAITING');
-            navigator.serviceWorker.addEventListener('controllerchange',()=>{
-              window.location.reload();
-            },{once:true});
+            console.log('[IronTracker] New SW installed, activating...');
+            newWorker.postMessage({type:'SKIP_WAITING'});
           }
         });
       });
-      // Check for updates every time app comes to foreground
+
+      // SW sends SW_UPDATED after it takes control of all tabs — reload to get new files
+      navigator.serviceWorker.addEventListener('message',event=>{
+        if(event.data?.type==='SW_UPDATED'){
+          console.log('[IronTracker] Updated to',event.data.version,'— reloading in 1s');
+          setTimeout(()=>window.location.reload(),1000);
+        }
+      });
+
+      // Also handle controllerchange (belt-and-suspenders)
+      let _swRefreshing=false;
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{
+        if(_swRefreshing)return;
+        _swRefreshing=true;
+        window.location.reload();
+      });
+
+      // Check for SW updates every time app comes back to foreground
       document.addEventListener('visibilitychange',()=>{
         if(document.visibilityState==='visible')reg.update();
-      });
+      },{passive:true});
+
     }).catch(err=>{
       console.warn('[IronTracker] SW registration failed:', err);
     });
