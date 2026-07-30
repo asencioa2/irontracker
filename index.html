@@ -144,7 +144,7 @@
     <div class="card">
       <div class="section-hd"><div class="section-title">Split progress</div><div class="badge badge-green" id="dash-week-badge">Day 1</div></div>
       <div class="day-strip" id="dash-week-strip"></div>
-      <div style="font-size:12px;color:var(--text3)">Your last 7 logged sessions, in order</div>
+      <div class="text-sm text-muted">Your last 7 logged sessions, in order</div>
     </div>
     <div class="card">
       <div class="section-hd"><div class="section-title">Today's nutrition</div><button class="btn btn-ghost btn-sm" onclick="showPage('nutrition')">Log food</button></div>
@@ -243,7 +243,7 @@
       <div class="section-title">🏃 Cardio</div>
       <button class="btn btn-ghost btn-sm" onclick="addCardioEntry()">+ Add cardio</button>
     </div>
-    <div id="cardio-entries" style="font-size:13px;color:var(--text3)">No cardio logged today.</div>
+    <div id="cardio-entries" class="text-base text-muted">No cardio logged today.</div>
   </div>
 </div>
 
@@ -334,7 +334,7 @@
   <!-- FEED TAB -->
   <div id="social-feed-tab">
     <div id="social-feed-content">
-      <div style="text-align:center;color:var(--text3);padding:40px;font-size:13px">Loading feed...</div>
+      <div class="empty-state">Loading feed...</div>
     </div>
   </div>
 
@@ -458,7 +458,7 @@
       <div id="bf-result" style="display:none;background:var(--surface2);border-radius:var(--radius);padding:14px;margin-top:4px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
           <div><div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em">Estimated body fat</div><div style="font-size:32px;font-weight:800;font-family:var(--mono);color:var(--accent)" id="bf-pct">—</div></div>
-          <div style="text-align:right"><div style="font-size:11px;color:var(--text3)">Fat mass</div><div style="font-size:16px;font-weight:700;font-family:var(--mono);color:var(--text2)" id="bf-fat-lbs">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Lean mass</div><div style="font-size:16px;font-weight:700;font-family:var(--mono);color:var(--text2)" id="bf-lean-lbs">—</div></div>
+          <div style="text-align:right"><div class="text-xs text-muted">Fat mass</div><div style="font-size:16px;font-weight:700;font-family:var(--mono);color:var(--text2)" id="bf-fat-lbs">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Lean mass</div><div style="font-size:16px;font-weight:700;font-family:var(--mono);color:var(--text2)" id="bf-lean-lbs">—</div></div>
         </div>
         <div style="font-size:12px;padding:6px 10px;border-radius:6px;font-weight:600;text-align:center" id="bf-category"></div>
       </div>
@@ -481,7 +481,7 @@
           <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Per side</div>
           <div id="plate-display" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:32px"></div>
         </div>
-        <div style="font-size:12px;color:var(--text3)" id="plate-total"></div>
+        <div class="text-sm text-muted" id="plate-total"></div>
       </div>
       <div id="plate-error" style="display:none;font-size:13px;color:var(--red);margin-top:8px"></div>
     </div>
@@ -538,7 +538,7 @@
       <button class="btn btn-primary btn-sm" onclick="openMuscleGroupEditor()">Edit focus</button>
     </div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:10px">The muscle groups your program currently prioritizes.</div>
-    <div id="muscle-focus-display" style="display:flex;flex-wrap:wrap;gap:6px"><div style="font-size:12px;color:var(--text3)">Loading...</div></div>
+    <div id="muscle-focus-display" style="display:flex;flex-wrap:wrap;gap:6px"><div class="text-sm text-muted">Loading...</div></div>
   </div>
 
   <!-- Workout templates -->
@@ -549,7 +549,7 @@
     </div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Save any workout as a reusable template — start it anytime without being locked to your split.</div>
     <div id="templates-list">
-      <div style="font-size:13px;color:var(--text3)">No templates saved yet. Finish setting up a workout day and save it as a template.</div>
+      <div class="text-base text-muted">No templates saved yet. Finish setting up a workout day and save it as a template.</div>
     </div>
   </div>
 
@@ -561,7 +561,7 @@
         <label>Height</label>
         <input type="text" id="set-height-display" placeholder="e.g. 5'10&quot; or 70" oninput="parseHeightInput(this.value)" style="margin-bottom:4px">
         <input type="hidden" id="set-height">
-        <div id="height-hint" style="font-size:11px;color:var(--text3)">Enter as feet/inches (5'10") or total inches (70)</div>
+        <div id="height-hint" class="text-xs text-muted">Enter as feet/inches (5'10") or total inches (70)</div>
       </div>
       <div class="form-group"><label>Age</label><input type="number" id="set-age" placeholder="e.g. 26" min="13" max="100"></div>
       <div class="form-group"><label>Gender</label>
@@ -854,17 +854,17 @@
         <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Serving size</div>
         <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
           <div style="display:flex;flex-direction:column;gap:4px;flex:1">
-            <label style="font-size:11px;color:var(--text3)">Servings</label>
+            <label class="text-xs text-muted">Servings</label>
             <input type="number" id="f-servings" value="1" min="0.25" step="0.25" style="width:100%;text-align:center;font-size:16px;font-weight:700;font-family:var(--mono)" oninput="updateServingMacros()">
           </div>
           <span style="font-size:18px;color:var(--text3);margin-top:18px">×</span>
           <div style="display:flex;flex-direction:column;gap:4px;flex:2">
-            <label style="font-size:11px;color:var(--text3)">Serving size (g) — optional</label>
+            <label class="text-xs text-muted">Serving size (g) — optional</label>
             <input type="number" id="f-serving-size" placeholder="e.g. 28" style="width:100%;font-size:15px" oninput="updateServingMacros()">
           </div>
           <button class="btn btn-ghost btn-sm" style="margin-top:18px;white-space:nowrap" onclick="document.getElementById('f-servings').value=1;document.getElementById('f-serving-size').value='';updateServingMacros()">Reset</button>
         </div>
-        <div style="font-size:11px;color:var(--text3)">Change servings to scale macros · Enter serving size (g) if macros are per 100g</div>
+        <div class="text-xs text-muted">Change servings to scale macros · Enter serving size (g) if macros are per 100g</div>
       </div>
       <div class="grid-2">
         <div class="form-group"><label>Calories</label><input type="number" id="f-cal" placeholder="0" oninput="storeBaseServingMacros()"></div>
@@ -1122,6 +1122,46 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentUser = null;
 let userProfile = {};
+
+// ── Grouped state namespaces ──────────────────────────────────────────────
+// workout page state
+const workoutState = {
+  day: null,              // which split day index is active
+  sets: {},               // logged sets keyed by exercise name
+  restDuration: 90,       // rest timer total seconds
+  restRemaining: 90,      // rest timer countdown
+  restInterval: null,     // rest timer interval handle
+  prCache: {},            // PRs hit this session { exName: {w,r} }
+};
+
+// ui / session state
+const uiState = {
+  weightChart: null,
+  volumeChart: null,
+  timerDuration: 90,
+  timerRemaining: 90,
+  timerInterval: null,
+  timerRunning: false,
+  current1RM: null,
+  postId: null,
+  liveInterval: null,
+  pollInterval: null,
+  templateId: null,
+  lbPeriod: 'week',
+  lbCategory: 'volume',
+  dragSrcEx: null,
+  barcodeData: null,
+  codeReader: null,
+  planResults: null,
+  customSplitDayCount: 0,
+  baseMacros: {cal:0,pro:0,carb:0,fat:0},
+  updatingMacros: false,
+  allWorkoutLogs: [],
+  cardioEntries: [],
+};
+
+// Compatibility shims — let existing code keep working while we migrate
+// These proxy to the state objects above
 let weightChart = null, volumeChart = null;
 let currentWorkoutDay = null;
 let workoutSets = {};
@@ -1306,15 +1346,7 @@ async function confirmDeleteAccount(){
   try{
     // Delete all app data first (tables without cascading FKs to auth.users get cleaned explicitly)
     await Promise.all([
-      sb.from('workout_logs').delete().eq('user_id',uid),
-      sb.from('nutrition_logs').delete().eq('user_id',uid),
-      sb.from('weight_logs').delete().eq('user_id',uid),
-      sb.from('personal_records').delete().eq('user_id',uid),
-      sb.from('measurements').delete().eq('user_id',uid),
-      sb.from('custom_exercises').delete().eq('user_id',uid),
-      sb.from('hidden_exercises').delete().eq('user_id',uid),
-      sb.from('rest_days').delete().eq('user_id',uid),
-      sb.from('profiles').delete().eq('id',uid),
+      dbDeleteAllUserData(uid),
     ]);
     // Remove locally cached data for this user
     Object.keys(localStorage).forEach(k=>{if(k.includes(uid))localStorage.removeItem(k);});
@@ -1383,11 +1415,8 @@ async function loadProfile(){
     updateMacroGoalLabels();
   }
   // Always load username so publishWorkoutPost works without visiting Social tab first
-  const{data:unData}=await sb.from('usernames').select('username,display_name').eq('user_id',currentUser.id).single();
-  if(unData){
-    userProfile.username=unData.username;
-    userProfile.display_name=unData.display_name;
-  }
+  const unData=await dbGetUsername(currentUser.id);
+  if(unData){userProfile.username=unData.username;userProfile.display_name=unData.display_name;}
 }
 
 function updateMacroGoalLabels(){
@@ -1480,68 +1509,73 @@ const _dashCache = {
 function invalidateDashboard() { _dashCache.invalidate(); }
 
 async function refreshDashboard(){
-  const hour=new Date().getHours();
-  const greeting=hour<12?'Good morning':hour<17?'Good afternoon':'Good evening';
-  const name=userProfile.name||'Athlete';
-  document.getElementById('dash-greeting').textContent=`${greeting}, ${name} 👋`;
-  const split=getActiveSplit();
-  const nextIdx=await getNextSplitIndex();
-  const nextDay=split.days[nextIdx];
-  document.getElementById('dash-day-label').textContent=nextDay?`Up next: Day ${nextIdx+1} — ${nextDay.name}`:'Ready to train';
+  try{
+    const hour=new Date().getHours();
+    const greeting=hour<12?'Good morning':hour<17?'Good afternoon':'Good evening';
+    const name=userProfile.name||'Athlete';
+    document.getElementById('dash-greeting').textContent=`${greeting}, ${name} 👋`;
+    const split=getActiveSplit();
+    const nextIdx=await getNextSplitIndex();
+    const nextDay=split.days[nextIdx];
+    document.getElementById('dash-day-label').textContent=nextDay?`Up next: Day ${nextIdx+1} — ${nextDay.name}`:'Ready to train';
 
-  // Use cached data if still fresh
-  let weights, logs, prs, restDays;
-  if(_dashCache.valid()){
-    ({weights,logs,prs,restDays}=_dashCache.data);
-  } else {
-    const[wRes,lRes,pRes,rRes]=await Promise.all([
-      sb.from('weight_logs').select('*').eq('user_id',currentUser.id).order('date').limit(30),
-      sb.from('workout_logs').select('*').eq('user_id',currentUser.id).order('date'),
-      sb.from('personal_records').select('*').eq('user_id',currentUser.id),
-      sb.from('rest_days').select('date').eq('user_id',currentUser.id).order('date'),
-    ]);
-    weights=wRes.data||[];
-    logs=lRes.data||[];
-    prs=pRes.data||[];
-    restDays=rRes.data||[];
-    _dashCache.set({weights,logs,prs,restDays});
-  }
-
-  // Weight stat
-  if(weights.length){
-    const last=weights[weights.length-1];
-    document.getElementById('stat-weight').innerHTML=`${last.weight_lbs}<span class="stat-unit">lbs</span>`;
-    if(weights.length>1){
-      const diff=(last.weight_lbs-weights[weights.length-2].weight_lbs).toFixed(1);
-      document.getElementById('stat-weight-delta').innerHTML=`<span class="${diff<=0?'delta-pos':'delta-neg'}">${diff>0?'+':''}${diff} lbs</span>`;
+    // Use cached data if still fresh
+    let weights, logs, prs, restDays;
+    if(_dashCache.valid()){
+      ({weights,logs,prs,restDays}=_dashCache.data);
+    } else {
+      const[wRes,lRes,pRes,rRes]=await Promise.all([
+        sb.from('weight_logs').select('*').eq('user_id',currentUser.id).order('date').limit(30),
+        sb.from('workout_logs').select('*').eq('user_id',currentUser.id).order('date'),
+        sb.from('personal_records').select('*').eq('user_id',currentUser.id),
+        sb.from('rest_days').select('date').eq('user_id',currentUser.id).order('date'),
+      ]);
+      weights=wRes.data||[];
+      logs=lRes.data||[];
+      prs=pRes.data||[];
+      restDays=rRes.data||[];
+      _dashCache.set({weights,logs,prs,restDays});
     }
+
+    // Weight stat
+    if(weights.length){
+      const last=weights[weights.length-1];
+      document.getElementById('stat-weight')&&(document.getElementById('stat-weight').innerHTML=`${last.weight_lbs}<span class="stat-unit">lbs</span>`);
+      if(weights.length>1){
+        const diff=(last.weight_lbs-weights[weights.length-2].weight_lbs).toFixed(1);
+        document.getElementById('stat-weight-delta')&&(document.getElementById('stat-weight-delta').innerHTML=`<span class="${diff<=0?'delta-pos':'delta-neg'}">${diff>0?'+':''}${diff} lbs</span>`);
+      }
+    }
+
+    // Weekly workouts
+    const weekStart=getWeekStart();
+    const thisWeek=logs.filter(l=>l.date>=weekStart);
+    const uniqueDays=[...new Set(thisWeek.map(l=>l.date))];
+    document.getElementById('stat-weekly')&&(document.getElementById('stat-weekly').innerHTML=`${uniqueDays.length}<span class="stat-unit">/5</span>`);
+    document.getElementById('stat-weekly-sub').textContent=`${Math.max(0,5-uniqueDays.length)} remaining this week`;
+
+    // Streak & total
+    const streak=calcStreak(logs,restDays);
+    document.getElementById('stat-streak')&&(document.getElementById('stat-streak').innerHTML=`${streak}<span class="stat-unit">days</span>`);
+    document.getElementById('stat-total').textContent=[...new Set(logs.map(l=>l.date))].length;
+
+    // Split progress badge
+    const nextIdx2=await getNextSplitIndex();
+    document.getElementById('dash-week-badge').textContent=`Day ${nextIdx2+1} next`;
+
+    buildSplitProgressStrip(logs,restDays);
+    await loadNutritionTotals(today());
+    renderWaterOz(weights);
+    buildStreakGrid(logs);
+    buildWeeklyCheckin(logs,weights,prs);
+    checkAndShowBadges(logs,prs);
+    checkRestDaySuggestion(logs);
+    updateCalorieBurn();
+    checkMonthlyRecap();
+
+  } catch(err) {
+    console.error('[refreshDashboard]', err.message||err);
   }
-
-  // Weekly workouts
-  const weekStart=getWeekStart();
-  const thisWeek=logs.filter(l=>l.date>=weekStart);
-  const uniqueDays=[...new Set(thisWeek.map(l=>l.date))];
-  document.getElementById('stat-weekly').innerHTML=`${uniqueDays.length}<span class="stat-unit">/5</span>`;
-  document.getElementById('stat-weekly-sub').textContent=`${Math.max(0,5-uniqueDays.length)} remaining this week`;
-
-  // Streak & total
-  const streak=calcStreak(logs,restDays);
-  document.getElementById('stat-streak').innerHTML=`${streak}<span class="stat-unit">days</span>`;
-  document.getElementById('stat-total').textContent=[...new Set(logs.map(l=>l.date))].length;
-
-  // Split progress badge
-  const nextIdx2=await getNextSplitIndex();
-  document.getElementById('dash-week-badge').textContent=`Day ${nextIdx2+1} next`;
-
-  buildSplitProgressStrip(logs,restDays);
-  await loadNutritionTotals(today());
-  renderWaterOz(weights);
-  buildStreakGrid(logs);
-  buildWeeklyCheckin(logs,weights,prs);
-  checkAndShowBadges(logs,prs);
-  checkRestDaySuggestion(logs);
-  updateCalorieBurn();
-  checkMonthlyRecap();
 }
 
 function getWeekStart(){
@@ -1768,6 +1802,15 @@ async function chooseSplit(key){
   renderWorkoutContent();
 }
 
+
+// ── Combined workout page refresh ────────────────────────────────────────
+// Refreshes both the exercise list and the workout content in one call.
+// Use this instead of calling both separately.
+async function refreshWorkoutPage() {
+  await renderCustomExerciseList();
+  renderWorkoutContent();
+}
+
 // ============================================================
 // CUSTOM EXERCISES
 // ============================================================
@@ -1776,8 +1819,7 @@ async function getCustomExercises(dow){
 }
 
 async function getHiddenPresetExercises(splitKey,dow){
-  const{data}=await sb.from('hidden_exercises').select('exercise_name').eq('user_id',currentUser.id).eq('split_key',splitKey).eq('dow',dow);
-  return new Set((data||[]).map(h=>h.exercise_name));
+  return await dbGetHiddenExerciseSet(currentUser.id,splitKey,dow);
 }
 
 async function hidePresetExercise(exName){
@@ -1785,16 +1827,14 @@ async function hidePresetExercise(exName){
   const splitKey=userProfile.active_split||'iron24_5day';
   await sb.from('hidden_exercises').insert({user_id:currentUser.id,split_key:splitKey,dow:currentWorkoutDay,exercise_name:exName});
   toast('Removed: '+exName);
-  renderCustomExerciseList();
-  renderWorkoutContent();
+  await refreshWorkoutPage();
 }
 
 async function unhidePresetExercise(exName){
   const splitKey=userProfile.active_split||'iron24_5day';
   await sb.from('hidden_exercises').delete().eq('user_id',currentUser.id).eq('split_key',splitKey).eq('dow',currentWorkoutDay).eq('exercise_name',exName);
   toast('Restored: '+exName);
-  renderCustomExerciseList();
-  renderWorkoutContent();
+  await refreshWorkoutPage();
 }
 
 function openAddExerciseModal(){
@@ -1841,9 +1881,9 @@ function renderExerciseDbList(){
     const media=EXERCISE_MEDIA[name]||null;
     const img=media?.img||EXERCISE_IMG_FALLBACK[cat]||'';
     return `<div class="ex-db-item" style="align-items:flex-start;padding:10px 12px;gap:10px" onclick="openExerciseDetail('${name.replace(/'/g,"\\'")}','${cat}')">
-      ${img?`<img src="${img}" alt="${name}" style="width:54px;height:54px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1px solid var(--border)" loading="lazy" onerror="this.style.display='none'">`:'<div style="width:54px;height:54px;border-radius:8px;background:var(--surface3);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px">🏋️</div>'}
+      ${img?`<img src="${img}" alt="${sanitizeHTML(name)}" style="width:54px;height:54px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1px solid var(--border)" loading="lazy" onerror="this.style.display='none'">`:'<div style="width:54px;height:54px;border-radius:8px;background:var(--surface3);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px">🏋️</div>'}
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600;color:var(--text)">${name}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${sanitizeHTML(name)}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px">${cat}${media?.muscles?' · <span style="color:var(--text2)">'+media.muscles+'</span>':''}</div>
         ${media?.video?`<a href="${media.video}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="font-size:11px;color:#ff4444;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-top:4px">▶ ${media.videoLabel||'Watch tutorial'}</a>`:''}
       </div>
@@ -1877,10 +1917,10 @@ function openExerciseDetail(name,cat){
 
 async function addFromDatabase(name,category){
   const defaults=EXERCISE_DB_DEFAULT_TARGETS[category]||{sets:3,reps:'10-12'};
-  await sb.from('custom_exercises').insert({user_id:currentUser.id,dow:currentWorkoutDay,name,sets:defaults.sets,target_reps:defaults.reps});
+  const{error:ceErr1}=await sb.from('custom_exercises').insert({user_id:currentUser.id,dow:currentWorkoutDay,name,sets:defaults.sets,target_reps:defaults.reps});
+  if(ceErr1){toastError('Add exercise',ceErr1);return;}
   toast('Added: '+name);
-  renderCustomExerciseList();
-  renderWorkoutContent();
+  await refreshWorkoutPage();
 }
 
 async function renderCustomExerciseList(){
@@ -1898,7 +1938,7 @@ async function renderCustomExerciseList(){
     sched.exercises.forEach(ex=>{
       const isHidden=hiddenSet.has(ex.name);
       html+=`<div class="ex-db-item" style="cursor:default;${isHidden?'opacity:0.5':''}">
-        <div><div class="ex-db-item-name">${ex.name}${isHidden?' <span style="color:var(--text3)">(removed)</span>':''}</div><div style="font-size:11px;color:var(--text3)">${ex.sets} × ${ex.target} · Preset</div></div>
+        <div><div class="ex-db-item-name">${ex.name}${isHidden?' <span style="color:var(--text3)">(removed)</span>':''}</div><div class="text-xs text-muted">${ex.sets} × ${ex.target} · Preset</div></div>
         ${isHidden
           ?`<button class="btn btn-ghost btn-sm" onclick="unhidePresetExercise('${ex.name.replace(/'/g,"\\'")}')">Restore</button>`
           :`<button class="btn btn-danger btn-sm" onclick="hidePresetExercise('${ex.name.replace(/'/g,"\\'")}')">Remove</button>`}
@@ -1907,11 +1947,11 @@ async function renderCustomExerciseList(){
   }
   customList.forEach(ex=>{
     html+=`<div class="ex-db-item" style="cursor:default">
-      <div><div class="ex-db-item-name">${ex.name}</div><div style="font-size:11px;color:var(--text3)">${ex.sets} × ${ex.target_reps} · Added by you</div></div>
+      <div><div class="ex-db-item-name">${ex.name}</div><div class="text-xs text-muted">${ex.sets} × ${ex.target_reps} · Added by you</div></div>
       <button class="btn btn-danger btn-sm" onclick="deleteCustomExercise('${ex.id}')">×</button>
     </div>`;
   });
-  el.innerHTML=html||'<div style="font-size:12px;color:var(--text3)">No exercises in this day yet.</div>';
+  el.innerHTML=html||'<div class="text-sm text-muted">No exercises in this day yet.</div>';
 }
 
 async function addCustomExercise(){
@@ -1919,18 +1959,17 @@ async function addCustomExercise(){
   if(!name){toast('Enter an exercise name');return;}
   const sets=parseInt(document.getElementById('custom-ex-sets').value)||3;
   const reps=document.getElementById('custom-ex-reps').value.trim()||'10-12';
-  await sb.from('custom_exercises').insert({user_id:currentUser.id,dow:currentWorkoutDay,name,sets,target_reps:reps});
+  const{error:ceErr2}=await sb.from('custom_exercises').insert({user_id:currentUser.id,dow:currentWorkoutDay,name,sets,target_reps:reps});
+  if(ceErr2){toastError('Add exercise',ceErr2);return;}
   document.getElementById('custom-ex-name').value='';
   toast('Exercise added: '+name);
-  renderCustomExerciseList();
-  renderWorkoutContent();
+  await refreshWorkoutPage();
 }
 
 async function deleteCustomExercise(id){
   await dbDeleteCustomExercise(id);
   toast('Exercise removed');
-  renderCustomExerciseList();
-  renderWorkoutContent();
+  await refreshWorkoutPage();
 }
 
 // ============================================================
@@ -2003,130 +2042,157 @@ async function buildSplitStrip(){
 
 function selectWorkoutDay(dow){selectSplitDay(dow);}
 
-async function renderWorkoutContent(){
-  const split=getActiveSplit();
-  const sched=split.days[currentWorkoutDay];
-  const label=document.getElementById('workout-day-label');
-  const contentEl=document.getElementById('workout-content');
-  const customExercises=await getCustomExercises(currentWorkoutDay);
-  const splitKey=userProfile.active_split||'iron24_5day';
-  const hiddenSet=await getHiddenPresetExercises(splitKey,currentWorkoutDay);
-  const visiblePreset=sched?sched.exercises.filter(e=>!hiddenSet.has(e.name)):[];
-  if(!visiblePreset.length&&!customExercises.length){
-    if(label)label.textContent='No workout configured';
-    if(contentEl)contentEl.innerHTML='<div class="card" style="text-align:center;padding:40px"><div class="text-muted fs-13">Pick a split or add a custom exercise.</div><button class="btn btn-primary" style="margin-top:16px" onclick="openAddExerciseModal()">+ Add exercise</button></div>';
-    return;
-  }
-  const base=visiblePreset.map(e=>({name:e.name,target:e.target,sets:e.sets,isCustom:false}));
-  const custom=customExercises.map(c=>({name:c.name,target:c.target_reps,sets:c.sets,isCustom:true,id:c.id}));
-  const allEx=[...base,...custom];
-  if(label)label.textContent=sched?`Day ${currentWorkoutDay+1} — ${sched.name}${sched.focus?' · '+sched.focus:''}`:`Day ${currentWorkoutDay+1} — Custom workout`;
+// -- Apply overload hint
+function applyOverloadHint(btn) {
+  const wEl = document.getElementById('ex-w-' + btn.dataset.exIdx);
+  const rEl = document.getElementById('ex-r-' + btn.dataset.exIdx);
+  if (wEl) wEl.value = btn.dataset.w;
+  if (rEl) rEl.value = btn.dataset.r;
+}
 
-  const sessionKey=`it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`;
-  workoutSets=JSON.parse(localStorage.getItem(sessionKey)||'{}');
+// ── Logged set rows ──────────────────────────────────────────
+function buildLoggedSetsHTML(n, sets) {
+  if (!sets || !sets.length) return '';
+  let html = '<div style="margin-bottom:10px">';
+  const safeName = n.replace(/'/g, "\\'");
+  sets.forEach((s, si) => {
+    html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface2);border-radius:8px;margin-bottom:4px">' +
+      '<span class="text-xs text-muted" style="min-width:20px">' + (si+1) + '</span>' +
+      '<span style="font-size:13px;font-weight:700;color:var(--text);font-family:var(--mono)">' + s.w + ' lbs × ' + s.r + '</span>' +
+      (s.note ? '<span class="text-xs text-muted" style="margin-left:4px">' + s.note + '</span>' : '') +
+      '<button onclick="deleteSet(\'' + safeName + '\',' + si + ')" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:0 4px">×</button>' +
+      '</div>';
+  });
+  return html + '</div>';
+}
 
-  const{data:prs}=await sb.from('personal_records').select('*').eq('user_id',currentUser.id);
-  const prMap={};(prs||[]).forEach(p=>{prMap[p.exercise]=p;});
+// -- Overload hint row
+function buildOverloadHintHTML(i, n, last) {
+  if (!last) return '';
+  const suggestW = last.r >= 12 ? last.w + 5 : last.w;
+  const suggestR = last.r >= 12 ? last.r : last.r + 1;
+  return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--accent-dim);border-radius:var(--radius);border:1px solid var(--accent);margin-bottom:10px;font-size:12px">' +
+    '<span style="color:var(--accent)">💡</span>' +
+    '<span style="color:var(--text2);flex:1;min-width:0">Last: <strong style="color:var(--text)">' + last.w + 'lbs x' + last.r + '</strong> - try <strong style="color:var(--accent)">' + suggestW + 'lbs x' + suggestR + '</strong></span>' +
+    '<button class="btn btn-ghost btn-sm" style="flex-shrink:0;padding:2px 8px;font-size:11px"' +
+    ' data-ex-idx="' + i + '" data-w="' + suggestW + '" data-r="' + suggestR + '" onclick="applyOverloadHint(this)">Use</button>' +
+    '</div>';
+}
 
-  const{data:recentLogs}=await sb.from('workout_logs').select('date,sets_data').eq('user_id',currentUser.id).eq('split_index',currentWorkoutDay).neq('date',today()).order('date',{ascending:false}).limit(1);
-  const lastMap={};
-  if(recentLogs&&recentLogs.length){
-    const sd=recentLogs[0].sets_data||{};
-    Object.entries(sd).forEach(([name,exData])=>{
-      if(exData&&exData.sets&&exData.sets.length){
-        const best=exData.sets.reduce((b,s)=>(s.w||0)>(b.w||0)?s:b,exData.sets[0]);
-        lastMap[name]={w:best.w,r:best.r,date:recentLogs[0].date};
+
+
+// ── loadWorkoutData — all DB reads for the workout page ──────────────────
+async function loadWorkoutData(splitKey, dow) {
+  const [customExercises, hiddenSet, prsRes, recentLogsRes] = await Promise.all([
+    getCustomExercises(dow),
+    getHiddenPresetExercises(splitKey, dow),
+    sb.from('personal_records').select('*').eq('user_id', currentUser.id),
+    sb.from('workout_logs').select('date,sets_data').eq('user_id', currentUser.id)
+      .eq('split_index', dow).neq('date', today())
+      .order('date', { ascending: false }).limit(1),
+  ]);
+  if (prsRes.error) { toastError('Load PRs', prsRes.error); return null; }
+  const prMap = {};
+  (prsRes.data || []).forEach(p => { prMap[p.exercise] = p; });
+  const lastMap = {};
+  if (recentLogsRes.data?.length) {
+    Object.entries(recentLogsRes.data[0].sets_data || {}).forEach(([name, exData]) => {
+      if (exData?.sets?.length) {
+        const best = exData.sets.reduce((b, s) => (s.w || 0) > (b.w || 0) ? s : b, exData.sets[0]);
+        lastMap[name] = { w: best.w, r: best.r };
       }
     });
   }
+  return { customExercises, hiddenSet, prMap, lastMap };
+}
 
-  let html='';
-  allEx.forEach((ex,i)=>{
-    const exData=workoutSets[ex.name]||{sets:[],note:''};
-    const pr=prMap[ex.name];
-    const last=lastMap[ex.name];
-    const prTag=pr?`<span class="pb-tag">PR: ${pr.weight_lbs}lbs×${pr.reps}</span>`:'';
-    const custTag=ex.isCustom?'<span class="badge badge-amber" style="margin-left:6px">Custom</span>':'';
-    const lastTag=last?`<div style="font-size:10px;color:var(--blue);font-family:var(--mono);margin-top:2px">Last: ${last.w}lbs×${last.r}</div>`:'';
-    const delBtn=ex.isCustom
-      ?`<button class="btn btn-danger btn-sm" onclick="deleteCustomExercise('${ex.id}')">Remove</button>`
-      :`<button class="btn btn-danger btn-sm" onclick="hidePresetExercise('${ex.name.replace(/'/g,"\'")}')">Remove</button>`;
+// ── buildExerciseHTML — renders one exercise card ─────────────────────────
+function buildExerciseHTML(ex, i, exData, pr, last) {
+  const n = ex.name.replace(/'/g, "\'").split(String.fromCharCode(96)).join("'");
+  const prTag = pr ? '<span class="pb-tag">PR: ' + pr.weight_lbs + 'lbs\xd7' + pr.reps + '</span>' : '';
+  const custTag = ex.isCustom ? '<span class="badge badge-amber" style="margin-left:6px">Custom</span>' : '';
+  const lastTag = last ? '<div style="font-size:10px;color:var(--blue);font-family:var(--mono);margin-top:2px">Last: ' + last.w + 'lbs\xd7' + last.r + '</div>' : '';
+  const safeDel = ex.isCustom ? ex.id.replace(/'/g,"\'") : n;
+  const delBtnFn = ex.isCustom ? 'deleteCustomExercise' : 'hidePresetExercise';
+  const delBtn = '<button class="btn btn-danger btn-sm" onclick="' + delBtnFn + '(\'' + safeDel + '\')">Remove</button>';
+  const logBtnOnclick = 'logSet(' + i + ',\'' + n + '\')';
+  const noteOnchange = 'saveExNote(\'' + n + '\',this.value)';
+  return (
+    '<div class="card ex-drag-card" style="margin-bottom:10px;padding:14px" data-ex-name="' + n + '">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">' +
+    '<div style="flex:1;padding-right:8px;display:flex;align-items:flex-start;gap:6px">' +
+    '<span class="drag-handle" style="cursor:grab;color:var(--text3);font-size:16px;line-height:1.6;flex-shrink:0;user-select:none;padding-top:1px">\u2803</span>' +
+    '<div style="min-width:0;flex:1">' +
+    '<div style="font-size:14px;font-weight:600;color:var(--text)">' + sanitizeHTML(ex.name) + prTag + custTag + '</div>' +
+    '<div style="font-size:11px;color:var(--text3);margin-top:2px">Target: ' + ex.sets + ' x ' + ex.target + lastTag + '</div>' +
+    '</div></div>' + delBtn + '</div>' +
+    buildLoggedSetsHTML(n, exData.sets) +
+    (!exData.sets?.length ? '<div style="font-size:12px;color:var(--text3);margin-bottom:10px;padding:6px 0">No sets logged yet.</div>' : '') +
+    buildOverloadHintHTML(i, n, last) +
+    '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:12px">' +
+    '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Weight (lbs)</div>' +
+    '<input class="ex-input" type="number" inputmode="decimal" step="2.5" id="ex-w-' + i + '" placeholder="' + (last ? last.w : 'lbs') + '" style="width:100%"></div>' +
+    '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Reps</div>' +
+    '<input class="ex-input" type="number" inputmode="numeric" id="ex-r-' + i + '" placeholder="' + (last ? last.r : 'reps') + '" style="width:100%"></div>' +
+    '<button class="btn btn-primary btn-sm" style="align-self:end;height:42px;padding:0 14px;white-space:nowrap" onclick="' + logBtnOnclick + '">+ Log set</button></div>' +
+    '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Exercise notes</div>' +
+    '<textarea style="width:100%;resize:none;font-size:13px;padding:8px;border-radius:var(--radius);background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font)" rows="2" placeholder="Warmup sets, form notes, bands, tempo..." onchange="' + noteOnchange + '">' + (exData.note || '') + '</textarea>' +
+    '</div></div>'
+  );
+}
 
-    // Logged sets
-    let setsHtml='';
-    if(exData.sets&&exData.sets.length){
-      setsHtml='<div style="margin-bottom:10px">';
-      exData.sets.forEach((s,si)=>{
-        const n=ex.name.replace(/'/g,"\'").replace(/`/g,"'");
-        setsHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--surface2);border-radius:8px;margin-bottom:6px">
-          <div style="font-size:11px;font-weight:700;color:var(--text3);min-width:36px">Set ${si+1}</div>
-          <input type="number" inputmode="decimal" step="2.5" value="${s.w||''}" placeholder="lbs" style="width:64px;font-family:var(--mono);font-size:14px;padding:5px 6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);text-align:center" onchange="editSet('${n}',${si},'w',this.value)">
-          <span style="color:var(--text3)">×</span>
-          <input type="number" inputmode="numeric" value="${s.r||''}" placeholder="reps" style="width:54px;font-family:var(--mono);font-size:14px;padding:5px 6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);text-align:center" onchange="editSet('${n}',${si},'r',this.value)">
-          <button class="btn btn-danger btn-sm" style="padding:4px 8px;flex-shrink:0" onclick="deleteSet('${n}',${si})">x</button>
-        </div>`;
-      });
-      setsHtml+='</div>';
-    }else{
-      setsHtml='<div style="font-size:12px;color:var(--text3);margin-bottom:10px;padding:6px 0">No sets logged yet.</div>';
-    }
 
-    const n=ex.name.replace(/'/g,"\'").replace(/`/g,"'");
-    html+=`<div class="card ex-drag-card" style="margin-bottom:10px;padding:14px" data-ex-name="${n}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-        <div style="flex:1;padding-right:8px;display:flex;align-items:flex-start;gap:6px">
-          <span class="drag-handle" title="Drag to reorder" style="cursor:grab;color:var(--text3);font-size:16px;line-height:1.6;flex-shrink:0;user-select:none;padding-top:1px">⠿</span>
-          <div style="min-width:0;flex:1">
-            <div style="font-size:14px;font-weight:600;color:var(--text)">${ex.name}${prTag}${custTag}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:2px">Target: ${ex.sets} x ${ex.target}${lastTag}</div>
-          </div>
-        </div>
-        ${delBtn}
-      </div>
-      ${setsHtml}
-      ${last?`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--accent-dim);border-radius:var(--radius);border:1px solid var(--accent);margin-bottom:10px;font-size:12px">
-        <span style="color:var(--accent)">💡</span>
-        <span style="color:var(--text2)">Last time: <strong style="color:var(--text)">${last.w}lbs × ${last.r}</strong> — try <strong style="color:var(--accent)">${last.r>=12?last.w+5+'lbs × '+last.r:last.w+'lbs × '+(last.r+1)}</strong> today?</span>
-        <button class="btn btn-ghost btn-sm" style="margin-left:auto;padding:2px 8px;font-size:11px" onclick="document.getElementById('ex-w-${i}').value=${last.r>=12?last.w+5:last.w};document.getElementById('ex-r-${i}').value=${last.r>=12?last.r:last.r+1}">Use</button>
-      </div>`:''}
-      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:12px">
-        <div>
-          <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Weight (lbs)</div>
-          <input class="ex-input" type="number" inputmode="decimal" step="2.5" id="ex-w-${i}" placeholder="${last?last.w:'lbs'}" style="width:100%">
-        </div>
-        <div>
-          <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Reps</div>
-          <input class="ex-input" type="number" inputmode="numeric" id="ex-r-${i}" placeholder="${last?last.r:'reps'}" style="width:100%">
-        </div>
-        <button class="btn btn-primary btn-sm" style="align-self:end;height:42px;padding:0 14px;white-space:nowrap" onclick="logSet(${i},'${n}')">+ Log set</button>
-      </div>
-      <div>
-        <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Exercise notes</div>
-        <textarea style="width:100%;resize:none;font-size:13px;padding:8px;border-radius:var(--radius);background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font)" rows="2" placeholder="Warmup sets, form notes, bands, tempo..." onchange="saveExNote('${n}',this.value)">${(exData.note||'')}</textarea>
-      </div>
-    </div>`;
+// ── wireWorkoutEvents — attach drag events after innerHTML is set ─────────
+function wireWorkoutEvents() {
+  document.querySelectorAll('.ex-drag-card').forEach(card => {
+    card.setAttribute('draggable', 'true');
+    card.addEventListener('dragstart', e => onExDragStart(e, card.dataset.exName));
+    card.addEventListener('dragover',  e => onExDragOver(e));
+    card.addEventListener('drop',      e => onExDrop(e, card.dataset.exName));
+    card.addEventListener('dragend',   e => onExDragEnd(e));
   });
+}
 
-  const savedNotes=localStorage.getItem(`it_notes_${currentUser.id}_${currentWorkoutDay}_${today()}`)||'';
-  html+=`<div class="card" style="padding:14px">
-    <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Session notes</div>
-    <textarea id="workout-notes" rows="2" style="resize:none;width:100%;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:13px" placeholder="How did the session feel overall?">${savedNotes}</textarea>
-  </div>`;
-  if(contentEl)contentEl.innerHTML=html;
-  // Wire drag-and-drop AFTER innerHTML is set (avoids template literal backtick issues)
-  document.querySelectorAll('.ex-drag-card').forEach(card=>{
-    card.setAttribute('draggable','true');
-    card.addEventListener('dragstart', e=>onExDragStart(e, card.dataset.exName));
-    card.addEventListener('dragover',  e=>onExDragOver(e));
-    card.addEventListener('drop',      e=>onExDrop(e, card.dataset.exName));
-    card.addEventListener('dragend',   e=>onExDragEnd(e));
-  });
+async function renderWorkoutContent(){
+  const split = getActiveSplit();
+  const sched = split.days[currentWorkoutDay];
+  const splitKey = userProfile.active_split || 'iron24_5day';
+  const label = document.getElementById('workout-day-label');
+  const contentEl = document.getElementById('workout-content');
+  const data = await loadWorkoutData(splitKey, currentWorkoutDay);
+  if (!data) return;
+  const { customExercises, hiddenSet, prMap, lastMap } = data;
+  const visiblePreset = sched ? sched.exercises.filter(e => !hiddenSet.has(e.name)) : [];
+  if (!visiblePreset.length && !customExercises.length) {
+    if (label) label.textContent = 'No workout configured';
+    if (contentEl) contentEl.innerHTML = '<div class="card" style="text-align:center;padding:40px"><div class="text-muted fs-13">Pick a split or add a custom exercise.</div><button class="btn btn-primary" style="margin-top:16px" onclick="openAddExerciseModal()">+ Add exercise</button></div>';
+    return;
+  }
+  const allEx = [
+    ...visiblePreset.map(e => ({ name: e.name, target: e.target, sets: e.sets, isCustom: false })),
+    ...customExercises.map(c => ({ name: c.name, target: c.target_reps, sets: c.sets, isCustom: true, id: c.id })),
+  ];
+  if (label) label.textContent = sched
+    ? 'Day ' + (currentWorkoutDay + 1) + ' — ' + sched.name + (sched.focus ? ' · ' + sched.focus : '')
+    : 'Day ' + (currentWorkoutDay + 1) + ' — Custom workout';
+  const sessionKey = 'it_session_' + currentUser.id + '_' + currentWorkoutDay + '_' + today();
+  workoutSets = JSON.parse(localStorage.getItem(sessionKey) || '{}');
+  const savedNotes = localStorage.getItem('it_notes_' + currentUser.id + '_' + currentWorkoutDay + '_' + today()) || '';
+  const html = allEx.map((ex, i) =>
+    buildExerciseHTML(ex, i, workoutSets[ex.name] || { sets: [], note: '' }, prMap[ex.name], lastMap[ex.name])
+  ).join('') +
+    '<div class="card" style="padding:14px">' +
+    '<div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Session notes</div>' +
+    '<textarea id="workout-notes" rows="2" style="resize:none;width:100%;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:13px" placeholder="How did the session feel overall?">' + savedNotes + '</textarea></div>';
+  if (contentEl) contentEl.innerHTML = html;
+  wireWorkoutEvents();
 }
 
 function getSessionKey(){return `it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`;}
 function saveSession(){localStorage.setItem(getSessionKey(),JSON.stringify(workoutSets));}
 
 // ── Workout-page rest timer ────────────────────────────────────────────────
+// workoutRest* → use workoutState.restDuration/restRemaining/restInterval
 let workoutRestDuration=90;
 let workoutRestRemaining=90;
 let workoutRestInterval=null;
@@ -2176,6 +2242,7 @@ function skipRestTimer(){
 }
 
 // ── Auto PR detection ─────────────────────────────────────────────────────
+// sessionPRCache → use workoutState.prCache
 let sessionPRCache={};
 
 async function autoPRCheck(exName,w,r){
@@ -2183,14 +2250,14 @@ async function autoPRCheck(exName,w,r){
   const orm=Math.round(w*(1+r/30));
   let existing=sessionPRCache[exName];
   if(existing===undefined){
-    const{data}=await sb.from('personal_records').select('*').eq('user_id',currentUser.id).eq('exercise',exName).single();
+    const data=await dbGetExistingPR(currentUser.id,exName);
     existing=data||null;
     sessionPRCache[exName]=existing;
   }
   const isPR=!existing||w>existing.weight_lbs||(w===existing.weight_lbs&&r>existing.reps);
   if(isPR){
     const newPR={user_id:currentUser.id,exercise:exName,weight_lbs:w,reps:r,estimated_orm:orm,date:today()};
-    await sb.from('personal_records').upsert(newPR,{onConflict:'user_id,exercise'});
+    await dbUpsertPRRecord(newPR.exercise,newPR.weight_lbs,newPR.reps,newPR.date,newPR.estimated_orm);
     sessionPRCache[exName]=newPR;
     toast('\ud83c\udfc6 NEW PR \u2014 '+exName+': '+w+'lbs \xd7 '+r);
     return true;
@@ -2198,7 +2265,7 @@ async function autoPRCheck(exName,w,r){
   return false;
 }
 
-function logSet(exIdx,exName){
+async function logSet(exIdx,exName){
   const w=parseFloat(document.getElementById('ex-w-'+exIdx)?.value);
   const r=parseInt(document.getElementById('ex-r-'+exIdx)?.value);
   if(!w||!r){toast('Enter weight and reps first');return;}
@@ -2214,16 +2281,17 @@ function logSet(exIdx,exName){
     const sched=split.days[currentWorkoutDay];
     setLiveStatus(true,sched?sched.name:'Workout');
   }
-  autoPRCheck(exName,w,r).then(isPR=>{
-    if(!isPR)toast('Set '+workoutSets[exName].sets.length+' logged: '+w+'lbs \xd7 '+r);
-    if(isPR)renderWorkoutContent();
-  });
+  // Surgical DOM update — only re-render full page if PR detected
+  const setIdx=workoutSets[exName].sets.length-1;
+  const rowUpdated=updateSetRowUI(exName,setIdx,w,r);
+  const isPR=await autoPRCheck(exName,w,r);
+  if(!isPR)toast('Set '+(setIdx+1)+' logged: '+w+'lbs \xd7 '+r);
+  if(isPR||!rowUpdated)renderWorkoutContent(); // full render on PR or surgical fallback
   // Push live sets so friends can follow along
   if(Object.values(workoutSets).some(ex=>ex?.sets?.length>0)){
-    sb.from('workout_live').update({sets_data:workoutSets,updated_at:new Date().toISOString()}).eq('user_id',currentUser.id).then(()=>{});
+    dbUpdateLiveSets(currentUser.id,workoutSets);
   }
   startWorkoutRestTimer();
-  renderWorkoutContent();
 }
 
 function editSet(exName,si,field,value){
@@ -2260,7 +2328,7 @@ async function checkPRFromSet(exIdx,exName){
   const orm=Math.round(w*(1+r/30));
   const{data:existing}=await sb.from('personal_records').select('*').eq('user_id',currentUser.id).eq('exercise',exName).single();
   if(!existing||w>existing.weight_lbs||(w===existing.weight_lbs&&r>existing.reps)){
-    await sb.from('personal_records').upsert({user_id:currentUser.id,exercise:exName,weight_lbs:w,reps:r,estimated_orm:orm,date:today()},{onConflict:'user_id,exercise'});
+    await dbUpsertPRRecord(exName,w,r,today(),orm);
     toast('New PR on '+exName+': '+w+'lbs x '+r);
   }else{
     toast('Not a PR yet. Current best: '+existing.weight_lbs+'lbs x '+existing.reps);
@@ -2290,6 +2358,26 @@ async function copyLastWorkout(){
 }
 
 // ── Loading guard utility ────────────────────────────────────
+
+// -- Consistent error toasting
+// Always use this instead of raw toast() for errors
+// -- HTML sanitizer — prevents XSS from user-controlled data in innerHTML
+function sanitizeHTML(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
+function toastError(context, err) {
+  const msg = err && err.message ? err.message : (typeof err === 'string' ? err : 'Unknown error');
+  console.error('[' + context + ']', msg);
+  toast('⚠️ ' + context + ': ' + msg);
+}
+
 // Prevents double-tap on slow connections and shows feedback
 const _saving = {};
 function isSaving(key) { return !!_saving[key]; }
@@ -2330,8 +2418,7 @@ async function finishWorkout(){
     volume:totalVolume,
     notes
   });
-  if(error){toast('Error saving workout: '+error.message);console.error('[finishWorkout] workout_logs insert failed:',error);setSaving('workout',false);return;}
-  console.log('[finishWorkout] workout saved successfully, sets:',totalSets,'volume:',totalVolume);
+  if(error){toastError('Save workout',error);console.error('[finishWorkout] workout_logs insert failed:',error);setSaving('workout',false);return;}
   localStorage.removeItem(`it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`);
   invalidateDashboard();
   toast(`\u2705 ${dayName} saved! Next up: Day ${((currentWorkoutDay+1)%split.days.length)+1}`);
@@ -2344,9 +2431,10 @@ async function finishWorkout(){
 }
 
 async function logRestDay(){
-  const{data:existing}=await sb.from('rest_days').select('id').eq('user_id',currentUser.id).eq('date',today()).limit(1);
+  const{data:existing,error:rdErr}=await sb.from('rest_days').select('id').eq('user_id',currentUser.id).eq('date',today()).limit(1);
+  if(rdErr)console.warn('[logRestDay]',rdErr.message);
   if(existing&&existing.length){toast('Already logged today as a rest day');return;}
-  await sb.from('rest_days').insert({user_id:currentUser.id,date:today()});
+  await dbLogRestDay(today());
   invalidateDashboard();
   toast('\ud83d\ude34 Rest day logged \u2014 your split stays on Day '+(currentWorkoutDay+1)+' for next time');
   refreshDashboard();
@@ -2408,22 +2496,27 @@ async function initNutritionPage(){
 }
 
 async function loadNutritionForDate(){
-  const dateStr=document.getElementById('nutr-date')?.value||today();
-  const disp=document.getElementById('nutr-date-display');
-  if(disp)disp.textContent=formatDateDisplay(dateStr);
-  const meals=await dbGetNutritionLogs(currentUser.id,dateStr);
-  const t=meals.reduce((a,m)=>({cal:a.cal+m.cal,pro:a.pro+m.protein,carb:a.carb+m.carbs,fat:a.fat+m.fat}),{cal:0,pro:0,carb:0,fat:0});
-  const s=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-  s('n-cal',t.cal);s('n-pro',t.pro+'g');s('n-carb',t.carb+'g');s('n-fat',t.fat+'g');
-  const tbody=document.getElementById('food-table-body');
-  if(!meals.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">No food logged for this date</td></tr>';return;}
-  tbody.innerHTML=meals.map(m=>`<tr><td style="color:var(--text)">${m.food_name}</td><td><span class="badge badge-blue">${m.meal||''}</span></td><td class="text-mono">${m.cal}</td><td class="text-mono">${m.protein}g</td><td class="text-mono">${m.carbs}g</td><td class="text-mono">${m.fat}g</td><td><button class="btn btn-danger btn-sm" onclick="deleteFood('${m.id}')">x</button></td></tr>`).join('');
+  try{
+    const dateStr=document.getElementById('nutr-date')?.value||today();
+    const disp=document.getElementById('nutr-date-display');
+    if(disp)disp.textContent=formatDateDisplay(dateStr);
+    const meals=await dbGetNutritionLogs(currentUser.id,dateStr);
+    const t=meals.reduce((a,m)=>({cal:a.cal+m.cal,pro:a.pro+m.protein,carb:a.carb+m.carbs,fat:a.fat+m.fat}),{cal:0,pro:0,carb:0,fat:0});
+    const s=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+    s('n-cal',t.cal);s('n-pro',t.pro+'g');s('n-carb',t.carb+'g');s('n-fat',t.fat+'g');
+    const tbody=document.getElementById('food-table-body');
+    if(!meals.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">No food logged for this date</td></tr>';return;}
+    tbody.innerHTML=meals.map(m=>`<tr><td style="color:var(--text)">${m.food_name}</td><td><span class="badge badge-blue">${m.meal||''}</span></td><td class="text-mono">${m.cal}</td><td class="text-mono">${m.protein}g</td><td class="text-mono">${m.carbs}g</td><td class="text-mono">${m.fat}g</td><td><button class="btn btn-danger btn-sm" onclick="deleteFood('${m.id}')">x</button></td></tr>`).join('');
+
+  } catch(err) {
+    console.error('[loadNutritionForDate]', err.message||err);
+  }
 }
 
 async function addFood(){
   const name=document.getElementById('f-name').value.trim();if(!name)return;
   const dateStr=document.getElementById('nutr-date')?.value||today();
-  const{error}=await sb.from('nutrition_logs').insert({user_id:currentUser.id,date:dateStr,food_name:name,meal:document.getElementById('f-meal').value,cal:parseInt(document.getElementById('f-cal').value)||0,protein:parseInt(document.getElementById('f-pro').value)||0,carbs:parseInt(document.getElementById('f-carb').value)||0,fat:parseInt(document.getElementById('f-fat').value)||0});
+  const{error}=await dbInsertNutritionLog({date:dateStr,food_name:name,meal:document.getElementById('f-meal').value,cal:parseInt(document.getElementById('f-cal').value)||0,protein:parseInt(document.getElementById('f-pro').value)||0,carbs:parseInt(document.getElementById('f-carb').value)||0,fat:parseInt(document.getElementById('f-fat').value)||0})?{error:null}:{error:{message:'Save failed'}};
   if(!error){closeModal('food-modal');await loadNutritionForDate();await loadNutritionTotals(today());toast(`Added: ${name}`);}
 }
 
@@ -2434,7 +2527,7 @@ async function deleteFood(id){
 
 function buildQuickMeals(){
   const container=document.getElementById('quick-meals');if(!container)return;
-  container.innerHTML=QUICK_MEALS.map(m=>`<div class="card-sm" style="cursor:pointer" onclick='quickAddMeal(${JSON.stringify(m)})'><div style="font-size:13px;font-weight:500;margin-bottom:4px">${m.name}</div><div style="font-size:12px;color:var(--text3)">${m.cal} kcal \xb7 ${m.protein}g protein</div><div class="badge badge-green mt-8">+ Quick add</div></div>`).join('');
+  container.innerHTML=QUICK_MEALS.map(m=>`<div class="card-sm" style="cursor:pointer" onclick='quickAddMeal(${JSON.stringify(m)})'><div style="font-size:13px;font-weight:500;margin-bottom:4px">${m.name}</div><div class="text-sm text-muted">${m.cal} kcal \xb7 ${m.protein}g protein</div><div class="badge badge-green mt-8">+ Quick add</div></div>`).join('');
 }
 
 async function quickAddMeal(m){
@@ -2447,13 +2540,18 @@ async function quickAddMeal(m){
 // PROGRESS PAGE
 // ============================================================
 async function initProgressPage(){
-  const[weights,logs,prs,measures]=await Promise.all([
-    sb.from('weight_logs').select('*').eq('user_id',currentUser.id).order('date').limit(30),
-    sb.from('workout_logs').select('date,volume,day_name').eq('user_id',currentUser.id).order('date').limit(10),
-    sb.from('personal_records').select('*').eq('user_id',currentUser.id).order('exercise'),
-    sb.from('measurements').select('*').eq('user_id',currentUser.id).order('date',{ascending:false}).limit(10),
-  ]);
-  buildWeightChart(weights.data||[]);buildVolumeChart(logs.data||[]);buildPRTable(prs.data||[]);buildMeasureTable(measures.data||[]);
+  try{
+    const[weights,logs,prs,measures]=await Promise.all([
+      sb.from('weight_logs').select('*').eq('user_id',currentUser.id).order('date').limit(30),
+      sb.from('workout_logs').select('date,volume,day_name').eq('user_id',currentUser.id).order('date').limit(10),
+      sb.from('personal_records').select('*').eq('user_id',currentUser.id).order('exercise'),
+      sb.from('measurements').select('*').eq('user_id',currentUser.id).order('date',{ascending:false}).limit(10),
+    ]);
+    buildWeightChart(weights.data||[]);buildVolumeChart(logs.data||[]);buildPRTable(prs.data||[]);buildMeasureTable(measures.data||[]);
+
+  } catch(err) {
+    console.error('[initProgressPage]', err.message||err);
+  }
 }
 
 function buildWeightChart(weights){
@@ -2556,7 +2654,7 @@ function calc1RM(){
 }
 async function save1RM(){
   if(!current1RM)return;const name=document.getElementById('orm-exercise').value.trim()||'Unknown exercise';
-  await sb.from('personal_records').upsert({user_id:currentUser.id,exercise:name,weight_lbs:current1RM.w,reps:current1RM.r,estimated_orm:current1RM.orm,date:today()},{onConflict:'user_id,exercise'});
+  await dbUpsertPRRecord(name,current1RM.w,current1RM.r,today(),current1RM.orm);
   toast(`Saved 1RM for ${name}: ${current1RM.orm} lbs`);
 }
 
@@ -2572,12 +2670,17 @@ function calcBF(){
 }
 
 async function buildToolsCheckin(){
-  const[logs,weights,prs]=await Promise.all([sb.from('workout_logs').select('date,volume').eq('user_id',currentUser.id),sb.from('weight_logs').select('date,weight_lbs').eq('user_id',currentUser.id).order('date'),sb.from('personal_records').select('*').eq('user_id',currentUser.id)]);
-  const weekStart=getWeekStart();const thisWeek=(logs.data||[]).filter(l=>l.date>=weekStart);const uniqueDays=[...new Set(thisWeek.map(l=>l.date))];const totalVol=thisWeek.reduce((s,l)=>s+(l.volume||0),0);
-  const w=weights.data||[];let wc=null;if(w.length>=2)wc=(w[w.length-1].weight_lbs-w[w.length-2].weight_lbs).toFixed(1);
-  const weekPRs=(prs.data||[]).filter(p=>p.date>=weekStart);
-  const el=document.getElementById('tools-checkin-content');if(!el)return;
-  el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px"><div class="card-sm"><div class="stat-label">Sessions</div><div style="font-size:22px;font-weight:700;font-family:var(--mono)">${uniqueDays.length}<span style="font-size:13px;color:var(--text2)">/5</span></div></div><div class="card-sm"><div class="stat-label">Volume</div><div style="font-size:22px;font-weight:700;font-family:var(--mono)">${totalVol>0?(totalVol/1000).toFixed(1)+'k':'0'}<span style="font-size:13px;color:var(--text2)"> lbs</span></div></div><div class="card-sm"><div class="stat-label">Weight change</div><div style="font-size:22px;font-weight:700;font-family:var(--mono);color:${wc<=0?'var(--accent)':'var(--red)'}">${wc!==null?(wc>0?'+':'')+wc:'--'}<span style="font-size:13px"> lbs</span></div></div><div class="card-sm"><div class="stat-label">New PRs</div><div style="font-size:22px;font-weight:700;font-family:var(--mono);color:var(--amber)">${weekPRs.length}</div></div></div>${weekPRs.length?'<div style="font-size:12px;color:var(--text2)"><strong style="color:var(--amber)">PRs this week:</strong> '+weekPRs.map(p=>`${p.exercise} -- ${p.weight_lbs}lbs x ${p.reps}`).join(', ')+'</div>':''}`;
+  try{
+    const[logs,weights,prs]=await Promise.all([sb.from('workout_logs').select('date,volume').eq('user_id',currentUser.id),sb.from('weight_logs').select('date,weight_lbs').eq('user_id',currentUser.id).order('date'),sb.from('personal_records').select('*').eq('user_id',currentUser.id)]);
+    const weekStart=getWeekStart();const thisWeek=(logs.data||[]).filter(l=>l.date>=weekStart);const uniqueDays=[...new Set(thisWeek.map(l=>l.date))];const totalVol=thisWeek.reduce((s,l)=>s+(l.volume||0),0);
+    const w=weights.data||[];let wc=null;if(w.length>=2)wc=(w[w.length-1].weight_lbs-w[w.length-2].weight_lbs).toFixed(1);
+    const weekPRs=(prs.data||[]).filter(p=>p.date>=weekStart);
+    const el=document.getElementById('tools-checkin-content');if(!el)return;
+    el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px"><div class="card-sm"><div class="stat-label">Sessions</div><div style="font-size:22px;font-weight:700;font-family:var(--mono)">${uniqueDays.length}<span style="font-size:13px;color:var(--text2)">/5</span></div></div><div class="card-sm"><div class="stat-label">Volume</div><div style="font-size:22px;font-weight:700;font-family:var(--mono)">${totalVol>0?(totalVol/1000).toFixed(1)+'k':'0'}<span style="font-size:13px;color:var(--text2)"> lbs</span></div></div><div class="card-sm"><div class="stat-label">Weight change</div><div style="font-size:22px;font-weight:700;font-family:var(--mono);color:${wc<=0?'var(--accent)':'var(--red)'}">${wc!==null?(wc>0?'+':'')+wc:'--'}<span style="font-size:13px"> lbs</span></div></div><div class="card-sm"><div class="stat-label">New PRs</div><div style="font-size:22px;font-weight:700;font-family:var(--mono);color:var(--amber)">${weekPRs.length}</div></div></div>${weekPRs.length?'<div style="font-size:12px;color:var(--text2)"><strong style="color:var(--amber)">PRs this week:</strong> '+weekPRs.map(p=>`${p.exercise} -- ${p.weight_lbs}lbs x ${p.reps}`).join(', ')+'</div>':''}`;
+
+  } catch(err) {
+    console.error('[buildToolsCheckin]', err.message||err);
+  }
 }
 
 function initSettingsPage(){
@@ -2608,12 +2711,13 @@ function initSettingsPage(){
   // Muscle group focus display
   const mfd=document.getElementById('muscle-focus-display');
   const mf=userProfile.muscle_focus||[];
-  if(mfd){mfd.innerHTML=mf.length?mf.map(m=>`<span style="padding:4px 10px;border-radius:20px;background:var(--accent-dim);border:1px solid var(--accent);font-size:12px;color:var(--accent);font-weight:600">${MUSCLE_ICONS[m]||''} ${m}</span>`).join(''):'<span style="font-size:12px;color:var(--text3)">No specific focus set — click Edit focus to add priorities.</span>';}
+  if(mfd){mfd.innerHTML=mf.length?mf.map(m=>`<span style="padding:4px 10px;border-radius:20px;background:var(--accent-dim);border:1px solid var(--accent);font-size:12px;color:var(--accent);font-weight:600">${MUSCLE_ICONS[m]||''} ${m}</span>`).join(''):'<span class="text-sm text-muted">No specific focus set — click Edit focus to add priorities.</span>';}
 }
 
 // ============================================================
 // BARCODE SCANNER + OPENFOODFACTS LOOKUP
 // ============================================================
+// barcodeFoundData/codeReader → use uiState.barcodeData/codeReader
 let barcodeFoundData=null;
 let codeReader=null;
 
@@ -2775,15 +2879,16 @@ async function confirmBarcodeFood(){
 // ============================================================
 // SOCIAL FEED
 // ============================================================
+// currentPostId/liveInterval/feedPollInterval → use uiState
 let currentPostId=null;
 let liveInterval=null;
 let feedPollInterval=null;
 
 // ---- Username ----
 async function ensureUsername(){
-  const{data}=await sb.from('usernames').select('username').eq('user_id',currentUser.id).single();
-  if(data){
-    userProfile.username=data.username;
+  const _existUn=await dbCheckUsername(currentUser.id);
+  if(_existUn){
+    userProfile.username=_existUn;
     document.getElementById('username-setup-card').style.display='none';
     setInviteLink(data.username);
   }else{
@@ -2842,7 +2947,7 @@ async function publishWorkoutPost(dayName,setsData,volume,notes){
   const username=userProfile.username||null;
   const exerciseCount=Object.keys(setsData||{}).length;
   const setCount=Object.values(setsData||{}).reduce((t,ex)=>t+(ex.sets?ex.sets.length:0),0);
-  const{error}=await sb.from('workout_posts').insert({
+  const{error}=await dbInsertWorkoutPost({
     user_id:currentUser.id,
     username,
     display_name:displayName,
@@ -2878,7 +2983,7 @@ async function setLiveStatus(isLive,dayName){
     updated_at:new Date().toISOString()
   },{onConflict:'user_id'});
   if(error)console.warn('[setLiveStatus]',error.message);
-  if(error)console.warn('setLiveStatus error:',error.message);
+
   if(isLive)sendWorkoutNotificationToFriends(null,'started');
 }
 
@@ -2893,34 +2998,32 @@ function stopLivePoll(){if(feedPollInterval){clearInterval(feedPollInterval);fee
 
 // ---- Load social feed ----
 async function loadSocialFeed(){
-  const el=document.getElementById('social-feed-content');
-  if(!el)return;
-  el.innerHTML='<div style="text-align:center;color:var(--text3);padding:32px"><div class="ai-spinner" style="margin:0 auto 10px"></div>Loading...</div>';
+  try{
+    const el=document.getElementById('social-feed-content');
+    if(!el)return;
+    el.innerHTML='<div style="text-align:center;color:var(--text3);padding:32px"><div class="ai-spinner" style="margin:0 auto 10px"></div>Loading...</div>';
 
-  // Get accepted friends
-  const friendIds=await dbGetFriendIds();
+    // Get accepted friends
+    const friendIds=await dbGetFriendIds();
 
-  // Load posts from friends + own posts (always include self)
-  const allIds=[...new Set([...friendIds, currentUser.id])];
-  const{data:posts,error:postsErr}=await sb.from('workout_posts').select('*').in('user_id',allIds).order('posted_at',{ascending:false}).limit(30);
-  if(postsErr){el.innerHTML='<div style="color:var(--text3);padding:20px;text-align:center">Could not load feed. Please try again.</div>';return;}
+    // Load posts from friends + own posts (always include self)
+    const allIds=[...new Set([...friendIds, currentUser.id])];
+  const _fd=await dbGetFeedData(allIds);
+  if(!_fd){el.innerHTML='<div style="color:var(--text3);padding:20px;text-align:center">Could not load feed.</div>';return;}
+  const{posts}=_fd;
+  if(!posts.length){el.innerHTML='<div class="empty-state">'+(friendIds.length?'No workouts posted yet.':'Finish a workout to see it here.')+'</div>';return;}
+    const likeMap={};
+    (_fd.likes||[]).forEach(l=>{if(!likeMap[l.post_id])likeMap[l.post_id]=[];likeMap[l.post_id].push(l);});
 
-  if(!posts||!posts.length){
-    el.innerHTML='<div style="text-align:center;color:var(--text3);padding:40px;font-size:13px">'+(friendIds.length?'No workouts posted yet. Finish a workout to share it!':'Finish a workout to see it here, or add friends to see their posts too.')+'</div>';
-    return;
+    const commentCounts=feedData.commentCounts||[];
+    const commentCountMap={};
+    (commentCounts||[]).forEach(c=>{commentCountMap[c.post_id]=(commentCountMap[c.post_id]||0)+1;});
+
+    el.innerHTML=posts.map(p=>renderFeedPost(p,likeMap[p.id]||[],commentCountMap[p.id]||0)).join('');
+
+  } catch(err) {
+    console.error('[loadSocialFeed]', err.message||err);
   }
-
-  // Load likes for visible posts
-  const postIds=posts.map(p=>p.id);
-  const{data:likes}=await sb.from('post_likes').select('*').in('post_id',postIds);
-  const likeMap={};
-  (likes||[]).forEach(l=>{if(!likeMap[l.post_id])likeMap[l.post_id]=[];likeMap[l.post_id].push(l);});
-
-  const{data:commentCounts}=await sb.from('post_comments').select('post_id').in('post_id',postIds);
-  const commentCountMap={};
-  (commentCounts||[]).forEach(c=>{commentCountMap[c.post_id]=(commentCountMap[c.post_id]||0)+1;});
-
-  el.innerHTML=posts.map(p=>renderFeedPost(p,likeMap[p.id]||[],commentCountMap[p.id]||0)).join('');
 }
 
 function renderFeedPost(post,likes,commentCount){
@@ -2939,20 +3042,20 @@ function renderFeedPost(post,likes,commentCount){
         <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--accent)">${(post.display_name||'A')[0].toUpperCase()}</div>
         <div>
           <div style="font-size:14px;font-weight:700;color:var(--text)">${post.display_name||'Athlete'}</div>
-          <div style="font-size:11px;color:var(--text3)">@${post.username} · ${timeAgo}</div>
+          <div class="text-xs text-muted">@${post.username} · ${timeAgo}</div>
         </div>
       </div>
       ${isOwn?`<button class="btn btn-danger btn-sm" onclick="deletePost('${post.id}')">Delete</button>`:''}
     </div>
 
     <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:12px;cursor:pointer" onclick="openPostDetail('${post.id}')" title="Click to see full workout">
-      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">🏋️ ${post.day_name} <span style="font-size:11px;color:var(--text3);font-weight:400">tap for full workout →</span></div>
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">🏋️ ${sanitizeHTML(post.day_name)} <span style="font-size:11px;color:var(--text3);font-weight:400">tap for full workout →</span></div>
       <div style="display:flex;gap:16px;font-size:12px;color:var(--text2);margin-bottom:8px">
         ${post.set_count?`<span><strong style="color:var(--text)">${post.set_count}</strong> sets</span>`:''}
         ${post.exercise_count?`<span><strong style="color:var(--text)">${post.exercise_count}</strong> exercises</span>`:''}
         ${vol?`<span><strong style="color:var(--accent)">${vol}</strong> volume</span>`:''}
       </div>
-      ${exercises.length?`<div style="font-size:12px;color:var(--text3)">${exercises.map(e=>`<span style="display:inline-block;background:var(--surface3);border-radius:4px;padding:2px 6px;margin:2px">${e}</span>`).join('')}${moreEx?`<span class="text-muted text-xs"> +${moreEx} more</span>`:''}</div>`:''}
+      ${exercises.length?`<div class="text-sm text-muted">${exercises.map(e=>`<span style="display:inline-block;background:var(--surface3);border-radius:4px;padding:2px 6px;margin:2px">${e}</span>`).join('')}${moreEx?`<span class="text-muted text-xs"> +${moreEx} more</span>`:''}</div>`:''}
     </div>
 
     ${post.notes?`<div style="font-size:13px;color:var(--text2);font-style:italic;margin-bottom:12px">"${post.notes}"</div>`:''}
@@ -2980,97 +3083,103 @@ function getTimeAgo(date){
 
 // ---- Live feed ----
 async function loadLiveFeed(){
-  const el=document.getElementById('social-live-content');
-  if(!el)return;
+  try{
+    const el=document.getElementById('social-live-content');
+    if(!el)return;
 
-  // Show loading state
-  el.innerHTML='<div style="text-align:center;color:var(--text3);padding:20px;font-size:13px"><div class="ai-spinner" style="margin:0 auto 10px"></div>Checking...</div>';
+    // Show loading state
+    el.innerHTML='<div style="text-align:center;color:var(--text3);padding:20px;font-size:13px"><div class="ai-spinner" style="margin:0 auto 10px"></div>Checking...</div>';
 
-  const{data:friendships,error:fErr}=await sb.from('friendships').select('requester_id,addressee_id').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`).eq('status','accepted');
+    const _lf=await dbGetLiveFeedData(currentUser.id);
+  // live feed data handled inside dbGetLiveFeedData
 
-  if(fErr){el.innerHTML='<div style="color:var(--red);font-size:13px;padding:16px">Error loading: '+fErr.message+'</div>';return;}
+    if(fErr){el.innerHTML='<div style="color:var(--red);font-size:13px;padding:16px">Error loading: '+fErr.message+'</div>';return;}
 
-  const friendIds=(friendships||[]).map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id);
+    const friendIds=(friendships||[]).map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id);
 
-  if(!friendIds.length){
-    el.innerHTML='<div style="text-align:center;color:var(--text3);padding:32px;font-size:13px">Add friends to see when they\'re training.</div>';
-    return;
-  }
+    if(!friendIds.length){
+      el.innerHTML='<div style="text-align:center;color:var(--text3);padding:32px;font-size:13px">Add friends to see when they\'re training.</div>';
+      return;
+    }
 
-  const{data:live,error:lErr}=await sb.from('workout_live').select('*').in('user_id',friendIds).eq('is_live',true);
+    const{data:live,error:lErr}=await sb.from('workout_live').select('*').in('user_id',friendIds).eq('is_live',true);
 
-  if(lErr){el.innerHTML='<div style="color:var(--red);font-size:13px;padding:16px">Error: '+lErr.message+'</div>';return;}
+    if(lErr){el.innerHTML='<div style="color:var(--red);font-size:13px;padding:16px">Error: '+lErr.message+'</div>';return;}
 
-  if(!live||!live.length){
-    el.innerHTML='<div style="text-align:center;color:var(--text3);padding:32px;font-size:13px">No friends training right now — check back soon!<br><br><button class="btn btn-ghost btn-sm" onclick="loadLiveFeed()">🔄 Refresh</button></div>';
-    return;
-  }
+    if(!live||!live.length){
+      el.innerHTML='<div style="text-align:center;color:var(--text3);padding:32px;font-size:13px">No friends training right now — check back soon!<br><br><button class="btn btn-ghost btn-sm" onclick="loadLiveFeed()">🔄 Refresh</button></div>';
+      return;
+    }
 
-  el.innerHTML=live.map(l=>{
-    const since=l.started_at?getTimeAgo(new Date(l.started_at)):'just started';
-    const setsData=l.sets_data||{};
-    const exEntries=Object.entries(setsData).filter(([,ex])=>ex?.sets?.length>0);
-    const totalSets=exEntries.reduce((t,[,ex])=>t+(ex?.sets?.length||0),0);
-    const setsHtml=exEntries.length?`
-      <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
-        <div class="section-label-sm">${totalSets} sets so far</div>
-        ${exEntries.map(([name,ex])=>`
-          <div style="margin-bottom:8px">
-            <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px">${name}</div>
-            <div style="display:flex;flex-wrap:wrap;gap:4px">
-              ${(ex.sets||[]).map((s,i)=>`<span style="font-size:11px;font-family:var(--mono);padding:2px 7px;border-radius:4px;background:var(--surface3);color:var(--text2)">Set ${i+1}: ${s.w}lbs×${s.r}</span>`).join('')}
-            </div>
-          </div>`).join('')}
-      </div>`:'<div style="font-size:12px;color:var(--text3);margin-top:8px">Warming up — no sets yet</div>';
-    return `<div class="card" style="margin-bottom:12px;border-color:var(--red)">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-        <div style="width:10px;height:10px;border-radius:50%;background:var(--red);flex-shrink:0;animation:pulse 1.5s infinite"></div>
-        <div style="width:34px;height:34px;border-radius:50%;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent)">${(l.display_name||'A')[0].toUpperCase()}</div>
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:700;color:var(--text)">${l.display_name||'Athlete'} is training now 🔴</div>
-          <div style="font-size:12px;color:var(--text2)">@${l.username} · ${l.day_name} · ${since}</div>
+    el.innerHTML=live.map(l=>{
+      const since=l.started_at?getTimeAgo(new Date(l.started_at)):'just started';
+      const setsData=l.sets_data||{};
+      const exEntries=Object.entries(setsData).filter(([,ex])=>ex?.sets?.length>0);
+      const totalSets=exEntries.reduce((t,[,ex])=>t+(ex?.sets?.length||0),0);
+      const setsHtml=exEntries.length?`
+        <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+          <div class="section-label-sm">${totalSets} sets so far</div>
+          ${exEntries.map(([name,ex])=>`
+            <div style="margin-bottom:8px">
+              <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px">${name}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px">
+                ${(ex.sets||[]).map((s,i)=>`<span style="font-size:11px;font-family:var(--mono);padding:2px 7px;border-radius:4px;background:var(--surface3);color:var(--text2)">Set ${i+1}: ${s.w}lbs×${s.r}</span>`).join('')}
+              </div>
+            </div>`).join('')}
+        </div>`:'<div style="font-size:12px;color:var(--text3);margin-top:8px">Warming up — no sets yet</div>';
+      return `<div class="card" style="margin-bottom:12px;border-color:var(--red)">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+          <div class="live-dot"></div>
+          <div style="width:34px;height:34px;border-radius:50%;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent)">${(l.display_name||'A')[0].toUpperCase()}</div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:700;color:var(--text)">${l.display_name||'Athlete'} is training now 🔴</div>
+            <div style="font-size:12px;color:var(--text2)">@${l.username} · ${l.day_name} · ${since}</div>
+          </div>
         </div>
-      </div>
-      ${setsHtml}
-    </div>`;
-  }).join('')+'<div style="text-align:center;margin-top:8px"><button class="btn btn-ghost btn-sm" onclick="loadLiveFeed()">🔄 Refresh</button></div>';
+        ${setsHtml}
+      </div>`;
+    }).join('')+'<div style="text-align:center;margin-top:8px"><button class="btn btn-ghost btn-sm" onclick="loadLiveFeed()">🔄 Refresh</button></div>';
+
+  } catch(err) {
+    console.error('[loadLiveFeed]', err.message||err);
+  }
 }
 
 // ---- Likes ----
 async function toggleLike(postId,existingLikeId,emoji){
-  const reaction=emoji||'❤️';
-  if(existingLikeId){
-    await sb.from('post_likes').delete().eq('id',existingLikeId).eq('user_id',currentUser.id);
-  }else{
-    await sb.from('post_likes').insert({post_id:postId,user_id:currentUser.id,reaction});
-  }
-  loadSocialFeed();
+  const ok=await dbTogglePostLike(postId,existingLikeId,emoji||'❤️');
+  if(ok)loadSocialFeed();
 }
 
 // ---- Comments ----
 async function openComments(postId){
-  currentPostId=postId;
-  const el=document.getElementById('comments-list');
-  el.innerHTML='<div class="ai-spinner" style="margin:16px auto"></div>';
-  openModal('comments-modal');
-  const comments=await dbGetPostComments(postId);
-  if(!comments||!comments.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:16px;text-align:center">No comments yet. Be first!</div>';return;}
-  el.innerHTML=comments.map(c=>`<div style="display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">
-    <div style="width:34px;height:34px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0">${(c.display_name||'A')[0].toUpperCase()}</div>
-    <div style="flex:1;min-width:0">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <div>
-          <span style="font-size:13px;font-weight:700;color:var(--text)">${c.display_name}</span>
-          <span style="font-size:11px;color:var(--text3);margin-left:6px">@${c.username}</span>
+  try{
+    currentPostId=postId;
+    const el=document.getElementById('comments-list');
+    el.innerHTML='<div class="ai-spinner" style="margin:16px auto"></div>';
+    openModal('comments-modal');
+    const comments=await dbGetPostComments(postId);
+    if(!comments||!comments.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:16px;text-align:center">No comments yet. Be first!</div>';return;}
+    el.innerHTML=comments.map(c=>`<div style="display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="width:34px;height:34px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0">${(c.display_name||'A')[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div>
+            <span style="font-size:13px;font-weight:700;color:var(--text)">${sanitizeHTML(c.display_name)}</span>
+            <span style="font-size:11px;color:var(--text3);margin-left:6px">@${c.username}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="text-xs text-muted">${getTimeAgo(new Date(c.created_at))}</span>
+            ${c.user_id===currentUser.id?`<button onclick="deleteComment('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:16px;line-height:1" title="Delete">×</button>`:''}
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:11px;color:var(--text3)">${getTimeAgo(new Date(c.created_at))}</span>
-          ${c.user_id===currentUser.id?`<button onclick="deleteComment('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:16px;line-height:1" title="Delete">×</button>`:''}
-        </div>
+        <div style="font-size:14px;color:var(--text);line-height:1.5;word-break:break-word">${c.body}</div>
       </div>
-      <div style="font-size:14px;color:var(--text);line-height:1.5;word-break:break-word">${c.body}</div>
-    </div>
-  </div>`).join('');
+    </div>`).join('');
+
+  } catch(err) {
+    console.error('[openComments]', err.message||err);
+  }
 }
 
 async function submitComment(){
@@ -3101,43 +3210,48 @@ async function deletePost(id){
 
 // ---- Friends ----
 async function searchFriends(){
-  const query=document.getElementById('friend-search-input').value.trim().toLowerCase();
-  if(!query){toast('Enter a username or email to search');return;}
-  const el=document.getElementById('friend-search-results');
-  el.innerHTML='<div class="text-muted text-base">Searching...</div>';
+  try{
+    const query=document.getElementById('friend-search-input').value.trim().toLowerCase();
+    if(!query){toast('Enter a username or email to search');return;}
+    const el=document.getElementById('friend-search-results');
+    el.innerHTML='<div class="text-muted text-base">Searching...</div>';
 
-  // Search by username
-  const{data:byUsername}=await sb.from('usernames').select('user_id,username,display_name').ilike('username','%'+query+'%').neq('user_id',currentUser.id).limit(5);
-  const results=byUsername||[];
+    // Search by username
+    const{data:byUsername}=await sb.from('usernames').select('user_id,username,display_name').ilike('username','%'+query+'%').neq('user_id',currentUser.id).limit(5);
+    const results=byUsername||[];
 
-  if(!results.length){
-    el.innerHTML='<div class="text-muted text-base">No users found for "'+query+'"</div>';
-    return;
+    if(!results.length){
+      el.innerHTML='<div class="text-muted text-base">No users found for "'+query+'"</div>';
+      return;
+    }
+
+    // Get existing friendships
+    const{data:existing}=await sb.from('friendships').select('*').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`);
+    const existingMap={};
+    (existing||[]).forEach(f=>{
+      const otherId=f.requester_id===currentUser.id?f.addressee_id:f.requester_id;
+      existingMap[otherId]=f;
+    });
+
+    el.innerHTML=results.map(u=>{
+      const fr=existingMap[u.user_id];
+      let btn='';
+      if(!fr)btn=`<button class="btn btn-primary btn-sm" onclick="sendFriendRequest('${u.user_id}','${u.display_name}')">Add friend</button>`;
+      else if(fr.status==='pending'&&fr.requester_id===currentUser.id)btn='<span class="text-sm text-muted">Request sent</span>';
+      else if(fr.status==='pending')btn=`<button class="btn btn-primary btn-sm" onclick="acceptFriendRequest('${fr.id}')">Accept</button>`;
+      else btn='<span style="font-size:12px;color:var(--accent)">Friends ✓</span>';
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text)">${u.display_name}</div>
+          <div class="text-sm text-muted">@${u.username}</div>
+        </div>
+        ${btn}
+      </div>`;
+    }).join('');
+
+  } catch(err) {
+    console.error('[searchFriends]', err.message||err);
   }
-
-  // Get existing friendships
-  const{data:existing}=await sb.from('friendships').select('*').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`);
-  const existingMap={};
-  (existing||[]).forEach(f=>{
-    const otherId=f.requester_id===currentUser.id?f.addressee_id:f.requester_id;
-    existingMap[otherId]=f;
-  });
-
-  el.innerHTML=results.map(u=>{
-    const fr=existingMap[u.user_id];
-    let btn='';
-    if(!fr)btn=`<button class="btn btn-primary btn-sm" onclick="sendFriendRequest('${u.user_id}','${u.display_name}')">Add friend</button>`;
-    else if(fr.status==='pending'&&fr.requester_id===currentUser.id)btn='<span style="font-size:12px;color:var(--text3)">Request sent</span>';
-    else if(fr.status==='pending')btn=`<button class="btn btn-primary btn-sm" onclick="acceptFriendRequest('${fr.id}')">Accept</button>`;
-    else btn='<span style="font-size:12px;color:var(--accent)">Friends ✓</span>';
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-      <div>
-        <div style="font-size:14px;font-weight:600;color:var(--text)">${u.display_name}</div>
-        <div style="font-size:12px;color:var(--text3)">@${u.username}</div>
-      </div>
-      ${btn}
-    </div>`;
-  }).join('');
 }
 
 async function sendFriendRequest(toUserId,toName){
@@ -3162,7 +3276,7 @@ async function loadPendingRequests(){
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
       <div>
         <div style="font-size:14px;font-weight:600;color:var(--text)">${u.display_name}</div>
-        <div style="font-size:12px;color:var(--text3)">@${u.username} wants to connect</div>
+        <div class="text-sm text-muted">@${u.username} wants to connect</div>
       </div>
       <div style="display:flex;gap:6px">
         <button class="btn btn-primary btn-sm" onclick="acceptFriendRequest('${req.id}')">Accept</button>
@@ -3187,27 +3301,32 @@ async function declineFriendRequest(id){
 }
 
 async function loadFriendsList(){
-  const el=document.getElementById('friends-list-content');
-  if(!el)return;
-  const{data:friendships}=await sb.from('friendships').select('id,requester_id,addressee_id').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`).eq('status','accepted');
-  if(!friendships||!friendships.length){el.innerHTML='<div class="text-muted text-base">No friends yet — search above to find people!</div>';return;}
-  const ids=friendships.map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id);
-  const{data:names}=await sb.from('usernames').select('user_id,username,display_name').in('user_id',ids);
-  const friendshipMap={};
-  (friendships||[]).forEach(f=>{
-    const fid=f.requester_id===currentUser.id?f.addressee_id:f.requester_id;
-    friendshipMap[fid]=f.id;
-  });
-  el.innerHTML=(names||[]).map(u=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
-    <div style="display:flex;align-items:center;gap:10px">
-      <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--accent)">${u.display_name[0].toUpperCase()}</div>
-      <div>
-        <div style="font-size:14px;font-weight:600;color:var(--text)">${u.display_name}</div>
-        <div style="font-size:12px;color:var(--text3)">@${u.username}</div>
+  try{
+    const el=document.getElementById('friends-list-content');
+    if(!el)return;
+    const{data:friendships}=await sb.from('friendships').select('id,requester_id,addressee_id').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`).eq('status','accepted');
+    if(!friendships||!friendships.length){el.innerHTML='<div class="text-muted text-base">No friends yet — search above to find people!</div>';return;}
+    const ids=friendships.map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id);
+    const{data:names}=await sb.from('usernames').select('user_id,username,display_name').in('user_id',ids);
+    const friendshipMap={};
+    (friendships||[]).forEach(f=>{
+      const fid=f.requester_id===currentUser.id?f.addressee_id:f.requester_id;
+      friendshipMap[fid]=f.id;
+    });
+    el.innerHTML=(names||[]).map(u=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--accent)">${u.display_name[0].toUpperCase()}</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text)">${u.display_name}</div>
+          <div class="text-sm text-muted">@${u.username}</div>
+        </div>
       </div>
-    </div>
-    <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red)" onclick="removeFriend('${friendshipMap[u.user_id]}','${u.display_name}')">Remove</button>
-  </div>`).join('') || '<div class="text-muted text-base">No friends yet!</div>';
+      <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red)" onclick="removeFriend('${friendshipMap[u.user_id]}','${u.display_name}')">Remove</button>
+    </div>`).join('') || '<div class="text-muted text-base">No friends yet!</div>';
+
+  } catch(err) {
+    console.error('[loadFriendsList]', err.message||err);
+  }
 }
 
 // ---- Push Notifications ----
@@ -3241,9 +3360,9 @@ async function openPostDetail(postId){
   const totalVol=exEntries.reduce((t,[,ex])=>t+(ex?.sets||[]).reduce((s2,s)=>s2+(s.w||0)*(s.r||0),0),0);
   let html=`<div style="font-size:12px;color:var(--text3);margin-bottom:16px">${dateStr} · @${post.username}</div>
   <div style="display:flex;gap:16px;padding:12px;background:var(--accent-dim);border-radius:var(--radius);margin-bottom:16px;border:1px solid var(--accent)">
-    <div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--accent)">${exEntries.length}</div><div style="font-size:11px;color:var(--text3)">exercises</div></div>
-    <div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--accent)">${totalSets}</div><div style="font-size:11px;color:var(--text3)">sets</div></div>
-    <div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--accent)">${totalVol>0?(totalVol/1000).toFixed(1)+'k':0}</div><div style="font-size:11px;color:var(--text3)">lbs vol.</div></div>
+    <div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--accent)">${exEntries.length}</div><div class="text-xs text-muted">exercises</div></div>
+    <div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--accent)">${totalSets}</div><div class="text-xs text-muted">sets</div></div>
+    <div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--accent)">${totalVol>0?(totalVol/1000).toFixed(1)+'k':0}</div><div class="text-xs text-muted">lbs vol.</div></div>
   </div>`;
   exEntries.forEach(([name,ex])=>{
     const exSets=ex?.sets||[];
@@ -3258,7 +3377,7 @@ async function openPostDetail(postId){
     </div>`;
   });
   if(post.notes)html+=`<div style="padding:12px;background:var(--surface2);border-radius:var(--radius);border-left:3px solid var(--accent)"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">SESSION NOTES</div><div style="font-size:13px;color:var(--text2);font-style:italic">${post.notes}</div></div>`;
-  document.getElementById('past-workout-content').innerHTML=html;
+  const _pwc=document.getElementById('past-workout-content');if(_pwc)_pwc.innerHTML=html;
   openModal('past-workout-modal');
 }
 
@@ -3266,7 +3385,7 @@ async function sendWorkoutNotificationToFriends(friends,type){
   try{
     // Check if user has broadcasting enabled before doing anything
     if(type==='started'){
-      const{data:myProfile}=await sb.from('profiles').select('notif_broadcast_workout').eq('id',currentUser.id).single();
+      const myProfile=await dbGetNotifPrefsForUser(currentUser.id);
       if(!myProfile?.notif_broadcast_workout)return;
     }
     if(!friends)return;
@@ -3284,7 +3403,7 @@ async function sendWorkoutNotificationToFriends(friends,type){
     })));
     // Send push notifications to friends who have alerts enabled
     if(type==='started'&&friendIds.length>0){
-      const{data:friendProfiles}=await sb.from('profiles').select('id,notif_friend_workout').in('id',friendIds);
+      const friendProfiles=await dbGetFriendNotifPrefs(friendIds);
       const pushRecipients=(friendProfiles||[]).filter(p=>p.notif_friend_workout).map(p=>p.id);
       if(pushRecipients.length>0){
         fetch('/api/notify-workout',{
@@ -3305,7 +3424,7 @@ async function sendWorkoutNotificationToFriends(friends,type){
 
 async function checkNotifications(){
   if(!currentUser)return;
-  const{data}=await sb.from('workout_notifications').select('id').eq('to_user_id',currentUser.id).eq('read',false);
+  const _notifCount=await dbGetNotifCount(currentUser.id);
   const badge=document.getElementById('feed-badge');
   if(badge){badge.style.display=(data&&data.length)?'block':'none';}
 }
@@ -3316,22 +3435,52 @@ async function markNotificationsRead(){
   if(badge)badge.style.display='none';
 }
 
-// ── Item 2: Surgical set row update ─────────────────────────
-// Instead of re-rendering the entire workout page after each set,
-// update only the specific row that changed
+// ── Surgical set row update ──────────────────────────────────
+// Updates a single logged set row without re-rendering the whole workout.
+// Returns true if successful, false if row not found (triggers full render).
 function updateSetRowUI(exName, setIdx, weight, reps) {
-  const rowId = `set-row-${exName.replace(/[^a-zA-Z0-9]/g,'-')}-${setIdx}`;
-  const row = document.getElementById(rowId);
-  if (!row) return false; // row not found, fall back to full re-render
-  // Update weight and reps fields in place
-  const wInput = row.querySelector('.set-weight');
-  const rInput = row.querySelector('.set-reps');
-  if (wInput) wInput.value = weight;
-  if (rInput) rInput.value = reps;
-  // Flash green to confirm save
+  // Sets are tracked by exercise card — find the card for this exercise
+  const cards = document.querySelectorAll('.ex-drag-card');
+  let targetCard = null;
+  cards.forEach(c => {
+    if (c.dataset.exName === exName) targetCard = c;
+  });
+  if (!targetCard) return false;
+
+  // Find or create the sets-logged section inside the card
+  let setsLogged = targetCard.querySelector('.sets-logged');
+  if (!setsLogged) {
+    // First set — create the container
+    setsLogged = document.createElement('div');
+    setsLogged.className = 'sets-logged';
+    setsLogged.style.cssText = 'margin-bottom:8px';
+    // Insert before the input row
+    const inputRow = targetCard.querySelector('.ex-input');
+    if (inputRow) inputRow.closest('div').before(setsLogged);
+    else return false; // can't find anchor — fall back
+  }
+
+  // Check if this set row already exists
+  const rowId = 'set-logged-' + exName.replace(/[^a-zA-Z0-9]/g, '-') + '-' + setIdx;
+  let row = document.getElementById(rowId);
+  
+  if (!row) {
+    // New set — append a row
+    row = document.createElement('div');
+    row.id = rowId;
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface2);border-radius:8px;margin-bottom:4px;border:1px solid var(--accent);transition:border-color 0.5s';
+    setsLogged.appendChild(row);
+  }
+
+  // Update content
+  row.innerHTML = '<span style="font-size:11px;color:var(--text3);min-width:16px">' + (setIdx + 1) + '</span>' +
+    '<span style="font-size:13px;font-weight:700;color:var(--text);font-family:var(--mono)">' + weight + ' lbs × ' + reps + '</span>' +
+    '<span style="font-size:11px;color:var(--accent);margin-left:auto">✓</span>';
+
+  // Flash accent border to confirm
   row.style.borderColor = 'var(--accent)';
-  row.style.transition = 'border-color 0.5s';
-  setTimeout(() => { row.style.borderColor = ''; }, 1000);
+  setTimeout(() => { if (row) row.style.borderColor = 'var(--border)'; }, 800);
+
   return true;
 }
 
@@ -3348,7 +3497,7 @@ setInterval(checkNotifications,60000);
 // DARK / LIGHT MODE
 // ============================================================
 function initTheme(){
-  const saved=localStorage.getItem('it_theme')||'dark';
+  const saved=localStorage.getItem('it_theme_'+(currentUser?.id||'global'))||'dark';
   applyTheme(saved,false);
 }
 
@@ -3360,7 +3509,7 @@ function applyTheme(theme,save=true){
   }
   const btn=document.getElementById('theme-toggle-btn');
   if(btn)btn.textContent=theme==='light'?'🌙 Dark mode':'☀️ Light mode';
-  if(save)localStorage.setItem('it_theme',theme);
+  if(save)localStorage.setItem('it_theme_'+(currentUser?.id||'global'),theme);
 }
 
 function toggleTheme(){
@@ -3462,6 +3611,7 @@ async function exportWeightCSV(){
 // ============================================================
 // WORKOUT TEMPLATES
 // ============================================================
+// currentTemplateId → use uiState.templateId
 let currentTemplateId=null;
 
 function getTemplates(){
@@ -3509,7 +3659,7 @@ function renderTemplatesList(){
   if(!el)return;
   const templates=getTemplates();
   if(!templates.length){
-    el.innerHTML='<div style="font-size:13px;color:var(--text3)">No templates saved yet.</div>';
+    el.innerHTML='<div class="text-base text-muted">No templates saved yet.</div>';
     return;
   }
   el.innerHTML=templates.map(t=>`
@@ -3528,10 +3678,11 @@ function openStartTemplate(id){
   if(!t)return;
   currentTemplateId=id;
   document.getElementById('start-template-title').textContent=t.name;
-  document.getElementById('start-template-exercises').innerHTML=t.exercises.map(e=>`
+  const _ste=document.getElementById('start-template-exercises');
+  if(_ste)_ste.innerHTML=t.exercises.map(e=>`
     <div style="padding:8px 0;border-bottom:1px solid var(--border)">
       <div style="font-size:13px;font-weight:600;color:var(--text)">${e.name}</div>
-      <div style="font-size:11px;color:var(--text3)">${e.sets} × ${e.target}</div>
+      <div class="text-xs text-muted">${e.sets} \xd7 ${e.target}</div>
     </div>`).join('');
   openModal('start-template-modal');
 }
@@ -3563,7 +3714,8 @@ function deleteCurrentTemplate(){
 // MY PLAN — MACRO & SUPPLEMENT RECOMMENDER
 // ============================================================
 
-let planResults=null; // store calculated results for apply button
+// planResults → use uiState.planResults
+let planResults=null;
 
 function parseHeightInput(val){
   // Accept formats: 5'10", 5'10, 5-10, 510, 70 (pure inches)
@@ -3596,286 +3748,174 @@ function parseHeightInput(val){
   }
 }
 
-function generateMyPlan(){
-  // Read values — prefer live field values, fall back to saved profile
-  const currentWeight = parseFloat(document.getElementById('set-start-weight')?.value) || parseFloat(userProfile.start_weight) || 0;
-  const goalWeight    = parseFloat(document.getElementById('set-goal-weight')?.value)  || parseFloat(userProfile.goal_weight)  || 0;
-  const heightIn      = parseFloat(document.getElementById('set-height')?.value)       || parseFloat(userProfile.height_in)    || 0;  // hidden field set by parseHeightInput
-  const age           = parseInt(document.getElementById('set-age')?.value)             || parseInt(userProfile.age)            || 0;
-  const gender        = document.getElementById('set-gender')?.value                   || userProfile.gender                   || '';
-  const goal          = document.getElementById('plan-goal')?.value  || 'maintain';
-  const activity      = parseFloat(document.getElementById('plan-activity')?.value || 1.55);
-
-  // Validate
-  const missing = [];
-  if (!currentWeight) missing.push('current weight (Starting weight field)');
-  if (!heightIn)       missing.push('height');
-  if (!age)            missing.push('age');
-  if (!gender)         missing.push('gender');
-  if (missing.length) {
-    toast('Please fill in: ' + missing.join(', ') + ' — then hit Save profile before calculating');
-    return;
-  }
-
-  // ── BMR using Mifflin-St Jeor ─────────────────────────────────────────
-  // Inputs must be in kg and cm
-  const weightKg  = currentWeight * UNITS.KG_PER_LB;
-  const heightCm  = heightIn * UNITS.CM_PER_INCH;
-  let bmr;
-  if (gender === 'male')   bmr = Math.round(10 * weightKg + 6.25 * heightCm - 5 * age + 5);
-  else                     bmr = Math.round(10 * weightKg + 6.25 * heightCm - 5 * age - 161);
-
-  // ── TDEE ──────────────────────────────────────────────────────────────
+// ── Pure macro calculator — extracted from generateMyPlan ───────────────
+function calcMacroValues(currentWeight, heightIn, age, gender, activity, goalKey) {
+  const weightKg = currentWeight * UNITS.KG_PER_LB;
+  const heightCm = heightIn * UNITS.CM_PER_INCH;
+  const bmr = gender === 'male'
+    ? Math.round(10 * weightKg + 6.25 * heightCm - 5 * age + 5)
+    : Math.round(10 * weightKg + 6.25 * heightCm - 5 * age - 161);
   const tdee = Math.round(bmr * activity);
+  const calDelta = goalKey === 'cut' ? -500 : goalKey === 'bulk' ? 300 : 0;
+  const targetCal = Math.round(tdee + calDelta);
+  const protein = Math.round(weightKg * 2.2);
+  const proteinCals = protein * 4;
+  const fat = Math.round(targetCal * 0.28 / 9);
+  const fatCals = fat * 9;
+  const carbCals = Math.max(0, targetCal - proteinCals - fatCals);
+  const carbs = Math.round(carbCals / 4);
+  const fiber = Math.round(targetCal / 1000 * 14);
+  return { bmr, tdee, targetCal, protein, proteinCals, fat, fatCals, carbs, carbCals, fiber,
+           trueTotal: proteinCals + fatCals + carbCals, weightKg, heightCm };
+}
 
-  // ── Calorie target ────────────────────────────────────────────────────
+
+
+// ── readPlanInputs — reads and validates the My Plan form ────────────────
+function readPlanInputs() {
+  const v = id => document.getElementById(id);
+  const inputs = {
+    currentWeight: parseFloat(v('set-start-weight')?.value) || parseFloat(userProfile.start_weight) || 0,
+    goalWeight:    parseFloat(v('set-goal-weight')?.value)  || parseFloat(userProfile.goal_weight)  || 0,
+    heightIn:      parseFloat(v('set-height')?.value)       || parseFloat(userProfile.height_in)    || 0,
+    age:           parseInt(v('set-age')?.value)             || parseInt(userProfile.age)            || 0,
+    gender:        v('set-gender')?.value                   || userProfile.gender                   || '',
+    goal:          v('plan-goal')?.value                    || 'maintain',
+    activity:      parseFloat(v('plan-activity')?.value)    || 1.55,
+  };
+  const missing = [];
+  if (!inputs.currentWeight) missing.push('current weight');
+  if (!inputs.heightIn)       missing.push('height');
+  if (!inputs.age)            missing.push('age');
+  if (!inputs.gender)         missing.push('gender');
+  if (missing.length) { toast('Please fill in: ' + missing.join(', ')); return null; }
+  return inputs;
+}
+
+// ── calcCalorieTarget — calorie target with safety floor ─────────────────
+function calcCalorieTarget(tdee, bmr, goal, goalWeight, currentWeight) {
   let targetCal, calNote, weeklyLoss = 0;
   if (goal === 'cut') {
-    // Safe deficit: 500 cal/day = ~1 lb/week. Never go below BMR + 200.
-    const maxDeficit = Math.max(0, tdee - bmr - 200);
-    const deficit    = Math.min(500, maxDeficit);
-    targetCal        = Math.max(bmr + 200, tdee - deficit);
-    weeklyLoss       = (tdee - targetCal) * 7 / UNITS.KCAL_PER_LB_FAT;
-    calNote          = `${tdee - targetCal} cal deficit · ~${weeklyLoss.toFixed(1)} lbs/week`;
+    const deficit = Math.min(500, Math.max(0, tdee - bmr - 200));
+    targetCal  = Math.round(Math.max(bmr + 200, tdee - deficit));
+    weeklyLoss = (tdee - targetCal) * 7 / UNITS.KCAL_PER_LB_FAT;
+    calNote    = (tdee - targetCal) + ' cal deficit · ~' + weeklyLoss.toFixed(1) + ' lbs/week';
   } else if (goal === 'bulk') {
-    targetCal = tdee + 275;
+    targetCal = Math.round(tdee + 275);
     calNote   = '275 cal surplus · lean muscle gain';
   } else {
-    targetCal = tdee;
+    targetCal = Math.round(tdee);
     calNote   = 'Maintenance · body recomposition';
   }
-  targetCal = Math.round(targetCal);
-
-  // ── Time to goal ──────────────────────────────────────────────────────
   let timeToGoal = '—';
-  const weightDiff = goalWeight ? goalWeight - currentWeight : 0;
-  if (goalWeight && Math.abs(weightDiff) > 0.5) {
-    if (goal === 'cut' && weightDiff < 0 && weeklyLoss > 0) {
-      const weeks = Math.ceil(Math.abs(weightDiff) / weeklyLoss);
-      timeToGoal = weeks <= 52 ? `~${weeks} weeks` : `~${(weeks / 52).toFixed(1)} yrs`;
-    } else if (goal === 'bulk' && weightDiff > 0) {
-      const weeks = Math.ceil(weightDiff / 0.3); // ~0.3 lbs muscle/week realistic
-      timeToGoal = `~${weeks} weeks`;
-    } else {
-      timeToGoal = 'N/A';
-    }
+  const diff = goalWeight ? goalWeight - currentWeight : 0;
+  if (goalWeight && Math.abs(diff) > 0.5) {
+    if (goal === 'cut' && diff < 0 && weeklyLoss > 0)
+      timeToGoal = '~' + Math.ceil(Math.abs(diff) / weeklyLoss) + ' weeks';
+    else if (goal === 'bulk' && diff > 0)
+      timeToGoal = '~' + Math.ceil(diff / 0.3) + ' weeks';
+    else timeToGoal = 'N/A';
   }
+  return { targetCal, calNote, weeklyLoss, timeToGoal };
+}
 
-  // ── Macros ────────────────────────────────────────────────────────────
-  // Protein: g per lb of BODYWEIGHT (not goal weight)
+// ── calcMacroBreakdown — macro grams from calorie target ─────────────────
+function calcMacroBreakdown(targetCal, currentWeight, goal) {
   const proteinPerLb = goal === 'cut' ? 1.0 : goal === 'bulk' ? 0.85 : 0.8;
-  const protein      = Math.round(currentWeight * proteinPerLb);
-  const proteinCals  = protein * 4;
+  const protein    = Math.round(currentWeight * proteinPerLb);
+  const proteinCals = protein * 4;
+  const fatPct     = goal === 'cut' ? 0.25 : 0.28;
+  const fatCals    = Math.round(targetCal * fatPct);
+  const fat        = Math.round(fatCals / 9);
+  const carbCals   = Math.max(200, targetCal - proteinCals - fatCals);
+  const carbs      = Math.round(carbCals / 4);
+  const fiber      = Math.round(targetCal / 1000 * 14);
+  const notes = {
+    cut: 'High protein (' + proteinPerLb + 'g/lb) preserves muscle in a deficit. Fat at 25% supports hormones.',
+    bulk: 'Moderate protein (' + proteinPerLb + 'g/lb) supports muscle. Higher carbs fuel heavy training.',
+    maintain: 'Balanced macros for recomposition. Protein prioritised for muscle retention.',
+  };
+  return { protein, proteinCals, fat, fatCals, carbs, carbCals, fiber,
+           trueTotal: proteinCals + fatCals + carbCals,
+           macroNote: notes[goal] || notes.maintain };
+}
 
-  // Fat: 25-28% of TARGET calories
-  const fatPct  = goal === 'cut' ? 0.25 : 0.28;
-  const fatCals = Math.round(targetCal * fatPct);
-  const fat     = Math.round(fatCals / 9);
-
-  // Carbs: whatever is left — ensure at minimum 50g
-  const carbCals = Math.max(200, targetCal - proteinCals - fatCals); // min 200 kcal from carbs
-  const carbs    = Math.round(carbCals / 4);
-
-  // Recalculate true total (carb floor may push over target slightly — that's fine)
-  const trueTotal = proteinCals + fatCals + carbCals;
-
-  // Fiber: 14g per 1000 kcal
-  const fiber = Math.round(targetCal / 1000 * 14);
-
-  // Macro note
-  let macroNote = '';
-  if (goal === 'cut') {
-    macroNote = `High protein (${proteinPerLb}g per lb) protects muscle during a deficit. Fat is kept at 25% of calories to support hormones. Carbs fill the remaining calories — time them around workouts for best performance.`;
-  } else if (goal === 'bulk') {
-    macroNote = `Moderate protein (${proteinPerLb}g per lb) supports muscle synthesis. Higher carbs fuel heavy training and glycogen replenishment. The 275 cal surplus promotes muscle growth while minimising fat gain.`;
-  } else {
-    macroNote = `Balanced macros for body recomposition — losing fat while building muscle simultaneously. Protein is prioritised for muscle retention and satiety. Works best with consistent training.`;
-  }
-
-  // Store for apply button
-  planResults = { cal: targetCal, pro: protein, carb: carbs, fat };
-
-  // ── Render stats ──────────────────────────────────────────────────────
+// ── renderMyPlanResults — writes all DOM updates for My Plan ──────────────
+function renderMyPlanResults(bmr, tdee, targetCal, calNote, timeToGoal, macros, goal, activity, currentWeight) {
   const s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   s('plan-bmr', bmr.toLocaleString());
   s('plan-tdee', tdee.toLocaleString());
   s('plan-target-cal', targetCal.toLocaleString());
   s('plan-cal-note', calNote);
   s('plan-time', timeToGoal);
-
-  // Macro cards
-  const macroGrid = document.getElementById('plan-macros-grid');
-  const pctOf = (cals) => Math.round(cals / trueTotal * 100);
-  const macros = [
-    { label:'Calories', val:targetCal, unit:'kcal', color:'var(--accent)',  extra:`${Math.round(targetCal/tdee*100)}% of TDEE` },
-    { label:'Protein',  val:protein,   unit:'g',    color:'var(--blue)',    extra:`${pctOf(proteinCals)}% · ${proteinCals} kcal` },
-    { label:'Carbs',    val:carbs,     unit:'g',    color:'var(--amber)',   extra:`${pctOf(carbCals)}% · ${carbCals} kcal` },
-    { label:'Fat',      val:fat,       unit:'g',    color:'var(--green)',   extra:`${pctOf(fatCals)}% · ${fatCals} kcal` },
-    { label:'Fiber',    val:fiber,     unit:'g',    color:'var(--text2)',   extra:'recommended daily' },
+  const pct = cals => Math.round(cals / macros.trueTotal * 100);
+  const items = [
+    { label:'Calories', val:targetCal,     unit:'kcal', color:'var(--accent)', extra: Math.round(targetCal/tdee*100) + '% of TDEE' },
+    { label:'Protein',  val:macros.protein, unit:'g',   color:'var(--blue)',   extra: pct(macros.proteinCals) + '% · ' + macros.proteinCals + ' kcal' },
+    { label:'Carbs',    val:macros.carbs,   unit:'g',   color:'var(--amber)',  extra: pct(macros.carbCals) + '% · ' + macros.carbCals + ' kcal' },
+    { label:'Fat',      val:macros.fat,     unit:'g',   color:'var(--green)',  extra: pct(macros.fatCals) + '% · ' + macros.fatCals + ' kcal' },
+    { label:'Fiber',    val:macros.fiber,   unit:'g',   color:'var(--text2)',  extra: 'recommended daily' },
   ];
-  if (macroGrid) macroGrid.innerHTML = macros.map(m => `
-    <div class="stat-card" style="border-color:${m.color}44">
-      <div class="stat-label" style="color:${m.color}">${m.label}</div>
-      <div class="stat-value text-mono" style="font-size:20px;color:${m.color}">${m.val.toLocaleString()}<span class="stat-unit" style="font-size:13px">${m.unit}</span></div>
-      <div style="font-size:10px;color:var(--text3);margin-top:3px">${m.extra}</div>
-    </div>`).join('');
-
-  const macroNoteEl = document.getElementById('plan-macro-note');
-  if (macroNoteEl) macroNoteEl.textContent = macroNote;
-
-  // Supplements
-  renderSupplementRecs(goal, activity, currentWeight, protein);
-
-  // Show
-  document.getElementById('my-plan-results').style.display = 'block';
-  document.getElementById('my-plan-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const grid = document.getElementById('plan-macros-grid');
+  if (grid) grid.innerHTML = items.map(m =>
+    '<div class="stat-card" style="border-color:' + m.color + '44">' +
+    '<div class="stat-label" style="color:' + m.color + '">' + m.label + '</div>' +
+    '<div class="stat-value text-mono" style="font-size:20px;color:' + m.color + '">' + m.val.toLocaleString() +
+    '<span class="stat-unit" style="font-size:13px">' + m.unit + '</span></div>' +
+    '<div style="font-size:10px;color:var(--text3);margin-top:3px">' + m.extra + '</div></div>'
+  ).join('');
+  const noteEl = document.getElementById('plan-macro-note');
+  if (noteEl) noteEl.textContent = macros.macroNote;
+  renderSupplementRecs(goal, activity, currentWeight, macros.protein);
+  const res = document.getElementById('my-plan-results');
+  if (res) { res.style.display = 'block'; res.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   toast('✅ Your plan is ready!');
 }
 
+function generateMyPlan() {
+  const inputs = readPlanInputs();
+  if (!inputs) return;
+  const { currentWeight, goalWeight, heightIn, age, gender, goal, activity } = inputs;
+  const weightKg = currentWeight * UNITS.KG_PER_LB;
+  const heightCm = heightIn * UNITS.CM_PER_INCH;
+  const bmr = Math.round(gender === 'male'
+    ? 10 * weightKg + 6.25 * heightCm - 5 * age + 5
+    : 10 * weightKg + 6.25 * heightCm - 5 * age - 161);
+  const tdee = Math.round(bmr * activity);
+  const { targetCal, calNote, timeToGoal } = calcCalorieTarget(tdee, bmr, goal, goalWeight, currentWeight);
+  const macros = calcMacroBreakdown(targetCal, currentWeight, goal);
+  planResults = { cal: targetCal, pro: macros.protein, carb: macros.carbs, fat: macros.fat };
+  renderMyPlanResults(bmr, tdee, targetCal, calNote, timeToGoal, macros, goal, activity, currentWeight);
+}
 
-function renderSupplementRecs(goal, activity, weight, proteinTarget, macroNote){
-  // All supplements with evidence ratings and goal relevance
-  const allSupplements=[
-    {
-      name:'Creatine Monohydrate',
-      icon:'💪',
-      dose:'3-5g daily',
-      timing:'Any time (consistency matters)',
-      goals:['cut','bulk','maintain'],
-      priority:'essential',
-      evidence:'⭐⭐⭐⭐⭐',
-      benefit:'The most researched supplement in sports science. Increases strength, power output, and muscle mass. Helps preserve muscle during a cut. No loading phase needed.',
-      note:'Take every day — even on rest days.',
-    },
-    {
-      name:'Protein Powder (Whey or Plant)',
-      icon:'🥛',
-      dose:`${Math.max(0,Math.round(proteinTarget*0.3))}g per shake`,
-      timing:'Post-workout or between meals',
-      goals:['bulk','cut','maintain'],
-      priority: proteinTarget>180?'essential':'recommended',
-      evidence:'⭐⭐⭐⭐⭐',
-      benefit:`You need ${proteinTarget}g protein daily. If you struggle to hit that from food alone, protein powder is the most convenient way to close the gap. Whey is absorbed fastest post-workout.`,
-      note:'Not needed if you hit protein targets from whole food.',
-    },
-    {
-      name:'Caffeine / Pre-workout',
-      icon:'⚡',
-      dose:'150-300mg caffeine',
-      timing:'30-45 min before training',
-      goals:['cut','bulk','maintain'],
-      priority:'recommended',
-      evidence:'⭐⭐⭐⭐⭐',
-      benefit:'Clinically proven to improve strength, endurance, and focus. Particularly useful on a cut when lower calories can leave you feeling sluggish before training.',
-      note:'Avoid after 2pm to protect sleep quality.',
-    },
-    {
-      name:'Omega-3 Fish Oil',
-      icon:'🐟',
-      dose:'2-3g EPA+DHA daily',
-      timing:'With meals',
-      goals:['cut','bulk','maintain'],
-      priority:'recommended',
-      evidence:'⭐⭐⭐⭐',
-      benefit:'Reduces inflammation from heavy training, supports joint health, and may improve muscle protein synthesis. Also has cardiovascular and cognitive benefits.',
-      note:'Look for a product with at least 1g EPA+DHA combined per serving.',
-    },
-    {
-      name:'Vitamin D3 + K2',
-      icon:'☀️',
-      dose:'2000-5000 IU D3 daily',
-      timing:'Morning with fat-containing meal',
-      goals:['cut','bulk','maintain'],
-      priority:'recommended',
-      evidence:'⭐⭐⭐⭐',
-      benefit:'Most people — especially those who train indoors — are Vitamin D deficient. D3 supports testosterone production, bone density, immune function, and muscle recovery.',
-      note:'K2 (100-200mcg) helps direct calcium to bones rather than arteries.',
-    },
-    {
-      name:'Magnesium Glycinate',
-      icon:'😴',
-      dose:'300-400mg elemental magnesium',
-      timing:'30-60 min before bed',
-      goals:['cut','bulk','maintain'],
-      priority:'recommended',
-      evidence:'⭐⭐⭐⭐',
-      benefit:'Heavy training depletes magnesium. Low levels hurt sleep quality, muscle recovery, and energy production. Glycinate form is easiest on the stomach and best absorbed.',
-      note:'Avoid magnesium oxide — it\'s poorly absorbed.',
-    },
-    {
-      name:'Beta-Alanine',
-      icon:'🔥',
-      dose:'3.2-6.4g daily',
-      timing:'Split doses throughout day',
-      goals:['bulk','maintain'],
-      priority: activity>=1.725?'recommended':'optional',
-      evidence:'⭐⭐⭐⭐',
-      benefit:'Buffers lactic acid in muscles, delaying fatigue during high-rep training and HIIT. Most effective for sets lasting 60-240 seconds.',
-      note:'Causes harmless tingling (paresthesia). Split doses to reduce this.',
-    },
-    {
-      name:'Zinc + Magnesium (ZMA)',
-      icon:'🌙',
-      dose:'ZMA supplement as directed',
-      timing:'Before bed on empty stomach',
-      goals:['bulk'],
-      priority:'optional',
-      evidence:'⭐⭐⭐',
-      benefit:'Zinc supports testosterone production and immune function. Combined with magnesium and B6, ZMA may improve sleep quality and recovery in lifters with low zinc/magnesium levels.',
-      note:'Not needed if already taking magnesium and getting adequate zinc from diet.',
-    },
-    {
-      name:'L-Carnitine',
-      icon:'🔥',
-      dose:'1-2g daily',
-      timing:'With meals',
-      goals:['cut'],
-      priority:'optional',
-      evidence:'⭐⭐⭐',
-      benefit:'May enhance fat oxidation during exercise. Most effective when combined with a caloric deficit and cardio. Evidence is moderate — not a magic fat burner.',
-      note:'Acetyl-L-Carnitine form also has cognitive benefits.',
-    },
-    {
-      name:'Electrolytes',
-      icon:'💧',
-      dose:'1 serving during/after training',
-      timing:'During workout or post-workout',
-      goals:['cut','bulk','maintain'],
-      priority: activity>=1.55?'recommended':'optional',
-      evidence:'⭐⭐⭐⭐',
-      benefit:'Heavy training and sweating deplete sodium, potassium, and magnesium. Electrolytes maintain performance, prevent cramping, and support recovery. Especially important on a cut where carb restriction reduces glycogen and water retention.',
-      note:'Coconut water + a pinch of sea salt is a cheap alternative.',
-    },
-  ];
 
-  // Filter and sort by relevance
-  const priorityOrder={essential:0,recommended:1,optional:2};
-  const relevant=allSupplements
-    .filter(s=>s.goals.includes(goal))
-    .sort((a,b)=>priorityOrder[a.priority]-priorityOrder[b.priority]);
+// ── Supplement card renderer — extracted from renderSupplementRecs ────────
+function buildSupplementCardHTML(s) {
+  const colors = { essential:'var(--accent)', recommended:'var(--blue)', optional:'var(--text3)' };
+  const labels = { essential:'Essential', recommended:'Recommended', optional:'Optional' };
+  const c = colors[s.priority] || 'var(--text3)';
+  const l = labels[s.priority] || 'Optional';
+  return '<div class="card" style="margin-bottom:12px;border-color:'+c+'33">' +
+    '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">' +
+    '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:22px">'+s.icon+'</span>' +
+    '<div><div style="font-size:13px;font-weight:700;color:var(--text)">'+s.name+'</div>' +
+    '<div class="text-xs text-muted">'+s.evidence+'</div></div></div>' +
+    '<span class="chip" style="background:'+c+'22;color:'+c+';border-color:'+c+'55">'+l+'</span></div>' +
+    '<div class="text-sm" style="color:var(--text2);margin-bottom:6px;line-height:1.5">'+s.benefit+'</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">' +
+    '<div class="text-xs text-muted">💊 '+s.dose+'</div>' +
+    '<div class="text-xs text-muted">⏰ '+s.timing+'</div></div>' +
+    (s.note?'<div class="text-xs" style="color:var(--accent);margin-top:4px">💡 '+s.note+'</div>':'') + '</div>';
+}
 
-  const priorityColors={essential:'var(--accent)',recommended:'var(--blue)',optional:'var(--text3)'};
-  const priorityLabels={essential:'Essential',recommended:'Recommended',optional:'Optional'};
 
-  document.getElementById('plan-supplements').innerHTML=relevant.map(s=>`
-    <div class="card" style="margin-bottom:12px;border-color:${priorityColors[s.priority]}33">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:24px">${s.icon}</span>
-          <div>
-            <div style="font-size:14px;font-weight:700;color:var(--text)">${s.name}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:2px">Evidence: ${s.evidence}</div>
-          </div>
-        </div>
-        <span class="chip" style="background:${priorityColors[s.priority]}22;color:${priorityColors[s.priority]};border-color:${priorityColors[s.priority]}55">${priorityLabels[s.priority]}</span>
-      </div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:10px;line-height:1.6">${s.benefit}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px">
-        <div style="padding:4px 10px;background:var(--surface2);border-radius:20px;font-size:11px;color:var(--text3)">📏 ${s.dose}</div>
-        <div style="padding:4px 10px;background:var(--surface2);border-radius:20px;font-size:11px;color:var(--text3)">⏰ ${s.timing}</div>
-        ${s.note?`<div style="padding:4px 10px;background:var(--accent-dim);border-radius:20px;font-size:11px;color:var(--accent)">💡 ${s.note}</div>`:''}
-      </div>
-    </div>`).join('');
+
+function renderSupplementRecs(goal, activity, weight, proteinTarget) {
+  const relevant = (SUPPLEMENT_DATABASE || [])
+    .filter(s => s.goals.includes(goal) || s.goals.includes('maintain'))
+    .sort((a, b) => ({ essential:0, recommended:1, optional:2 }[a.priority]||2) - ({ essential:0, recommended:1, optional:2 }[b.priority]||2));
+  const el = document.getElementById('plan-supplements');
+  if (el) el.innerHTML = relevant.map(s => buildSupplementCardHTML(s)).join('');
 }
 
 function applyPlanMacros(){
@@ -3940,18 +3980,19 @@ function showPastWorkout(log){
   const totalVol=Object.values(sets).reduce((t,ex)=>t+(ex?.sets||[]).reduce((s2,s)=>s2+(s.w||0)*(s.r||0),0),0);
   const totalSets=Object.values(sets).reduce((t,ex)=>t+(ex?.sets?.length||0),0);
   html=`<div style="display:flex;gap:16px;padding:12px;background:var(--accent-dim);border-radius:var(--radius);margin-bottom:16px">
-    <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--accent)">${Object.keys(sets).length}</div><div style="font-size:11px;color:var(--text3)">exercises</div></div>
-    <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--accent)">${totalSets}</div><div style="font-size:11px;color:var(--text3)">sets</div></div>
-    <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--accent)">${formatVolume(totalVol)}</div><div style="font-size:11px;color:var(--text3)">lbs vol.</div></div>
+    <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--accent)">${Object.keys(sets).length}</div><div class="text-xs text-muted">exercises</div></div>
+    <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--accent)">${totalSets}</div><div class="text-xs text-muted">sets</div></div>
+    <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--accent)">${formatVolume(totalVol)}</div><div class="text-xs text-muted">lbs vol.</div></div>
   </div>`+html;
 
-  document.getElementById('past-workout-content').innerHTML=html;
+  const _pwc=document.getElementById('past-workout-content');if(_pwc)_pwc.innerHTML=html;
   openModal('past-workout-modal');
 }
 
 // ============================================================
 // CUSTOM SPLIT BUILDER (fix 2)
 // ============================================================
+// customSplitDayCount → use uiState.customSplitDayCount
 let customSplitDayCount=0;
 
 function openCustomSplitModal(){
@@ -4055,8 +4096,9 @@ function toggleLiquidEstimate(){
   }
 }
 
+// _baseMacros/_updatingMacros → use uiState.baseMacros/updatingMacros
 let _baseMacros={cal:0,pro:0,carb:0,fat:0};
-let _updatingMacros=false; // prevent feedback loop
+let _updatingMacros=false;
 
 function storeBaseServingMacros(){
   // Only store when user is directly typing — not when updateServingMacros is writing
@@ -4091,14 +4133,20 @@ function updateServingMacros(){
 
 
 // ============================================================
+// allWorkoutLogs → use uiState.allWorkoutLogs
 let allWorkoutLogs=[];
 
 async function initHistoryPage(){
-  const list=document.getElementById('history-list');
-  if(list)list.innerHTML='<div style="color:var(--text3);font-size:13px;padding:20px 0">Loading history...</div>';
-  const logs=await dbGetAllWorkoutLogs(currentUser.id);
-  allWorkoutLogs=logs||[];
-  renderHistory(allWorkoutLogs);
+  try{
+    const list=document.getElementById('history-list');
+    if(list)list.innerHTML='<div style="color:var(--text3);font-size:13px;padding:20px 0">Loading history...</div>';
+    const logs=await dbGetAllWorkoutLogs(currentUser.id);
+    allWorkoutLogs=logs||[];
+    renderHistory(allWorkoutLogs);
+
+  } catch(err) {
+    console.error('[initHistoryPage]', err.message||err);
+  }
 }
 
 function renderHistory(logs){
@@ -4267,18 +4315,23 @@ async function updateCalorieBurn(){
 
 
 async function checkAndShowBadges(logs,prs){
-  const totalVol=logs.reduce((t,l)=>t+(l.volume||0),0);
-  const earned=BADGES.filter(b=>b.check(logs,prs,totalVol));
-  const seen=JSON.parse(localStorage.getItem('it_badges_seen_'+currentUser.id)||'[]');
-  const newBadges=earned.filter(b=>!seen.includes(b.id));
-  if(newBadges.length){
-    // Show first new badge as a toast-style popup
-    const b=newBadges[0];
-    seen.push(...newBadges.map(b=>b.id));
-    localStorage.setItem('it_badges_seen_'+currentUser.id,JSON.stringify(seen));
-    setTimeout(()=>{
-      toast(`${b.icon} Badge unlocked: ${b.name} — ${b.desc}`);
-    },1500);
+  try{
+    const totalVol=logs.reduce((t,l)=>t+(l.volume||0),0);
+    const earned=BADGES.filter(b=>b.check(logs,prs,totalVol));
+    const seen=JSON.parse(localStorage.getItem('it_badges_seen_'+currentUser.id)||'[]');
+    const newBadges=earned.filter(b=>!seen.includes(b.id));
+    if(newBadges.length){
+      // Show first new badge as a toast-style popup
+      const b=newBadges[0];
+      seen.push(...newBadges.map(b=>b.id));
+      localStorage.setItem('it_badges_seen_'+currentUser.id,JSON.stringify(seen));
+      setTimeout(()=>{
+        toast(`${b.icon} Badge unlocked: ${b.name} — ${b.desc}`);
+      },1500);
+    }
+
+  } catch(err) {
+    console.error('[checkAndShowBadges]', err.message||err);
   }
 }
 
@@ -4286,28 +4339,33 @@ async function checkAndShowBadges(logs,prs){
 // MONTHLY RECAP
 // ============================================================
 async function checkMonthlyRecap(){
-  const d=new Date();
-  if(d.getDate()!==1)return; // Only show on 1st of month
-  const lastMonth=new Date(d.getFullYear(),d.getMonth()-1,1);
-  const monthStr=lastMonth.toISOString().slice(0,7);
-  const seenKey='it_recap_seen_'+currentUser.id+'_'+monthStr;
-  if(localStorage.getItem(seenKey))return;
-  const{data:logs}=await sb.from('workout_logs').select('volume,day_name,date').eq('user_id',currentUser.id).gte('date',monthStr+'-01').lte('date',monthStr+'-31');
-  if(!logs?.length)return;
-  const{data:prs}=await sb.from('personal_records').select('exercise,weight_lbs,reps').eq('user_id',currentUser.id).gte('date',monthStr+'-01');
-  const totalVol=logs.reduce((t,l)=>t+(l.volume||0),0);
-  const monthName=lastMonth.toLocaleString('default',{month:'long',year:'numeric'});
-  localStorage.setItem(seenKey,'1');
-  // Show recap modal
-  const modal=document.getElementById('monthly-recap-modal');
-  if(!modal)return;
-  document.getElementById('recap-month').textContent=monthName;
-  document.getElementById('recap-sessions').textContent=logs.length;
-  document.getElementById('recap-volume').textContent=totalVol>0?(totalVol/1000).toFixed(1)+'k lbs':'0';
-  document.getElementById('recap-prs').textContent=(prs||[]).length;
-  const bestDay=logs.reduce((b,l)=>(l.volume||0)>(b.volume||0)?l:b,logs[0]);
-  document.getElementById('recap-best').textContent=bestDay?bestDay.day_name+' ('+bestDay.date+')':'—';
-  openModal('monthly-recap-modal');
+  try{
+    const d=new Date();
+    if(d.getDate()!==1)return; // Only show on 1st of month
+    const lastMonth=new Date(d.getFullYear(),d.getMonth()-1,1);
+    const monthStr=lastMonth.toISOString().slice(0,7);
+    const seenKey='it_recap_seen_'+currentUser.id+'_'+monthStr;
+    if(localStorage.getItem(seenKey))return;
+    const{data:logs}=await sb.from('workout_logs').select('volume,day_name,date').eq('user_id',currentUser.id).gte('date',monthStr+'-01').lte('date',monthStr+'-31');
+    if(!logs?.length)return;
+    const{data:prs}=await sb.from('personal_records').select('exercise,weight_lbs,reps').eq('user_id',currentUser.id).gte('date',monthStr+'-01');
+    const totalVol=logs.reduce((t,l)=>t+(l.volume||0),0);
+    const monthName=lastMonth.toLocaleString('default',{month:'long',year:'numeric'});
+    localStorage.setItem(seenKey,'1');
+    // Show recap modal
+    const modal=document.getElementById('monthly-recap-modal');
+    if(!modal)return;
+    document.getElementById('recap-month').textContent=monthName;
+    document.getElementById('recap-sessions').textContent=logs.length;
+    document.getElementById('recap-volume').textContent=totalVol>0?(totalVol/1000).toFixed(1)+'k lbs':'0';
+    document.getElementById('recap-prs').textContent=(prs||[]).length;
+    const bestDay=logs.reduce((b,l)=>(l.volume||0)>(b.volume||0)?l:b,logs[0]);
+    document.getElementById('recap-best').textContent=bestDay?bestDay.day_name+' ('+bestDay.date+')':'—';
+    openModal('monthly-recap-modal');
+
+  } catch(err) {
+    console.error('[checkMonthlyRecap]', err.message||err);
+  }
 }
 
 // ============================================================
@@ -4332,6 +4390,7 @@ function checkRestDaySuggestion(logs){
 // ============================================================
 // CARDIO LOGGING
 // ============================================================
+// cardioEntries → use uiState.cardioEntries
 let cardioEntries = [];
 
 // CARDIO_TYPES → see data.js
@@ -4386,19 +4445,24 @@ async function saveCardioEntry(){
 }
 
 async function loadCardioForToday(){
-  const el=document.getElementById('cardio-entries');if(!el)return;
-  const data=await dbGetCardioLogs(currentUser.id,today());
-  if(!data?.length){el.innerHTML='<div style="font-size:13px;color:var(--text3)">No cardio logged today.</div>';return;}
-  el.innerHTML=data.map(c=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-      <div>
-        <div style="font-size:13px;font-weight:600;color:var(--text)">${c.type} <span style="font-family:var(--mono);color:var(--accent)">${c.duration_min} min</span></div>
-        <div style="font-size:12px;color:var(--text3);margin-top:2px">
-          ${c.distance?c.distance+' · ':''}${c.calories_burned?c.calories_burned+' kcal · ':''}${c.avg_hr?'♥ '+c.avg_hr+'bpm · ':''}${c.notes||''}
+  try{
+    const el=document.getElementById('cardio-entries');if(!el)return;
+    const data=await dbGetCardioLogs(currentUser.id,today());
+    if(!data?.length){el.innerHTML='<div class="text-base text-muted">No cardio logged today.</div>';return;}
+    el.innerHTML=data.map(c=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${c.type} <span style="font-family:var(--mono);color:var(--accent)">${c.duration_min} min</span></div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">
+            ${c.distance?c.distance+' · ':''}${c.calories_burned?c.calories_burned+' kcal · ':''}${c.avg_hr?'♥ '+c.avg_hr+'bpm · ':''}${c.notes||''}
+          </div>
         </div>
-      </div>
-      <button onclick="deleteCardioEntry('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;padding:4px 8px" title="Delete">×</button>
-    </div>`).join('');
+        <button onclick="deleteCardioEntry('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;padding:4px 8px" title="Delete">×</button>
+      </div>`).join('');
+
+  } catch(err) {
+    console.error('[loadCardioForToday]', err.message||err);
+  }
 }
 
 async function deleteCardioEntry(id){
@@ -4409,6 +4473,7 @@ async function deleteCardioEntry(id){
 // ============================================================
 // LEADERBOARD
 // ============================================================
+// currentLbPeriod/currentLbCategory → use uiState.lbPeriod/lbCategory
 let currentLbPeriod='week';
 
 let currentLbCategory='volume';
@@ -4423,51 +4488,56 @@ function setLbCategory(cat){
 }
 
 async function loadLeaderboard(period='week'){
-  currentLbPeriod=period;
-  ['week','month','alltime'].forEach(p=>{
-    const btn=document.getElementById('lb-'+p+'-btn');if(!btn)return;
-    btn.style.borderColor=p===period?'var(--accent)':'';
-    btn.style.color=p===period?'var(--accent)':'';
-  });
-  const el=document.getElementById('leaderboard-content');
-  if(!el)return;
-  el.innerHTML='<div class="text-muted text-base">Loading...</div>';
-  const friendIds=await dbGetFriendIds();
-  const allIds=[currentUser.id,...friendIds];
-  const now=new Date();
-  let startDate='';
-  if(period==='week'){const d=new Date();d.setDate(d.getDate()-d.getDay());startDate=d.toISOString().split('T')[0];}
-  else if(period==='month'){startDate=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';}
-  // Parallel fetch everything
-  const{logs,prs:prsData,cardio:cardioData,profiles,usernames}=await dbGetLeaderboardData(allIds,startDate);
-  const nameMap=buildNameMap(profiles,usernames,currentUser.id,userProfile);
-  // Aggregate
-  const stats={};
-  allIds.forEach(id=>{stats[id]={id,name:nameMap[id]||'User '+id.slice(0,4),isMe:id===currentUser.id,sessions:0,volume:0,sets:0,prs:0,cardioMin:0,cardioSessions:0,streak:0};});
-  logs.forEach(l=>{
-    if(!stats[l.user_id])return;
-    stats[l.user_id].sessions++;
-    stats[l.user_id].volume+=(l.volume||0);
-    stats[l.user_id].sets+=Object.values(l.sets_data||{}).reduce((t,ex)=>t+(ex?.sets?.length||0),0);
-  });
-  prsData.forEach(p=>{if(stats[p.user_id])stats[p.user_id].prs++;});
-  cardioData.forEach(c=>{if(stats[c.user_id]){stats[c.user_id].cardioMin+=(c.duration_min||0);stats[c.user_id].cardioSessions++;}});
-  // Streak — needs full history
-  const allLogsForStreak=startDate?(await sb.from('workout_logs').select('user_id,date').in('user_id',allIds)).data||[]:logs;
-  allIds.forEach(id=>{
-    const dates=new Set(allLogsForStreak.filter(l=>l.user_id===id).map(l=>l.date));
-    let streak=0;const d=new Date();
-    for(let i=0;i<365;i++){
-      const ds=d.toISOString().split('T')[0];
-      if(dates.has(ds)){streak++;d.setDate(d.getDate()-1);}
-      else if(i===0){d.setDate(d.getDate()-1);}
-      else break;
-    }
-    if(stats[id])stats[id].streak=streak;
-  });
-  window._lbStats=stats;
-  window._lbPeriodLabel=period==='week'?'This week':period==='month'?'This month':'All time';
-  renderLeaderboard();
+  try{
+    currentLbPeriod=period;
+    ['week','month','alltime'].forEach(p=>{
+      const btn=document.getElementById('lb-'+p+'-btn');if(!btn)return;
+      btn.style.borderColor=p===period?'var(--accent)':'';
+      btn.style.color=p===period?'var(--accent)':'';
+    });
+    const el=document.getElementById('leaderboard-content');
+    if(!el)return;
+    el.innerHTML='<div class="text-muted text-base">Loading...</div>';
+    const friendIds=await dbGetFriendIds();
+    const allIds=[currentUser.id,...friendIds];
+    const now=new Date();
+    let startDate='';
+    if(period==='week'){const d=new Date();d.setDate(d.getDate()-d.getDay());startDate=d.toISOString().split('T')[0];}
+    else if(period==='month'){startDate=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';}
+    // Parallel fetch everything
+    const{logs,prs:prsData,cardio:cardioData,profiles,usernames}=await dbGetLeaderboardData(allIds,startDate);
+    const nameMap=buildNameMap(profiles,usernames,currentUser.id,userProfile);
+    // Aggregate
+    const stats={};
+    allIds.forEach(id=>{stats[id]={id,name:nameMap[id]||'User '+id.slice(0,4),isMe:id===currentUser.id,sessions:0,volume:0,sets:0,prs:0,cardioMin:0,cardioSessions:0,streak:0};});
+    logs.forEach(l=>{
+      if(!stats[l.user_id])return;
+      stats[l.user_id].sessions++;
+      stats[l.user_id].volume+=(l.volume||0);
+      stats[l.user_id].sets+=Object.values(l.sets_data||{}).reduce((t,ex)=>t+(ex?.sets?.length||0),0);
+    });
+    prsData.forEach(p=>{if(stats[p.user_id])stats[p.user_id].prs++;});
+    cardioData.forEach(c=>{if(stats[c.user_id]){stats[c.user_id].cardioMin+=(c.duration_min||0);stats[c.user_id].cardioSessions++;}});
+    // Streak — needs full history
+    const allLogsForStreak=startDate?(await sb.from('workout_logs').select('user_id,date').in('user_id',allIds)).data||[]:logs;
+    allIds.forEach(id=>{
+      const dates=new Set(allLogsForStreak.filter(l=>l.user_id===id).map(l=>l.date));
+      let streak=0;const d=new Date();
+      for(let i=0;i<365;i++){
+        const ds=d.toISOString().split('T')[0];
+        if(dates.has(ds)){streak++;d.setDate(d.getDate()-1);}
+        else if(i===0){d.setDate(d.getDate()-1);}
+        else break;
+      }
+      if(stats[id])stats[id].streak=streak;
+    });
+    window._lbStats=stats;
+    window._lbPeriodLabel=period==='week'?'This week':period==='month'?'This month':'All time';
+    renderLeaderboard();
+
+  } catch(err) {
+    console.error('[loadLeaderboard]', err.message||err);
+  }
 }
 
 function renderLeaderboard(){
@@ -4502,7 +4572,7 @@ function renderLeaderboard(){
   el.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em">${periodLabel} · ${c.icon} ${c.label}</div>
-      <div style="font-size:11px;color:var(--text3)">${ranked.length} athlete${ranked.length!==1?'s':''}</div>
+      <div class="text-xs text-muted">${ranked.length} athlete${ranked.length!==1?'s':''}</div>
     </div>
     ${ranked.map((u,i)=>`
       <div style="display:flex;align-items:center;gap:12px;padding:14px 12px;border-radius:var(--radius);background:${u.isMe?'var(--accent-dim)':i<3?'var(--surface2)':'var(--surface)'};border:1px solid ${u.isMe?'var(--accent)':i<3?'var(--border2)':'var(--border)'};margin-bottom:8px">
@@ -4546,14 +4616,19 @@ function urlBase64ToUint8Array(base64String){
 }
 
 async function loadNotificationSettings(){
-  const data=await dbGetMyNotifPrefs();
-  if(data){
-    const f=(id,v)=>{const el=document.getElementById(id);if(el)el.checked=!!v;};
-    f('notif-friend-workout',data.notif_friend_workout);
-    f('notif-broadcast-workout',data.notif_broadcast_workout);
+  try{
+    const data=await dbGetMyNotifPrefs();
+    if(data){
+      const f=(id,v)=>{const el=document.getElementById(id);if(el)el.checked=!!v;};
+      f('notif-friend-workout',data.notif_friend_workout);
+      f('notif-broadcast-workout',data.notif_broadcast_workout);
+    }
+    // Update UI based on current permission state
+    updateNotifPermissionUI();
+
+  } catch(err) {
+    console.error('[loadNotificationSettings]', err.message||err);
   }
-  // Update UI based on current permission state
-  updateNotifPermissionUI();
 }
 
 function updateNotifPermissionUI(){
@@ -4701,6 +4776,7 @@ function resetServingSize(){
 // ============================================================
 // FEATURE 2: EXERCISE DRAG-AND-DROP REORDERING
 // ============================================================
+// _dragSrcEx → use uiState.dragSrcEx
 let _dragSrcEx = null;
 
 function onExDragStart(e, exName) {
@@ -4813,79 +4889,88 @@ const MUSCLE_EXERCISE_MAP = {
 };
 
 async function renderMuscleHeatmap(period) {
-  period = period || 'week';
-  ['week','month'].forEach(p=>{
-    const btn=document.getElementById('hm-'+p+'-btn');
-    if(!btn)return;
-    btn.style.borderColor=p===period?'var(--accent)':'';
-    btn.style.color=p===period?'var(--accent)':'';
-  });
-  const el=document.getElementById('muscle-heatmap-grid');
-  if(!el)return;
-  el.innerHTML='<div style="color:var(--text3);font-size:12px">Loading...</div>';
-  const d=new Date();d.setDate(d.getDate()-(period==='week'?7:30));
-  const startDate=d.toISOString().split('T')[0];
-  const{data:logs,error}=await sb.from('workout_logs').select('sets_data,date').eq('user_id',currentUser.id).gte('date',startDate);
-  if(error){el.innerHTML='<div class="empty-state">Could not load</div>';return;}
-  const muscleSets={};
-  Object.keys(MUSCLE_ICONS).forEach(m=>muscleSets[m]=0);
-  (logs||[]).forEach(log=>{
-    Object.entries(log.sets_data||{}).forEach(([exName,exData])=>{
-      const sc=exData?.sets?.length||0;if(!sc)return;
-      Object.entries(MUSCLE_EXERCISE_MAP).forEach(([muscle,exercises])=>{
-        if(exercises.some(e=>exName.toLowerCase().includes(e.toLowerCase())||e.toLowerCase().includes(exName.toLowerCase()))){
-          muscleSets[muscle]=(muscleSets[muscle]||0)+sc;
-        }
+  try{
+    period = period || 'week';
+    ['week','month'].forEach(p=>{
+      const btn=document.getElementById('hm-'+p+'-btn');
+      if(!btn)return;
+      btn.style.borderColor=p===period?'var(--accent)':'';
+      btn.style.color=p===period?'var(--accent)':'';
+    });
+    const el=document.getElementById('muscle-heatmap-grid');
+    if(!el)return;
+    el.innerHTML='<div style="color:var(--text3);font-size:12px">Loading...</div>';
+    const d=new Date();d.setDate(d.getDate()-(period==='week'?7:30));
+    const startDate=d.toISOString().split('T')[0];
+  const logs=await dbGetWorkoutSetsForHeatmap(currentUser.id,startDate);
+    const muscleSets={};
+    Object.keys(MUSCLE_ICONS).forEach(m=>muscleSets[m]=0);
+    (logs||[]).forEach(log=>{
+      Object.entries(log.sets_data||{}).forEach(([exName,exData])=>{
+        const sc=exData?.sets?.length||0;if(!sc)return;
+        Object.entries(MUSCLE_EXERCISE_MAP).forEach(([muscle,exercises])=>{
+          if(exercises.some(e=>exName.toLowerCase().includes(e.toLowerCase())||e.toLowerCase().includes(exName.toLowerCase()))){
+            muscleSets[muscle]=(muscleSets[muscle]||0)+sc;
+          }
+        });
       });
     });
-  });
-  const maxSets=Math.max(1,...Object.values(muscleSets));
-  el.innerHTML=Object.entries(muscleSets).map(([muscle,sets])=>{
-    const intensity=sets/maxSets;
-    const bg=sets===0?'var(--surface3)':'rgba(201,168,76,'+Math.max(0.15,intensity).toFixed(2)+')';
-    const tc=intensity>0.6?'#080c14':sets>0?'var(--accent)':'var(--text3)';
-    const label=sets===0?'Not trained':sets+' set'+(sets!==1?'s':'');
-    return '<div style="background:'+bg+';border-radius:var(--radius);padding:12px;transition:background 0.3s" title="'+muscle+': '+label+'">' +
-      '<div style="font-size:20px;margin-bottom:4px">'+(MUSCLE_ICONS[muscle]||'💪')+'</div>' +
-      '<div style="font-size:12px;font-weight:700;color:'+tc+'">'+muscle+'</div>' +
-      '<div style="font-size:11px;color:'+(sets>0?tc:'var(--text3)')+';margin-top:2px;opacity:0.8">'+label+'</div></div>';
-  }).join('');
+    const maxSets=Math.max(1,...Object.values(muscleSets));
+    el.innerHTML=Object.entries(muscleSets).map(([muscle,sets])=>{
+      const intensity=sets/maxSets;
+      const bg=sets===0?'var(--surface3)':'rgba(201,168,76,'+Math.max(0.15,intensity).toFixed(2)+')';
+      const tc=intensity>0.6?'#080c14':sets>0?'var(--accent)':'var(--text3)';
+      const label=sets===0?'Not trained':sets+' set'+(sets!==1?'s':'');
+      return '<div style="background:'+bg+';border-radius:var(--radius);padding:12px;transition:background 0.3s" title="'+muscle+': '+label+'">' +
+        '<div style="font-size:20px;margin-bottom:4px">'+(MUSCLE_ICONS[muscle]||'💪')+'</div>' +
+        '<div style="font-size:12px;font-weight:700;color:'+tc+'">'+muscle+'</div>' +
+        '<div style="font-size:11px;color:'+(sets>0?tc:'var(--text3)')+';margin-top:2px;opacity:0.8">'+label+'</div></div>';
+    }).join('');
+
+  } catch(err) {
+    console.error('[renderMuscleHeatmap]', err.message||err);
+  }
 }
 
 // ============================================================
 // FEATURE 5: FRIEND CHALLENGES
 // ============================================================
 async function openChallengesTab() {
-  const el=document.getElementById('social-challenges-content');
-  if(!el)return;
-  el.innerHTML='<div style="color:var(--text3);font-size:13px">Loading...</div>';
-  const{data:challenges,error}=await sb.from('challenges').select('*').or('creator_id.eq.'+currentUser.id+',opponent_id.eq.'+currentUser.id).order('created_at',{ascending:false});
-  if(error){el.innerHTML='<div class="empty-state">Could not load challenges.<br><small>Run add_challenges.sql in Supabase first.</small></div>';return;}
-  const createBtn='<button class="btn btn-primary btn-full" onclick="openCreateChallenge()" style="margin-bottom:16px">⚡ Create a challenge</button>';
-  if(!challenges?.length){el.innerHTML=createBtn+'<div class="empty-state">No challenges yet.<br>Challenge a friend to compete on volume, sessions, or PRs!</div>';return;}
-  el.innerHTML=createBtn+(challenges||[]).map(c=>{
-    const isCreator=c.creator_id===currentUser.id;
-    const myScore=isCreator?c.creator_score:c.opponent_score;
-    const theirScore=isCreator?c.opponent_score:c.creator_score;
-    const theirName=isCreator?(c.opponent_name||'Friend'):(c.creator_name||'Friend');
-    const end=new Date(c.ends_at);
-    const daysLeft=Math.max(0,Math.ceil((end-new Date())/86400000));
-    const ended=daysLeft===0;
-    const isWinning=myScore>theirScore,isTied=myScore===theirScore;
-    const sc=ended?'var(--text3)':isWinning?'var(--accent)':isTied?'var(--amber)':'var(--red)';
-    const sl=ended?(myScore>theirScore?'🏆 You won!':myScore<theirScore?'😤 They won':'🤝 Tied'):(isWinning?'🔥 Ahead':isTied?'⚡ Tied':'😤 Behind');
-    const cl=c.category==='volume'?'🏋️ Volume':c.category==='sessions'?'📅 Sessions':'🏆 PRs';
-    return '<div style="background:var(--surface2);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;border:1px solid '+(ended?'var(--border)':sc+'44')+'">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
-      '<div><div style="font-size:13px;font-weight:700;color:var(--text)">'+cl+' battle</div>' +
-      '<div style="font-size:11px;color:var(--text3)">vs '+theirName+' · '+(ended?'Ended':'Ends in '+daysLeft+' day'+(daysLeft!==1?'s':''))+'</div></div>' +
-      '<div style="font-size:12px;font-weight:700;color:'+sc+'">'+sl+'</div></div>' +
-      '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">' +
-      '<div style="text-align:center;padding:10px;background:var(--accent-dim);border-radius:var(--radius);border:1px solid var(--accent)"><div style="font-size:18px;font-weight:800;color:var(--accent);font-family:var(--mono)">'+(myScore||0)+'</div><div style="font-size:10px;color:var(--text3)">You</div></div>' +
-      '<div style="font-size:16px;color:var(--text3);text-align:center">vs</div>' +
-      '<div style="text-align:center;padding:10px;background:var(--surface3);border-radius:var(--radius)"><div style="font-size:18px;font-weight:800;color:var(--text);font-family:var(--mono)">'+(theirScore||0)+'</div><div style="font-size:10px;color:var(--text3)">'+theirName+'</div></div>' +
-      '</div></div>';
-  }).join('');
+  try{
+    const el=document.getElementById('social-challenges-content');
+    if(!el)return;
+    el.innerHTML='<div style="color:var(--text3);font-size:13px">Loading...</div>';
+  const challenges=await dbGetChallenges(currentUser.id);
+  if(challenges===null){el.innerHTML='<div class="empty-state">Could not load challenges.<br><small>Run add_challenges.sql in Supabase first.</small></div>';return;}
+    const createBtn='<button class="btn btn-primary btn-full" onclick="openCreateChallenge()" style="margin-bottom:16px">⚡ Create a challenge</button>';
+    if(!challenges?.length){el.innerHTML=createBtn+'<div class="empty-state">No challenges yet.<br>Challenge a friend to compete on volume, sessions, or PRs!</div>';return;}
+    el.innerHTML=createBtn+(challenges||[]).map(c=>{
+      const isCreator=c.creator_id===currentUser.id;
+      const myScore=isCreator?c.creator_score:c.opponent_score;
+      const theirScore=isCreator?c.opponent_score:c.creator_score;
+      const theirName=isCreator?(c.opponent_name||'Friend'):(c.creator_name||'Friend');
+      const end=new Date(c.ends_at);
+      const daysLeft=Math.max(0,Math.ceil((end-new Date())/86400000));
+      const ended=daysLeft===0;
+      const isWinning=myScore>theirScore,isTied=myScore===theirScore;
+      const sc=ended?'var(--text3)':isWinning?'var(--accent)':isTied?'var(--amber)':'var(--red)';
+      const sl=ended?(myScore>theirScore?'🏆 You won!':myScore<theirScore?'😤 They won':'🤝 Tied'):(isWinning?'🔥 Ahead':isTied?'⚡ Tied':'😤 Behind');
+      const cl=c.category==='volume'?'🏋️ Volume':c.category==='sessions'?'📅 Sessions':'🏆 PRs';
+      return '<div style="background:var(--surface2);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;border:1px solid '+(ended?'var(--border)':sc+'44')+'">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
+        '<div><div style="font-size:13px;font-weight:700;color:var(--text)">'+cl+' battle</div>' +
+        '<div class="text-xs text-muted">vs '+theirName+' · '+(ended?'Ended':'Ends in '+daysLeft+' day'+(daysLeft!==1?'s':''))+'</div></div>' +
+        '<div style="font-size:12px;font-weight:700;color:'+sc+'">'+sl+'</div></div>' +
+        '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">' +
+        '<div style="text-align:center;padding:10px;background:var(--accent-dim);border-radius:var(--radius);border:1px solid var(--accent)"><div style="font-size:18px;font-weight:800;color:var(--accent);font-family:var(--mono)">'+(myScore||0)+'</div><div style="font-size:10px;color:var(--text3)">You</div></div>' +
+        '<div style="font-size:16px;color:var(--text3);text-align:center">vs</div>' +
+        '<div style="text-align:center;padding:10px;background:var(--surface3);border-radius:var(--radius)"><div style="font-size:18px;font-weight:800;color:var(--text);font-family:var(--mono)">'+(theirScore||0)+'</div><div style="font-size:10px;color:var(--text3)">'+theirName+'</div></div>' +
+        '</div></div>';
+    }).join('');
+
+  } catch(err) {
+    console.error('[openChallengesTab]', err.message||err);
+  }
 }
 
 function openCreateChallenge() {
@@ -4906,12 +4991,12 @@ async function createChallenge() {
   const days=parseInt(document.getElementById('chall-dur')?.value||'7');
   const oppUsername=(document.getElementById('chall-opp')?.value||'').trim().replace('@','');
   if(!oppUsername){toast('Enter an opponent username');return;}
-  const{data:opp}=await sb.from('usernames').select('user_id,display_name').eq('username',oppUsername).single();
+  const opp=await dbLookupUserByUsername(oppUsername);
   if(!opp){toast('User @'+oppUsername+' not found');return;}
+  const myName=await dbGetMyDisplayName(currentUser.id);
   const endsAt=new Date();endsAt.setDate(endsAt.getDate()+days);
-  const{data:me}=await sb.from('usernames').select('display_name').eq('user_id',currentUser.id).single();
-  const{error}=await sb.from('challenges').insert({creator_id:currentUser.id,creator_name:me?.display_name||'You',opponent_id:opp.user_id,opponent_name:opp.display_name,category,ends_at:endsAt.toISOString(),status:'active',creator_score:0,opponent_score:0});
-  if(error){toast('Could not create: '+error.message);return;}
+  const ok=await dbCreateChallenge({creator_id:currentUser.id,creator_name:myName||'You',opponent_id:opp.user_id,opponent_name:opp.display_name,category,ends_at:endsAt.toISOString(),status:'active',creator_score:0,opponent_score:0});
+  if(!ok)return;
   document.getElementById('create-challenge-wrap')?.remove();
   toast('⚡ Challenge sent to @'+oppUsername+'!');
   openChallengesTab();

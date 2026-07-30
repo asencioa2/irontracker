@@ -727,3 +727,288 @@ async function dbGetMonthlyRecapData(userId, startDate) {
   ]);
   return { logs: logsRes.data || [], prs: prsRes.data || [] };
 }
+
+// ── Account deletion ──────────────────────────────────────────
+async function dbDeleteAllUserData(userId) {
+  const tables = [
+    'workout_logs','nutrition_logs','weight_logs','personal_records',
+    'measurements','custom_exercises','hidden_exercises','rest_days',
+    'workout_posts','post_likes','post_comments','workout_notifications',
+    'push_subscriptions','cardio_logs','workout_live','friendships',
+    'usernames','water_logs','challenges',
+  ];
+  const results = await Promise.all(
+    tables.map(t => sb.from(t).delete().eq(t==='profiles'||t==='usernames'?'user_id':'user_id', userId))
+  );
+  await sb.from('profiles').delete().eq('id', userId);
+  const errors = results.filter(r => r.error);
+  if (errors.length) console.warn('[dbDeleteAllUserData]', errors.map(e=>e.error.message));
+  return errors.length === 0;
+}
+
+// ── Dashboard parallel fetch ──────────────────────────────────
+async function dbGetDashboardData(userId) {
+  const [wRes, lRes, pRes, rRes] = await Promise.all([
+    sb.from('weight_logs').select('*').eq('user_id', userId).order('date').limit(30),
+    sb.from('workout_logs').select('*').eq('user_id', userId).order('date'),
+    sb.from('personal_records').select('*').eq('user_id', userId),
+    sb.from('rest_days').select('date').eq('user_id', userId).order('date'),
+  ]);
+  [wRes, lRes, pRes, rRes].forEach((r, i) => {
+    if (r.error) console.warn('[dbGetDashboardData table '+i+']', r.error.message);
+  });
+  return {
+    weights: wRes.data || [],
+    logs: lRes.data || [],
+    prs: pRes.data || [],
+    restDays: rRes.data || [],
+  };
+}
+
+// ── Progress page parallel fetch ──────────────────────────────
+async function dbGetProgressData(userId) {
+  const [wRes, logsRes, pRes, mRes] = await Promise.all([
+    sb.from('weight_logs').select('*').eq('user_id', userId).order('date'),
+    sb.from('workout_logs').select('date,volume,day_name').eq('user_id', userId).order('date', { ascending: false }).limit(30),
+    sb.from('personal_records').select('*').eq('user_id', userId).order('exercise'),
+    sb.from('measurements').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1),
+  ]);
+  return {
+    weights: wRes.data || [],
+    logs: logsRes.data || [],
+    prs: pRes.data || [],
+    measurements: mRes.data?.[0] || null,
+  };
+}
+
+// ── Tools page parallel fetch ─────────────────────────────────
+async function dbGetToolsPageData(userId) {
+  const [logsRes, weightsRes, prsRes] = await Promise.all([
+    sb.from('workout_logs').select('date,volume').eq('user_id', userId),
+    sb.from('weight_logs').select('date,weight_lbs').eq('user_id', userId).order('date').limit(30),
+    sb.from('personal_records').select('*').eq('user_id', userId).order('exercise'),
+  ]);
+  return {
+    logs: logsRes.data || [],
+    weights: weightsRes.data || [],
+    prs: prsRes.data || [],
+  };
+}
+
+// ── Hidden exercises ──────────────────────────────────────────
+async function dbGetHiddenExerciseSet(userId, splitKey, dow) {
+  const { data, error } = await sb.from('hidden_exercises')
+    .select('exercise_name').eq('user_id', userId)
+    .eq('split_key', splitKey).eq('dow', dow);
+  if (error) { dbError(error, 'Load hidden exercises'); return new Set(); }
+  return new Set((data || []).map(h => h.exercise_name));
+}
+
+// ── Auto PR check ─────────────────────────────────────────────
+async function dbGetExistingPR(userId, exercise) {
+  const { data, error } = await sb.from('personal_records')
+    .select('*').eq('user_id', userId).eq('exercise', exercise).single();
+  if (error && error.code !== 'PGRST116') return null;
+  return data || null;
+}
+
+// ── Workout live update ───────────────────────────────────────
+async function dbUpdateLiveSets(userId, setsData) {
+  const { error } = await sb.from('workout_live')
+    .update({ sets_data: setsData, updated_at: new Date().toISOString() })
+    .eq('user_id', userId);
+  if (error) console.warn('[dbUpdateLiveSets]', error.message);
+  return !error;
+}
+
+// ── Social feed ───────────────────────────────────────────────
+async function dbGetFeedData(allIds) {
+  const { data: posts, error: pErr } = await sb.from('workout_posts')
+    .select('*').in('user_id', allIds)
+    .order('posted_at', { ascending: false }).limit(30);
+  if (pErr) { dbError(pErr, 'Load feed posts'); return null; }
+  if (!posts?.length) return { posts: [], likes: [], commentCounts: [] };
+  const postIds = posts.map(p => p.id);
+  const [likesRes, ccRes] = await Promise.all([
+    sb.from('post_likes').select('*').in('post_id', postIds),
+    sb.from('post_comments').select('post_id').in('post_id', postIds),
+  ]);
+  return {
+    posts,
+    likes: likesRes.data || [],
+    commentCounts: ccRes.data || [],
+  };
+}
+
+// ── Live workout feed ─────────────────────────────────────────
+async function dbGetLiveFeedData(userId) {
+  const friendIds = await dbGetFriendIds();
+  if (!friendIds.length) return { live: [], names: {} };
+  const { data: live, error } = await sb.from('workout_live')
+    .select('*').in('user_id', friendIds).eq('is_live', true);
+  if (error) { dbError(error, 'Load live feed'); return { live: [], names: {} }; }
+  if (!live?.length) return { live: [], names: {} };
+  const { data: names } = await sb.from('usernames')
+    .select('user_id,username,display_name').in('user_id', friendIds);
+  const nameMap = {};
+  (names || []).forEach(u => { nameMap[u.user_id] = u.display_name || u.username; });
+  return { live: live || [], nameMap };
+}
+
+// ── Post likes toggle ─────────────────────────────────────────
+async function dbTogglePostLike(postId, existingLikeId, reaction) {
+  if (existingLikeId) {
+    const { error } = await sb.from('post_likes').delete()
+      .eq('id', existingLikeId).eq('user_id', requireUser().id);
+    if (error) { dbError(error, 'Unlike post'); return false; }
+    return true;
+  } else {
+    const { error } = await sb.from('post_likes')
+      .insert({ post_id: postId, user_id: requireUser().id, reaction: reaction || '❤️' });
+    if (error) { dbError(error, 'Like post'); return false; }
+    return true;
+  }
+}
+
+// ── Add comment ───────────────────────────────────────────────
+async function dbAddPostComment(postId, body, displayName, username) {
+  const { error } = await sb.from('post_comments').insert({
+    post_id: postId, user_id: requireUser().id,
+    body, display_name: displayName, username,
+    created_at: new Date().toISOString(),
+  });
+  if (error) { dbError(error, 'Add comment'); return false; }
+  return true;
+}
+
+// ── Friends search & list ─────────────────────────────────────
+async function dbSearchUsersByUsername(query) {
+  const { data, error } = await sb.from('usernames')
+    .select('user_id,username,display_name').ilike('username', '%' + query + '%').limit(10);
+  if (error) { dbError(error, 'Search users'); return []; }
+  return data || [];
+}
+
+async function dbGetPendingFriendRequests(userId) {
+  const { data, error } = await sb.from('friendships')
+    .select('id,requester_id').eq('addressee_id', userId).eq('status', 'pending');
+  if (error) { dbError(error, 'Load pending requests'); return []; }
+  return data || [];
+}
+
+async function dbGetFriendListWithNames(userId) {
+  const { data: friendships, error } = await sb.from('friendships')
+    .select('id,requester_id,addressee_id')
+    .or('requester_id.eq.' + userId + ',addressee_id.eq.' + userId)
+    .eq('status', 'accepted');
+  if (error) { dbError(error, 'Load friends'); return { friendships: [], names: {} }; }
+  const ids = (friendships || []).map(f =>
+    f.requester_id === userId ? f.addressee_id : f.requester_id
+  );
+  if (!ids.length) return { friendships: friendships || [], names: {} };
+  const { data: names } = await sb.from('usernames')
+    .select('user_id,username,display_name').in('user_id', ids);
+  const nameMap = {};
+  (names || []).forEach(u => { nameMap[u.user_id] = u.display_name || u.username; });
+  return { friendships: friendships || [], nameMap };
+}
+
+// ── Username management ───────────────────────────────────────
+async function dbCheckUsername(userId) {
+  const { data } = await sb.from('usernames')
+    .select('username').eq('user_id', userId).single();
+  return data?.username || null;
+}
+
+async function dbInsertUsername(userId, username, displayName) {
+  const { error } = await sb.from('usernames')
+    .insert({ user_id: userId, username, display_name: displayName });
+  if (error) { dbError(error, 'Set username'); return false; }
+  return true;
+}
+
+// ── Notification prefs ────────────────────────────────────────
+async function dbGetNotifPrefsForUser(userId) {
+  const { data } = await sb.from('profiles')
+    .select('notif_broadcast_workout').eq('id', userId).single();
+  return data || {};
+}
+
+async function dbGetFriendNotifPrefs(friendIds) {
+  const { data } = await sb.from('profiles')
+    .select('id,notif_friend_workout').in('id', friendIds);
+  return data || [];
+}
+
+// ── Notifications count ───────────────────────────────────────
+async function dbGetNotifCount(userId) {
+  const { data } = await sb.from('workout_notifications')
+    .select('id').eq('to_user_id', userId).eq('read', false);
+  return data?.length || 0;
+}
+
+// ── Monthly recap ─────────────────────────────────────────────
+async function dbGetMonthlyData(userId, startDate) {
+  const [logsRes, prsRes] = await Promise.all([
+    sb.from('workout_logs').select('volume,day_name,date').eq('user_id', userId).gte('date', startDate),
+    sb.from('personal_records').select('exercise,weight_lbs,reps').eq('user_id', userId),
+  ]);
+  return { logs: logsRes.data || [], prs: prsRes.data || [] };
+}
+
+// ── Muscle heatmap ────────────────────────────────────────────
+async function dbGetWorkoutSetsForHeatmap(userId, startDate) {
+  const { data, error } = await sb.from('workout_logs')
+    .select('sets_data,date').eq('user_id', userId).gte('date', startDate);
+  if (error) { dbError(error, 'Load heatmap data'); return []; }
+  return data || [];
+}
+
+// ── Streak leaderboard ────────────────────────────────────────
+async function dbGetStreakData(allIds, startDate) {
+  const query = sb.from('workout_logs').select('user_id,date').in('user_id', allIds);
+  const { data } = startDate ? await query.gte('date', startDate) : await query;
+  return data || [];
+}
+
+// ── Challenges ────────────────────────────────────────────────
+async function dbGetChallenges(userId) {
+  const { data, error } = await sb.from('challenges')
+    .select('*')
+    .or('creator_id.eq.' + userId + ',opponent_id.eq.' + userId)
+    .order('created_at', { ascending: false });
+  if (error) { dbError(error, 'Load challenges'); return null; }
+  return data || [];
+}
+
+async function dbCreateChallenge(challenge) {
+  const { error } = await sb.from('challenges').insert(challenge);
+  if (error) { dbError(error, 'Create challenge'); return false; }
+  return true;
+}
+
+async function dbLookupUserByUsername(username) {
+  const { data } = await sb.from('usernames')
+    .select('user_id,display_name').eq('username', username).single();
+  return data || null;
+}
+
+async function dbGetMyDisplayName(userId) {
+  const { data } = await sb.from('usernames')
+    .select('display_name').eq('user_id', userId).single();
+  return data?.display_name || null;
+}
+
+// ── Export ────────────────────────────────────────────────────
+async function dbExportAll(userId) {
+  const [wRes, nRes, wgRes] = await Promise.all([
+    sb.from('workout_logs').select('*').eq('user_id', userId).order('date', { ascending: false }),
+    sb.from('nutrition_logs').select('*').eq('user_id', userId).order('date', { ascending: false }),
+    sb.from('weight_logs').select('*').eq('user_id', userId).order('date', { ascending: false }),
+  ]);
+  return {
+    workouts: wRes.data || [],
+    nutrition: nRes.data || [],
+    weights: wgRes.data || [],
+  };
+}
