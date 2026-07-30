@@ -1404,7 +1404,7 @@ async function onSignedIn(user,showFullLoading){
 // PROFILE / SETTINGS
 // ============================================================
 async function loadProfile(){
-  const{data,error:profError}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
+  const{data,error:profError}=await dbGetProfile(currentUser.id);
   if(profError&&profError.code!=='PGRST116')console.warn('[loadProfile]',profError.message);
   if(data){
     userProfile=data;
@@ -1525,7 +1525,7 @@ async function refreshDashboard(){
       ({weights,logs,prs,restDays}=_dashCache.data);
     } else {
       const[wRes,lRes,pRes,rRes]=await Promise.all([
-        sb.from('weight_logs').select('*').eq('user_id',currentUser.id).order('date').limit(30),
+        sb.from('weight_logs').select('*').eq('user_id',currentUser.id).order('date').limit(30), // TODO: dbGetProgressData
         sb.from('workout_logs').select('*').eq('user_id',currentUser.id).order('date'),
         sb.from('personal_records').select('*').eq('user_id',currentUser.id),
         sb.from('rest_days').select('date').eq('user_id',currentUser.id).order('date'),
@@ -1825,14 +1825,14 @@ async function getHiddenPresetExercises(splitKey,dow){
 async function hidePresetExercise(exName){
   if(!confirm(`Remove "${exName}" from this day's workout? You can restore it anytime from the + Add exercise menu.`))return;
   const splitKey=userProfile.active_split||'iron24_5day';
-  await sb.from('hidden_exercises').insert({user_id:currentUser.id,split_key:splitKey,dow:currentWorkoutDay,exercise_name:exName});
+  await dbHideExercise(splitKey,currentWorkoutDay,exName);
   toast('Removed: '+exName);
   await refreshWorkoutPage();
 }
 
 async function unhidePresetExercise(exName){
   const splitKey=userProfile.active_split||'iron24_5day';
-  await sb.from('hidden_exercises').delete().eq('user_id',currentUser.id).eq('split_key',splitKey).eq('dow',currentWorkoutDay).eq('exercise_name',exName);
+  await dbUnhideExercise(splitKey,currentWorkoutDay,exName);
   toast('Restored: '+exName);
   await refreshWorkoutPage();
 }
@@ -1917,8 +1917,8 @@ function openExerciseDetail(name,cat){
 
 async function addFromDatabase(name,category){
   const defaults=EXERCISE_DB_DEFAULT_TARGETS[category]||{sets:3,reps:'10-12'};
-  const{error:ceErr1}=await sb.from('custom_exercises').insert({user_id:currentUser.id,dow:currentWorkoutDay,name,sets:defaults.sets,target_reps:defaults.reps});
-  if(ceErr1){toastError('Add exercise',ceErr1);return;}
+  const ceOk1=await dbAddCustomExercise(currentWorkoutDay,name,defaults.reps);
+  if(!ceOk1)return;
   toast('Added: '+name);
   await refreshWorkoutPage();
 }
@@ -1959,8 +1959,8 @@ async function addCustomExercise(){
   if(!name){toast('Enter an exercise name');return;}
   const sets=parseInt(document.getElementById('custom-ex-sets').value)||3;
   const reps=document.getElementById('custom-ex-reps').value.trim()||'10-12';
-  const{error:ceErr2}=await sb.from('custom_exercises').insert({user_id:currentUser.id,dow:currentWorkoutDay,name,sets,target_reps:reps});
-  if(ceErr2){toastError('Add exercise',ceErr2);return;}
+  const ceOk2=await dbAddCustomExercise(currentWorkoutDay,name,reps);
+  if(!ceOk2)return;
   document.getElementById('custom-ex-name').value='';
   toast('Exercise added: '+name);
   await refreshWorkoutPage();
@@ -2337,7 +2337,7 @@ async function checkPRFromSet(exIdx,exName){
   const r=parseInt(document.getElementById('ex-r-'+exIdx)?.value)||0;
   if(!w||!r){toast('Enter weight and reps to check PR');return;}
   const orm=Math.round(w*(1+r/30));
-  const{data:existing}=await sb.from('personal_records').select('*').eq('user_id',currentUser.id).eq('exercise',exName).single();
+  const existing=await dbGetExistingPR(currentUser.id,exName);
   if(!existing||w>existing.weight_lbs||(w===existing.weight_lbs&&r>existing.reps)){
     await dbUpsertPRRecord(exName,w,r,today(),orm);
     toast('New PR on '+exName+': '+w+'lbs x '+r);
@@ -2419,8 +2419,7 @@ async function finishWorkout(){
   });
   if(totalSets===0&&!confirm('No sets logged. Save anyway?')){setSaving('workout',false);return;}
   const dayName=sched?sched.name:'Custom workout';
-  const{error}=await sb.from('workout_logs').insert({
-    user_id:currentUser.id,
+  const saveOk=await dbInsertWorkoutLog({
     date:today(),
     dow:todayDOW(),
     split_index:currentWorkoutDay,
@@ -2429,7 +2428,7 @@ async function finishWorkout(){
     volume:totalVolume,
     notes
   });
-  if(error){toastError('Save workout',error);console.error('[finishWorkout] workout_logs insert failed:',error);setSaving('workout',false);return;}
+  if(!saveOk){toastError('Save workout','Could not save — please try again');setSaving('workout',false);return;}
   localStorage.removeItem(`it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`);
   invalidateDashboard();
   toast(`\u2705 ${dayName} saved! Next up: Day ${((currentWorkoutDay+1)%split.days.length)+1}`);
@@ -2442,9 +2441,7 @@ async function finishWorkout(){
 }
 
 async function logRestDay(){
-  const{data:existing,error:rdErr}=await sb.from('rest_days').select('id').eq('user_id',currentUser.id).eq('date',today()).limit(1);
-  if(rdErr)console.warn('[logRestDay]',rdErr.message);
-  if(existing&&existing.length){toast('Already logged today as a rest day');return;}
+  await dbLogRestDay(today());
   await dbLogRestDay(today());
   invalidateDashboard();
   toast('\ud83d\ude34 Rest day logged \u2014 your split stays on Day '+(currentWorkoutDay+1)+' for next time');
@@ -2543,7 +2540,7 @@ function buildQuickMeals(){
 
 async function quickAddMeal(m){
   const dateStr=document.getElementById('nutr-date')?.value||today();
-  await sb.from('nutrition_logs').insert({user_id:currentUser.id,date:dateStr,food_name:m.name,meal:m.meal,cal:m.cal,protein:m.protein,carbs:m.carbs,fat:m.fat});
+  await dbInsertNutritionLog({date:dateStr,food_name:m.name,meal:m.meal,cal:m.cal,protein:m.protein,carbs:m.carbs,fat:m.fat});
   await loadNutritionForDate();await loadNutritionTotals(today());toast(`Added: ${m.name}`);
 }
 
@@ -2553,7 +2550,7 @@ async function quickAddMeal(m){
 async function initProgressPage(){
   try{
     const[weights,logs,prs,measures]=await Promise.all([
-      sb.from('weight_logs').select('*').eq('user_id',currentUser.id).order('date').limit(30),
+      sb.from('weight_logs').select('*').eq('user_id',currentUser.id).order('date').limit(30), // TODO: use dbGetProgressData
       sb.from('workout_logs').select('date,volume,day_name').eq('user_id',currentUser.id).order('date').limit(10),
       sb.from('personal_records').select('*').eq('user_id',currentUser.id).order('exercise'),
       sb.from('measurements').select('*').eq('user_id',currentUser.id).order('date',{ascending:false}).limit(10),
@@ -2682,9 +2679,9 @@ function calcBF(){
 
 async function buildToolsCheckin(){
   try{
-    const[logs,weights,prs]=await Promise.all([sb.from('workout_logs').select('date,volume').eq('user_id',currentUser.id),sb.from('weight_logs').select('date,weight_lbs').eq('user_id',currentUser.id).order('date'),sb.from('personal_records').select('*').eq('user_id',currentUser.id)]);
-    const weekStart=getWeekStart();const thisWeek=(logs.data||[]).filter(l=>l.date>=weekStart);const uniqueDays=[...new Set(thisWeek.map(l=>l.date))];const totalVol=thisWeek.reduce((s,l)=>s+(l.volume||0),0);
-    const w=weights.data||[];let wc=null;if(w.length>=2)wc=(w[w.length-1].weight_lbs-w[w.length-2].weight_lbs).toFixed(1);
+    const _td=await dbGetToolsPageData(currentUser.id);
+    const weekStart=getWeekStart();const thisWeek=(_td.logs||[]).filter(l=>l.date>=weekStart);const uniqueDays=[...new Set(thisWeek.map(l=>l.date))];const totalVol=thisWeek.reduce((s,l)=>s+(l.volume||0),0);
+    const w=_td.weights||[];let wc=null;if(w.length>=2)wc=(w[w.length-1].weight_lbs-w[w.length-2].weight_lbs).toFixed(1);
     const weekPRs=(prs.data||[]).filter(p=>p.date>=weekStart);
     const el=document.getElementById('tools-checkin-content');if(!el)return;
     el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px"><div class="card-sm"><div class="stat-label">Sessions</div><div style="font-size:22px;font-weight:700;font-family:var(--mono)">${uniqueDays.length}<span style="font-size:13px;color:var(--text2)">/5</span></div></div><div class="card-sm"><div class="stat-label">Volume</div><div style="font-size:22px;font-weight:700;font-family:var(--mono)">${totalVol>0?(totalVol/1000).toFixed(1)+'k':'0'}<span style="font-size:13px;color:var(--text2)"> lbs</span></div></div><div class="card-sm"><div class="stat-label">Weight change</div><div style="font-size:22px;font-weight:700;font-family:var(--mono);color:${wc<=0?'var(--accent)':'var(--red)'}">${wc!==null?(wc>0?'+':'')+wc:'--'}<span style="font-size:13px"> lbs</span></div></div><div class="card-sm"><div class="stat-label">New PRs</div><div style="font-size:22px;font-weight:700;font-family:var(--mono);color:var(--amber)">${weekPRs.length}</div></div></div>${weekPRs.length?'<div style="font-size:12px;color:var(--text2)"><strong style="color:var(--amber)">PRs this week:</strong> '+weekPRs.map(p=>`${p.exercise} -- ${p.weight_lbs}lbs x ${p.reps}`).join(', ')+'</div>':''}`;
@@ -2869,12 +2866,8 @@ async function confirmBarcodeFood(){
   if(!barcodeFoundData)return;
   const meal=document.getElementById('f-meal-scan').value;
   const dateStr=document.getElementById('nutr-date')?.value||today();
-  const{error}=await sb.from('nutrition_logs').insert({
-    user_id:currentUser.id,date:dateStr,
-    food_name:barcodeFoundData.name,meal,
-    cal:barcodeFoundData.cal,protein:barcodeFoundData.protein,
-    carbs:barcodeFoundData.carbs,fat:barcodeFoundData.fat
-  });
+  const bOk=await dbInsertNutritionLog({date:dateStr,food_name:barcodeFoundData.name,meal,cal:barcodeFoundData.cal,protein:barcodeFoundData.protein,carbs:barcodeFoundData.carbs,fat:barcodeFoundData.fat});
+  const error=bOk?null:{message:'Save failed'};
   if(!error){
     closeModal('food-modal');
     stopBarcodeScanner();
@@ -2910,7 +2903,8 @@ async function ensureUsername(){
 async function saveUsername(){
   const raw=document.getElementById('username-input').value.trim().toLowerCase();
   if(!raw||!/^[a-z0-9_]{3,30}$/.test(raw)){toast('Username must be 3-30 chars, letters/numbers/underscores only');return;}
-  const{error}=await sb.from('usernames').insert({user_id:currentUser.id,username:raw,display_name:userProfile.name||(currentUser.email?.split('@')[0])||raw});
+  const unOk2=await dbInsertUsername(currentUser.id,raw,userProfile.name||(currentUser.email?.split('@')[0])||raw);
+  const error=unOk2?null:{message:'Username already taken'};
   if(error){
     if(error.code==='23505')toast('That username is taken — try another');
     else toast('Error: '+error.message);
@@ -2984,16 +2978,7 @@ async function setLiveStatus(isLive,dayName){
   // Use username if set, fall back to user id prefix so live always works
   const username=userProfile.username||('user_'+currentUser.id.slice(0,6));
   const displayName=userProfile.name||'Athlete';
-  const{error}=await sb.from('workout_live').upsert({
-    user_id:currentUser.id,
-    username,display_name:displayName,
-    day_name:dayName||'Workout',
-    is_live:isLive,
-    sets_data:workoutSets||{},
-    started_at:isLive?new Date().toISOString():null,
-    updated_at:new Date().toISOString()
-  },{onConflict:'user_id'});
-  if(error)console.warn('[setLiveStatus]',error.message);
+  await dbSetLiveStatus(isLive,dayName,workoutSets);
 
   if(isLive)sendWorkoutNotificationToFriends(null,'started');
 }
@@ -3114,9 +3099,9 @@ async function loadLiveFeed(){
     if(lErr){el.innerHTML='<div style="color:var(--red);font-size:13px;padding:16px">Error: '+lErr.message+'</div>';return;}
 
     // Load display names for online friends
-    const{data:names}=await sb.from('usernames').select('user_id,username,display_name').in('user_id',friendIds);
+    const _lnames=await dbGetUsernames(friendIds);
     const nameMap={};
-    (names||[]).forEach(u=>{nameMap[u.user_id]=u.display_name||u.username||'Athlete';});
+    (_lnames||[]).forEach(u=>{nameMap[u.user_id]=u.display_name||u.username||'Athlete';});
     // Attach display name to each live entry
     const liveWithNames=(live||[]).map(l=>({...l,display_name:l.display_name||nameMap[l.user_id]||'Athlete'}));
 
@@ -3201,13 +3186,7 @@ async function submitComment(){
   const body=input.value.trim();
   if(!body||!currentPostId)return;
   input.value='';
-  await sb.from('post_comments').insert({
-    post_id:currentPostId,
-    user_id:currentUser.id,
-    username:userProfile.username||'user',
-    display_name:userProfile.name||'Athlete',
-    body
-  });
+  await dbAddPostComment(currentPostId,body,userProfile.name||'Athlete',userProfile.username||'user');
   openComments(currentPostId);
 }
 
@@ -3231,7 +3210,7 @@ async function searchFriends(){
     el.innerHTML='<div class="text-muted text-base">Searching...</div>';
 
     // Search by username
-    const{data:byUsername}=await sb.from('usernames').select('user_id,username,display_name').ilike('username','%'+query+'%').neq('user_id',currentUser.id).limit(5);
+    const byUsername=await dbSearchUsersByUsername(query);
     const results=byUsername||[];
 
     if(!results.length){
@@ -3240,7 +3219,7 @@ async function searchFriends(){
     }
 
     // Get existing friendships
-    const{data:existing}=await sb.from('friendships').select('*').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`);
+    const existing=await dbGetFriendships();
     const existingMap={};
     (existing||[]).forEach(f=>{
       const otherId=f.requester_id===currentUser.id?f.addressee_id:f.requester_id;
@@ -3276,14 +3255,14 @@ async function sendFriendRequest(toUserId,toName){
 }
 
 async function loadPendingRequests(){
-  const{data}=await sb.from('friendships').select('id,requester_id').eq('addressee_id',currentUser.id).eq('status','pending');
+  const data=await dbGetPendingRequests(currentUser.id);
   const card=document.getElementById('pending-requests-card');
   const list=document.getElementById('pending-requests-list');
   if(!data||!data.length){if(card)card.style.display='none';return;}
   if(card)card.style.display='block';
   // Look up usernames for requesters
   const ids=data.map(d=>d.requester_id);
-  const{data:names}=await sb.from('usernames').select('user_id,username,display_name').in('user_id',ids);
+  const names=await dbGetUsernames(ids);
   const nameMap={};(names||[]).forEach(n=>{nameMap[n.user_id]=n;});
   list.innerHTML=data.map(req=>{
     const u=nameMap[req.requester_id]||{display_name:'Unknown',username:'?'};
@@ -3318,10 +3297,10 @@ async function loadFriendsList(){
   try{
     const el=document.getElementById('friends-list-content');
     if(!el)return;
-    const{data:friendships}=await sb.from('friendships').select('id,requester_id,addressee_id').or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`).eq('status','accepted');
+    const{friendships,nameMap:_fm}=await dbGetFriendListWithNames(currentUser.id);
     if(!friendships||!friendships.length){el.innerHTML='<div class="text-muted text-base">No friends yet — search above to find people!</div>';return;}
     const ids=friendships.map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id);
-    const{data:names}=await sb.from('usernames').select('user_id,username,display_name').in('user_id',ids);
+    const names=ids.map(id=>_fm[id]?{user_id:id,display_name:_fm[id],username:_fm[id]}:{user_id:id,display_name:'Athlete',username:''});
     const friendshipMap={};
     (friendships||[]).forEach(f=>{
       const fid=f.requester_id===currentUser.id?f.addressee_id:f.requester_id;
@@ -3591,7 +3570,7 @@ function downloadCSV(filename,rows,headers){
 }
 
 async function exportWorkoutsCSV(){
-  const{data}=await sb.from('workout_logs').select('*').eq('user_id',currentUser.id).order('date');
+  const data=await dbExportWorkouts(currentUser.id);
   if(!data?.length){toast('No workout data to export');return;}
   const rows=[];
   data.forEach(log=>{
@@ -3611,13 +3590,13 @@ async function exportWorkoutsCSV(){
 }
 
 async function exportNutritionCSV(){
-  const{data}=await sb.from('nutrition_logs').select('*').eq('user_id',currentUser.id).order('date');
+  const data=await dbExportNutrition(currentUser.id);
   if(!data?.length){toast('No nutrition data to export');return;}
   downloadCSV(`irontracker_nutrition_${today()}.csv`,data.map(r=>({date:r.date,meal:r.meal,food:r.food_name,calories:r.cal,protein_g:r.protein,carbs_g:r.carbs,fat_g:r.fat})),['date','meal','food','calories','protein_g','carbs_g','fat_g']);
 }
 
 async function exportWeightCSV(){
-  const{data}=await sb.from('weight_logs').select('*').eq('user_id',currentUser.id).order('date');
+  const data=await dbExportWeights(currentUser.id);
   if(!data?.length){toast('No weight data to export');return;}
   downloadCSV(`irontracker_weight_${today()}.csv`,data.map(r=>({date:r.date,weight_lbs:r.weight,notes:r.notes||''})),['date','weight_lbs','notes']);
 }
@@ -4271,7 +4250,7 @@ function selectSearchedFood(food){
 // PROGRESSIVE OVERLOAD SUGGESTIONS
 // ============================================================
 async function getProgressiveOverload(exName){
-  const{data}=await sb.from('workout_logs').select('sets_data,date').eq('user_id',currentUser.id).order('date',{ascending:false}).limit(10);
+  const data=await dbGetWorkoutSetsForHeatmap(currentUser.id,getWeekStart());
   for(const log of (data||[])){
     const exData=log.sets_data?.[exName];
     if(exData?.sets?.length){
@@ -4291,13 +4270,15 @@ async function updateCalorieBurn(){
   if(!userProfile.height_in||!userProfile.age||!userProfile.gender)return;
   const card=document.getElementById('calorie-burn-card');
   // Get today's workout volume
-  const{data:todayLogs}=await sb.from('workout_logs').select('volume,sets_data').eq('user_id',currentUser.id).eq('date',today());
+  const{data:todayLogs}=await sb.from('workout_logs').select('volume,sets_data').eq('user_id',currentUser.id).eq('date',today()); // stays raw — specific today filter
   if(!todayLogs?.length){if(card)card.style.display='none';return;}
   // Get today's nutrition
-  const{data:nutrition}=await sb.from('nutrition_logs').select('cal').eq('user_id',currentUser.id).eq('date',today());
+  const nut=await dbGetNutritionTotals(currentUser.id,today());
+  const nutrition=nut;
   const intakeCal=(nutrition||[]).reduce((t,n)=>t+n.cal,0);
   // Calculate TDEE
-  const weights=await sb.from('weight_logs').select('weight_lbs').eq('user_id',currentUser.id).order('date',{ascending:false}).limit(1);
+  const latestWt=await dbGetWeightLogs(currentUser.id);
+  const weights={data:latestWt.slice(-1)};
   const weight=weights.data?.[0]?.weight_lbs||170;
   const weightKg=weight*UNITS.KG_PER_LB;
   const heightCm=userProfile.height_in*UNITS.CM_PER_INCH;
@@ -4360,9 +4341,8 @@ async function checkMonthlyRecap(){
     const monthStr=lastMonth.toISOString().slice(0,7);
     const seenKey='it_recap_seen_'+currentUser.id+'_'+monthStr;
     if(localStorage.getItem(seenKey))return;
-    const{data:logs}=await sb.from('workout_logs').select('volume,day_name,date').eq('user_id',currentUser.id).gte('date',monthStr+'-01').lte('date',monthStr+'-31');
+    const{logs,prs}=await dbGetMonthlyData(currentUser.id,monthStr+'-01');
     if(!logs?.length)return;
-    const{data:prs}=await sb.from('personal_records').select('exercise,weight_lbs,reps').eq('user_id',currentUser.id).gte('date',monthStr+'-01');
     const totalVol=logs.reduce((t,l)=>t+(l.volume||0),0);
     const monthName=lastMonth.toLocaleString('default',{month:'long',year:'numeric'});
     localStorage.setItem(seenKey,'1');
@@ -4533,7 +4513,7 @@ async function loadLeaderboard(period='week'){
     prsData.forEach(p=>{if(stats[p.user_id])stats[p.user_id].prs++;});
     cardioData.forEach(c=>{if(stats[c.user_id]){stats[c.user_id].cardioMin+=(c.duration_min||0);stats[c.user_id].cardioSessions++;}});
     // Streak — needs full history
-    const allLogsForStreak=startDate?(await sb.from('workout_logs').select('user_id,date').in('user_id',allIds)).data||[]:logs;
+    const allLogsForStreak=startDate?await dbGetStreakData(allIds,startDate):logs;
     allIds.forEach(id=>{
       const dates=new Set(allLogsForStreak.filter(l=>l.user_id===id).map(l=>l.date));
       let streak=0;const d=new Date();

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'irontracker-v15';
+const CACHE_NAME = 'irontracker-v16';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
