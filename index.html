@@ -3091,32 +3091,30 @@ async function loadLiveFeed(){
   try{
     const el=document.getElementById('social-live-content');
     if(!el)return;
-
-    // Show loading state
     el.innerHTML='<div style="text-align:center;color:var(--text3);padding:20px;font-size:13px"><div class="ai-spinner" style="margin:0 auto 10px"></div>Checking...</div>';
 
-    const _lf=await dbGetLiveFeedData(currentUser.id);
-  // live feed data handled inside dbGetLiveFeedData
-
-    if(fErr){el.innerHTML='<div style="color:var(--red);font-size:13px;padding:16px">Error loading: '+fErr.message+'</div>';return;}
-
-    const friendIds=(friendships||[]).map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id);
-
+    const friendIds=await dbGetFriendIds();
     if(!friendIds.length){
       el.innerHTML='<div style="text-align:center;color:var(--text3);padding:32px;font-size:13px">Add friends to see when they\'re training.</div>';
       return;
     }
 
     const{data:live,error:lErr}=await sb.from('workout_live').select('*').in('user_id',friendIds).eq('is_live',true);
-
     if(lErr){el.innerHTML='<div style="color:var(--red);font-size:13px;padding:16px">Error: '+lErr.message+'</div>';return;}
 
-    if(!live||!live.length){
+    // Load display names for online friends
+    const{data:names}=await sb.from('usernames').select('user_id,username,display_name').in('user_id',friendIds);
+    const nameMap={};
+    (names||[]).forEach(u=>{nameMap[u.user_id]=u.display_name||u.username||'Athlete';});
+    // Attach display name to each live entry
+    const liveWithNames=(live||[]).map(l=>({...l,display_name:l.display_name||nameMap[l.user_id]||'Athlete'}));
+
+    if(!liveWithNames.length){
       el.innerHTML='<div style="text-align:center;color:var(--text3);padding:32px;font-size:13px">No friends training right now — check back soon!<br><br><button class="btn btn-ghost btn-sm" onclick="loadLiveFeed()">🔄 Refresh</button></div>';
       return;
     }
 
-    el.innerHTML=live.map(l=>{
+    el.innerHTML=liveWithNames.map(l=>{
       const since=l.started_at?getTimeAgo(new Date(l.started_at)):'just started';
       const setsData=l.sets_data||{};
       const exEntries=Object.entries(setsData).filter(([,ex])=>ex?.sets?.length>0);
