@@ -2172,11 +2172,22 @@ async function renderWorkoutContent(){
     ...visiblePreset.map(e => ({ name: e.name, target: e.target, sets: e.sets, isCustom: false })),
     ...customExercises.map(c => ({ name: c.name, target: c.target_reps, sets: c.sets, isCustom: true, id: c.id })),
   ];
+
+  // Restore drag-and-drop order if the user has reordered exercises this session
+  const sessionKey = 'it_session_' + currentUser.id + '_' + currentWorkoutDay + '_' + today();
+  workoutSets = JSON.parse(localStorage.getItem(sessionKey) || '{}');
+  const savedOrder = workoutSets.__order?.[currentWorkoutDay];
+  if (savedOrder && savedOrder.length) {
+    allEx.sort((a, b) => {
+      const ai = savedOrder.indexOf(a.name);
+      const bi = savedOrder.indexOf(b.name);
+      // Items not in savedOrder (newly added) go to the end
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    });
+  }
   if (label) label.textContent = sched
     ? 'Day ' + (currentWorkoutDay + 1) + ' — ' + sched.name + (sched.focus ? ' · ' + sched.focus : '')
     : 'Day ' + (currentWorkoutDay + 1) + ' — Custom workout';
-  const sessionKey = 'it_session_' + currentUser.id + '_' + currentWorkoutDay + '_' + today();
-  workoutSets = JSON.parse(localStorage.getItem(sessionKey) || '{}');
   const savedNotes = localStorage.getItem('it_notes_' + currentUser.id + '_' + currentWorkoutDay + '_' + today()) || '';
   const html = allEx.map((ex, i) =>
     buildExerciseHTML(ex, i, workoutSets[ex.name] || { sets: [], note: '' }, prMap[ex.name], lastMap[ex.name])
