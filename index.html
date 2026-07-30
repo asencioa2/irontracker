@@ -3003,26 +3003,31 @@ async function loadSocialFeed(){
     if(!el)return;
     el.innerHTML='<div style="text-align:center;color:var(--text3);padding:32px"><div class="ai-spinner" style="margin:0 auto 10px"></div>Loading...</div>';
 
-    // Get accepted friends
+    // Get accepted friends + always include self
     const friendIds=await dbGetFriendIds();
-
-    // Load posts from friends + own posts (always include self)
     const allIds=[...new Set([...friendIds, currentUser.id])];
-  const _fd=await dbGetFeedData(allIds);
-  if(!_fd){el.innerHTML='<div style="color:var(--text3);padding:20px;text-align:center">Could not load feed.</div>';return;}
-  const{posts}=_fd;
-  if(!posts.length){el.innerHTML='<div class="empty-state">'+(friendIds.length?'No workouts posted yet.':'Finish a workout to see it here.')+'</div>';return;}
+
+    const _fd=await dbGetFeedData(allIds);
+    if(!_fd){el.innerHTML='<div style="color:var(--text3);padding:20px;text-align:center">Could not load feed. Please try again.</div>';return;}
+
+    const{posts}=_fd;
+    if(!posts.length){
+      el.innerHTML='<div class="empty-state">'+(friendIds.length?'No workouts posted yet. Finish a workout to share it!':'Finish a workout to see it here, or add friends to see their posts too.')+'</div>';
+      return;
+    }
+
     const likeMap={};
     (_fd.likes||[]).forEach(l=>{if(!likeMap[l.post_id])likeMap[l.post_id]=[];likeMap[l.post_id].push(l);});
 
-    const commentCounts=feedData.commentCounts||[];
     const commentCountMap={};
-    (commentCounts||[]).forEach(c=>{commentCountMap[c.post_id]=(commentCountMap[c.post_id]||0)+1;});
+    (_fd.commentCounts||[]).forEach(c=>{commentCountMap[c.post_id]=(commentCountMap[c.post_id]||0)+1;});
 
     el.innerHTML=posts.map(p=>renderFeedPost(p,likeMap[p.id]||[],commentCountMap[p.id]||0)).join('');
 
-  } catch(err) {
-    console.error('[loadSocialFeed]', err.message||err);
+  }catch(err){
+    console.error('[loadSocialFeed]',err.message||err);
+    const el=document.getElementById('social-feed-content');
+    if(el)el.innerHTML='<div class="empty-state">Could not load feed — '+( err.message||'unknown error')+'</div>';
   }
 }
 
