@@ -2182,10 +2182,16 @@ function buildExerciseHTML(ex, i, exData, pr, last) {
       '<button class="btn btn-primary" style="height:42px;padding:0 16px;white-space:nowrap;align-self:end" onclick="' + logBtnOnclick + '">+ Log</button>' +
       '</div>') +
     '<div style="display:flex;gap:6px">' +
-    '<button id="ex-fail-' + i + '" onclick="toggleFailure(' + i + ',\'' + n + '\')" style="flex:1;padding:6px 0;border-radius:var(--radius);border:1px solid var(--border);background:none;color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s">💀 Till failure</button>' +
+    '<button id="ex-drop-' + i + '" onclick="toggleDropSet(' + i + ',\'' + n + '\')" style="flex:1;padding:6px 0;border-radius:var(--radius);border:1px solid var(--border);background:none;color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s">📉 Drop set</button>' +
     (isBodyweight ? '' : '<button id="ex-bw-' + i + '" onclick="toggleBodyweight(' + i + ')" style="flex:1;padding:6px 0;border-radius:var(--radius);border:1px solid var(--border);background:none;color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s">🏋️ Bodyweight</button>') +
     '</div>' +
-    '<span id="ex-fail-label-' + i + '" style="font-size:11px;color:var(--red);display:none;margin-top:4px;display:none"> Failure selected</span>' +
+    '' +
+    '</div>' +
+    '<div id="ex-dropset-ui-' + i + '" style="display:none;margin-top:10px">' +
+    '<div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Drop set — add drops below ↓</div>' +
+    '<div id="ex-drops-' + i + '"></div>' +
+    '<button onclick="addDrop(' + i + ')" style="width:100%;padding:6px;border-radius:var(--radius);border:1px dashed var(--border);background:none;color:var(--text3);font-size:11px;cursor:pointer;margin-bottom:4px">+ Add drop</button>' +
+    '<button onclick="logDropSet(' + i + ',\'' + n + '\')" class="btn btn-primary" style="width:100%;margin-top:4px">Log drop set</button>' +
     '</div>' +
     '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Exercise notes</div>' +
     '<textarea style="width:100%;resize:none;font-size:13px;padding:8px;border-radius:var(--radius);background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font)" rows="2" placeholder="Warmup sets, form notes, bands, tempo..." onchange="' + noteOnchange + '">' + (exData.note || '') + '</textarea>' +
@@ -2335,23 +2341,21 @@ async function logSet(exIdx,exName){
   const wRaw=parseFloat(wInput?.value);
   const w=isBodyweight&&!wRaw?0:wRaw; // 0 = bodyweight
   const rRaw=rInput?.value?.trim();
-  const isFailure=rInput?.dataset.failure==='true';
-  const r=isFailure?999:parseInt(rRaw);
+  const r=parseInt(rRaw);
   if(w===undefined||w===null||(w<0)){toast('Enter weight first');return;}
   if(!isBodyweight&&!w&&w!==0){toast('Enter weight and reps first');return;}
-  if(!r&&!isFailure){toast('Enter reps first');return;}
+  if(!r){toast('Enter reps first');return;}
   if(!workoutSets[exName])workoutSets[exName]={sets:[],note:''};
   workoutSets[exName].sets.push({w,r,note:''});
   saveSession();
   document.getElementById('ex-w-'+exIdx).value='';
   document.getElementById('ex-r-'+exIdx).value='';
   // Clear failure flag
-  const rEl2=document.getElementById('ex-r-'+exIdx);
-  if(rEl2)rEl2.dataset.failure='false';
-  const failBtn=document.getElementById('ex-fail-'+exIdx);
-  if(failBtn){failBtn.style.borderColor='';failBtn.style.color='';}
-  const failLabel=document.getElementById('ex-fail-label-'+exIdx);
-  if(failLabel)failLabel.style.display='none';
+  // Close drop set UI after logging
+  const dropUI=document.getElementById('ex-dropset-ui-'+exIdx);
+  if(dropUI)dropUI.style.display='none';
+  const dropBtn=document.getElementById('ex-drop-'+exIdx);
+  if(dropBtn){dropBtn.style.borderColor='';dropBtn.style.color='';dropBtn.textContent='📉 Drop set';}
   // Go live on first set logged in this session
   const totalSetsLogged=Object.values(workoutSets).reduce((t,ex)=>t+(ex.sets?.length||0),0);
   if(totalSetsLogged===1){
@@ -2363,8 +2367,7 @@ async function logSet(exIdx,exName){
   const setIdx=workoutSets[exName].sets.length-1;
   const isPR=await autoPRCheck(exName,w,r);
   const wLabel=w===0?'BW':w+'lbs';
-  const rLabel=r===999?'failure':r;
-  if(!isPR)toast('Set '+(setIdx+1)+' logged: '+wLabel+' \xd7 '+rLabel);
+  if(!isPR)toast('Set '+(setIdx+1)+' logged: '+wLabel+' \xd7 '+r);
   renderWorkoutContent(); // always full re-render — surgical update was placing rows incorrectly
   // Push live sets so friends can follow along
   if(Object.values(workoutSets).some(ex=>ex?.sets?.length>0)){
@@ -5102,35 +5105,71 @@ function toggleBodyweight(exIdx) {
   }
 }
 
-// ── Till failure toggle ───────────────────────────────────────────────────
-function toggleFailure(exIdx, exName) {
-  const rInput = document.getElementById('ex-r-' + exIdx);
-  const btn = document.getElementById('ex-fail-' + exIdx);
-  const label = document.getElementById('ex-fail-label-' + exIdx);
-  if (!rInput || !btn) return;
-  const isOn = rInput.dataset.failure === 'true';
+// ── Drop set toggle ───────────────────────────────────────────────────────
+function toggleDropSet(exIdx, exName) {
+  const ui = document.getElementById('ex-dropset-ui-' + exIdx);
+  const btn = document.getElementById('ex-drop-' + exIdx);
+  if (!ui || !btn) return;
+  const isOn = ui.style.display !== 'none';
   if (isOn) {
-    // Turn off
-    rInput.dataset.failure = 'false';
-    rInput.disabled = false;
-    rInput.value = '';
-    rInput.placeholder = 'reps';
+    ui.style.display = 'none';
     btn.style.borderColor = '';
     btn.style.color = '';
-    btn.textContent = '💀 Till failure';
-    if (label) label.style.display = 'none';
+    btn.textContent = '📉 Drop set';
+    document.getElementById('ex-drops-' + exIdx).innerHTML = '';
   } else {
-    // Turn on
-    rInput.dataset.failure = 'true';
-    rInput.disabled = true;
-    rInput.value = '';
-    rInput.placeholder = 'failure';
-    btn.style.borderColor = 'var(--red)';
-    btn.style.color = 'var(--red)';
-    btn.textContent = '💀 Till failure ✓';
-    if (label) label.style.display = 'inline';
+    ui.style.display = 'block';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.color = 'var(--accent)';
+    btn.textContent = '📉 Drop set ✓';
+    // Pre-fill first drop with current inputs
+    const w = document.getElementById('ex-w-' + exIdx)?.value || '';
+    const r = document.getElementById('ex-r-' + exIdx)?.value || '';
+    addDrop(exIdx, w, r);
   }
 }
+
+function addDrop(exIdx, prefillW, prefillR) {
+  const container = document.getElementById('ex-drops-' + exIdx);
+  if (!container) return;
+  const idx = container.children.length;
+  const row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-bottom:6px;align-items:center';
+  row.innerHTML =
+    '<input type="number" inputmode="decimal" placeholder="weight (lbs)" value="' + (prefillW||'') + '" ' +
+    'style="padding:8px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;width:100%">' +
+    '<input type="number" inputmode="numeric" placeholder="reps" value="' + (prefillR||'') + '" ' +
+    'style="padding:8px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;width:100%">' +
+    '<button onclick="this.parentNode.remove()" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:0 4px">×</button>';
+  container.appendChild(row);
+}
+
+async function logDropSet(exIdx, exName) {
+  const container = document.getElementById('ex-drops-' + exIdx);
+  if (!container || !container.children.length) { toast('Add at least one drop'); return; }
+  const drops = [...container.children].map(row => {
+    const inputs = row.querySelectorAll('input');
+    return { w: parseFloat(inputs[0]?.value), r: parseInt(inputs[1]?.value) };
+  }).filter(d => d.w > 0 && d.r > 0);
+  if (!drops.length) { toast('Fill in weight and reps for each drop'); return; }
+  if (!workoutSets[exName]) workoutSets[exName] = { sets: [], note: '' };
+  drops.forEach(d => workoutSets[exName].sets.push({ w: d.w, r: d.r, note: 'drop' }));
+  saveSession();
+  toast('✅ Drop set logged: ' + drops.length + ' drops');
+  // Close UI and reset
+  const ui = document.getElementById('ex-dropset-ui-' + exIdx);
+  if (ui) ui.style.display = 'none';
+  const btn = document.getElementById('ex-drop-' + exIdx);
+  if (btn) { btn.style.borderColor='';btn.style.color='';btn.textContent='📉 Drop set'; }
+  container.innerHTML = '';
+  document.getElementById('ex-w-' + exIdx).value = '';
+  document.getElementById('ex-r-' + exIdx).value = '';
+  const isPR = drops.some(async d => await autoPRCheck(exName, d.w, d.r));
+  renderWorkoutContent();
+  startWorkoutRestTimer();
+}
+
+
 
 // ── Online/offline status ─────────────────────────────────────
 window.addEventListener('online', ()=>{
