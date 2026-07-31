@@ -2161,25 +2161,28 @@ function buildExerciseHTML(ex, i, exData, pr, last) {
     '<div style="font-size:11px;color:var(--text3);margin-top:2px">Target: ' + ex.sets + ' x ' + ex.target + lastTag + '</div>' +
     '</div></div>' + delBtn + '</div>' +
     buildLoggedSetsHTML(n, exData.sets) +
-    (!exData.sets?.length ? '<div style="font-size:12px;color:var(--text3);margin-bottom:10px;padding:6px 0">No sets logged yet.</div>' : '') +
+    (!exData.sets?.length ? '<div style="font-size:12px;color:var(--text3);margin-bottom:8px;padding:4px 0">No sets logged yet.</div>' : '') +
     buildOverloadHintHTML(i, n, last) +
+    '<div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:10px">' +
     (isBodyweight ?
-      '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:4px">' +
-      '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Reps <span style="color:var(--accent)">· bodyweight</span></div>' +
-      '<div style="display:flex;gap:6px">' +
-      '<input class="ex-input" type="number" inputmode="numeric" id="ex-r-' + i + '" placeholder="reps" style="width:100%;flex:1" data-bodyweight="true">' +
-      '<input type="hidden" id="ex-w-' + i + '" value="0" data-bodyweight="true"></div></div>' +
-      '<button class="btn btn-primary btn-sm" style="align-self:end;height:42px;padding:0 14px;white-space:nowrap" onclick="' + logBtnOnclick + '">+ Log set</button></div>' :
-      '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:4px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+      '<div style="flex:1"><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Reps · <span style="color:var(--accent)">Bodyweight</span></div>' +
+      '<input class="ex-input" type="number" inputmode="numeric" id="ex-r-' + i + '" placeholder="reps" style="width:100%" data-bodyweight="true">' +
+      '<input type="hidden" id="ex-w-' + i + '" value="0" data-bodyweight="true"></div>' +
+      '<button class="btn btn-primary" style="height:42px;padding:0 16px;white-space:nowrap;margin-top:18px" onclick="' + logBtnOnclick + '">+ Log</button>' +
+      '</div>' :
+      '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px">' +
       '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Weight (lbs)</div>' +
       '<input class="ex-input" type="number" inputmode="decimal" step="2.5" id="ex-w-' + i + '" placeholder="' + (last && last.w ? last.w : 'lbs') + '" style="width:100%"></div>' +
       '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Reps</div>' +
-      '<input class="ex-input" type="text" inputmode="numeric" id="ex-r-' + i + '" placeholder="' + (last && last.r && last.r!==999 ? last.r : 'reps') + '" style="width:100%"></div>' +
-      '<button class="btn btn-primary btn-sm" style="align-self:end;height:42px;padding:0 14px;white-space:nowrap" onclick="' + logBtnOnclick + '">+ Log set</button></div>') +
-    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">' +
-    '<button id="ex-fail-' + i + '" onclick="toggleFailure(' + i + ',\'' + n + '\')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px;border-color:var(--border);color:var(--text3)">💀 Till failure</button>' +
-    (isBodyweight ? '' : '<button id="ex-bw-' + i + '" onclick="toggleBodyweight(' + i + ')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px;border-color:var(--border);color:var(--text3)">🏋️ Bodyweight</button>') +
-    '<span id="ex-fail-label-' + i + '" style="font-size:11px;color:var(--text3);display:none">Failure selected — tap Log set</span>' +
+      '<input class="ex-input" type="number" inputmode="numeric" id="ex-r-' + i + '" placeholder="' + (last && last.r && last.r!==999 ? last.r : 'reps') + '" style="width:100%"></div>' +
+      '<button class="btn btn-primary" style="height:42px;padding:0 16px;white-space:nowrap;align-self:end" onclick="' + logBtnOnclick + '">+ Log</button>' +
+      '</div>') +
+    '<div style="display:flex;gap:6px">' +
+    '<button id="ex-fail-' + i + '" onclick="toggleFailure(' + i + ',\'' + n + '\')" style="flex:1;padding:6px 0;border-radius:var(--radius);border:1px solid var(--border);background:none;color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s">💀 Till failure</button>' +
+    (isBodyweight ? '' : '<button id="ex-bw-' + i + '" onclick="toggleBodyweight(' + i + ')" style="flex:1;padding:6px 0;border-radius:var(--radius);border:1px solid var(--border);background:none;color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s">🏋️ Bodyweight</button>') +
+    '</div>' +
+    '<span id="ex-fail-label-' + i + '" style="font-size:11px;color:var(--red);display:none;margin-top:4px;display:none"> Failure selected</span>' +
     '</div>' +
     '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Exercise notes</div>' +
     '<textarea style="width:100%;resize:none;font-size:13px;padding:8px;border-radius:var(--radius);background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font)" rows="2" placeholder="Warmup sets, form notes, bands, tempo..." onchange="' + noteOnchange + '">' + (exData.note || '') + '</textarea>' +
