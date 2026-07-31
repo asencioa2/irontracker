@@ -1050,6 +1050,10 @@
       <div class="grid-2">
         <div class="form-group"><label>Sets</label><input type="number" id="custom-ex-sets" placeholder="3" value="3"></div>
         <div class="form-group"><label>Target reps</label><input type="text" id="custom-ex-reps" placeholder="10-12" value="10-12"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+          <input type="checkbox" id="custom-ex-bodyweight" style="width:16px;height:16px;accent-color:var(--accent)">
+          <label for="custom-ex-bodyweight" style="font-size:13px;color:var(--text2);cursor:pointer">Bodyweight exercise (no weight needed)</label>
+        </div>
       </div>
       <button class="btn btn-primary btn-full" onclick="addCustomExercise()">Add to workout</button>
     </div>
@@ -1383,6 +1387,7 @@ async function onSignedIn(user,showFullLoading){
   document.getElementById('nav-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   await loadProfile();
   loadCustomSplits();
+  checkAndUpdateAge();  // auto-increment age on birthday
   await refreshDashboard();
   showPage('dashboard'); // Always land on dashboard on sign in
   checkNotifications();
@@ -1403,6 +1408,26 @@ async function onSignedIn(user,showFullLoading){
 // ============================================================
 // PROFILE / SETTINGS
 // ============================================================
+// ── Auto-age update on birthday ──────────────────────────────────────────
+async function checkAndUpdateAge(){
+  const dob = userProfile.date_of_birth || localStorage.getItem('it_dob_' + currentUser?.id);
+  if (!dob) return; // no birthday stored
+  const today_str = today();
+  const dobDate = new Date(dob);
+  const thisYearBirthday = today_str.slice(0,4) + '-' + dob.slice(5,10); // YYYY-MM-DD
+  const lastChecked = localStorage.getItem('it_age_checked_' + currentUser?.id);
+  if (lastChecked === today_str) return; // already checked today
+  localStorage.setItem('it_age_checked_' + currentUser?.id, today_str);
+  if (today_str === thisYearBirthday) {
+    const newAge = new Date().getFullYear() - dobDate.getFullYear();
+    await dbSaveProfile({ age: newAge });
+    userProfile.age = newAge;
+    const ageEl = document.getElementById('set-age');
+    if (ageEl) ageEl.value = newAge;
+    toast('🎂 Happy Birthday! Your age has been updated to ' + newAge);
+  }
+}
+
 async function loadProfile(){
   const{data,error:profError}=await dbGetProfile(currentUser.id);
   if(profError&&profError.code!=='PGRST116')console.warn('[loadProfile]',profError.message);
@@ -1410,6 +1435,9 @@ async function loadProfile(){
     userProfile=data;
     const f=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
     f('set-name',data.name);f('set-height',data.height_in);f('set-start-weight',data.start_weight);
+    // Restore birthday from localStorage
+    const dob=localStorage.getItem('it_dob_'+currentUser.id);
+    if(dob){const dobEl=document.getElementById('set-dob');if(dobEl)dobEl.value=dob;}
     f('set-goal-weight',data.goal_weight);f('set-gym',data.gym);
     f('set-cal',data.macro_cal);f('set-pro',data.macro_pro);f('set-carb',data.macro_carb);f('set-fat',data.macro_fat);
     updateMacroGoalLabels();
@@ -1917,9 +1945,10 @@ function openExerciseDetail(name,cat){
 
 async function addFromDatabase(name,category){
   const defaults=EXERCISE_DB_DEFAULT_TARGETS[category]||{sets:3,reps:'10-12'};
-  const ceOk1=await dbAddCustomExercise(currentWorkoutDay,name,defaults.reps);
+  const ceOk1=await dbAddCustomExercise(currentWorkoutDay,name,defaults.reps,defaults.sets);
   if(!ceOk1)return;
   toast('Added: '+name);
+  closeModal('add-exercise-modal');
   await refreshWorkoutPage();
 }
 
@@ -1959,9 +1988,13 @@ async function addCustomExercise(){
   if(!name){toast('Enter an exercise name');return;}
   const sets=parseInt(document.getElementById('custom-ex-sets').value)||3;
   const reps=document.getElementById('custom-ex-reps').value.trim()||'10-12';
-  const ceOk2=await dbAddCustomExercise(currentWorkoutDay,name,reps);
+  const isBodyweight=document.getElementById('custom-ex-bodyweight')?.checked;
+  const targetReps=isBodyweight?reps+' (bodyweight)':reps;
+  const ceOk2=await dbAddCustomExercise(currentWorkoutDay,name,targetReps,sets);
   if(!ceOk2)return;
   document.getElementById('custom-ex-name').value='';
+  document.getElementById('custom-ex-bodyweight').checked=false;
+  closeModal('add-exercise-modal');
   toast('Exercise added: '+name);
   await refreshWorkoutPage();
 }
@@ -2109,6 +2142,7 @@ async function loadWorkoutData(splitKey, dow) {
 // ── buildExerciseHTML — renders one exercise card ─────────────────────────
 function buildExerciseHTML(ex, i, exData, pr, last) {
   const n = ex.name.replace(/'/g, "\'").split(String.fromCharCode(96)).join("'");
+  const isBodyweight = (ex.target||ex.target_reps||'').toLowerCase().includes('bodyweight') || ex.bodyweight===true;
   const prTag = pr ? '<span class="pb-tag">PR: ' + pr.weight_lbs + 'lbs\xd7' + pr.reps + '</span>' : '';
   const custTag = ex.isCustom ? '<span class="badge badge-amber" style="margin-left:6px">Custom</span>' : '';
   const lastTag = last ? '<div style="font-size:10px;color:var(--blue);font-family:var(--mono);margin-top:2px">Last: ' + last.w + 'lbs\xd7' + last.r + '</div>' : '';
@@ -2129,12 +2163,20 @@ function buildExerciseHTML(ex, i, exData, pr, last) {
     buildLoggedSetsHTML(n, exData.sets) +
     (!exData.sets?.length ? '<div style="font-size:12px;color:var(--text3);margin-bottom:10px;padding:6px 0">No sets logged yet.</div>' : '') +
     buildOverloadHintHTML(i, n, last) +
-    '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:12px">' +
-    '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Weight (lbs)</div>' +
-    '<input class="ex-input" type="number" inputmode="decimal" step="2.5" id="ex-w-' + i + '" placeholder="' + (last ? last.w : 'lbs') + '" style="width:100%"></div>' +
-    '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Reps</div>' +
-    '<input class="ex-input" type="number" inputmode="numeric" id="ex-r-' + i + '" placeholder="' + (last ? last.r : 'reps') + '" style="width:100%"></div>' +
-    '<button class="btn btn-primary btn-sm" style="align-self:end;height:42px;padding:0 14px;white-space:nowrap" onclick="' + logBtnOnclick + '">+ Log set</button></div>' +
+    (isBodyweight ?
+      '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:4px">' +
+      '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Reps <span style="color:var(--accent)">· bodyweight</span></div>' +
+      '<div style="display:flex;gap:6px">' +
+      '<input class="ex-input" type="text" inputmode="numeric" id="ex-r-' + i + '" placeholder="reps or &apos;f&apos; for failure" style="width:100%;flex:1" data-bodyweight="true">' +
+      '<input type="hidden" id="ex-w-' + i + '" value="0" data-bodyweight="true"></div></div>' +
+      '<button class="btn btn-primary btn-sm" style="align-self:end;height:42px;padding:0 14px;white-space:nowrap" onclick="' + logBtnOnclick + '">+ Log set</button></div>' :
+      '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:4px">' +
+      '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Weight (lbs)</div>' +
+      '<input class="ex-input" type="number" inputmode="decimal" step="2.5" id="ex-w-' + i + '" placeholder="' + (last && last.w ? last.w : 'lbs') + '" style="width:100%"></div>' +
+      '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Reps</div>' +
+      '<input class="ex-input" type="text" inputmode="numeric" id="ex-r-' + i + '" placeholder="' + (last && last.r && last.r!==999 ? last.r : 'reps or f') + '" style="width:100%"></div>' +
+      '<button class="btn btn-primary btn-sm" style="align-self:end;height:42px;padding:0 14px;white-space:nowrap" onclick="' + logBtnOnclick + '">+ Log set</button></div>') +
+    '<div style="font-size:11px;color:var(--text3);margin-bottom:10px">Enter \'f\' for till failure</div>' +
     '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Exercise notes</div>' +
     '<textarea style="width:100%;resize:none;font-size:13px;padding:8px;border-radius:var(--radius);background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font)" rows="2" placeholder="Warmup sets, form notes, bands, tempo..." onchange="' + noteOnchange + '">' + (exData.note || '') + '</textarea>' +
     '</div></div>'
@@ -2170,7 +2212,7 @@ async function renderWorkoutContent(){
   }
   const allEx = [
     ...visiblePreset.map(e => ({ name: e.name, target: e.target, sets: e.sets, isCustom: false })),
-    ...customExercises.map(c => ({ name: c.name, target: c.target_reps, sets: c.sets, isCustom: true, id: c.id })),
+    ...customExercises.map(c => ({ name: c.name, target: c.target_reps, sets: c.sets, isCustom: true, id: c.id, bodyweight: (c.target_reps||'').toLowerCase().includes('bodyweight') })),
   ];
 
   // Restore drag-and-drop order if the user has reordered exercises this session
@@ -2277,9 +2319,17 @@ async function autoPRCheck(exName,w,r){
 }
 
 async function logSet(exIdx,exName){
-  const w=parseFloat(document.getElementById('ex-w-'+exIdx)?.value);
-  const r=parseInt(document.getElementById('ex-r-'+exIdx)?.value);
-  if(!w||!r){toast('Enter weight and reps first');return;}
+  const wInput=document.getElementById('ex-w-'+exIdx);
+  const rInput=document.getElementById('ex-r-'+exIdx);
+  const isBodyweight=wInput?.dataset.bodyweight==='true'||wInput?.placeholder==='BW';
+  const wRaw=parseFloat(wInput?.value);
+  const w=isBodyweight&&!wRaw?0:wRaw; // 0 = bodyweight
+  const rRaw=rInput?.value?.trim();
+  const isFailure=rRaw==='f'||rRaw==='F'||rRaw==='fail'||rRaw==='failure';
+  const r=isFailure?999:parseInt(rRaw);
+  if(w===undefined||w===null||(w<0)){toast('Enter weight first');return;}
+  if(!isBodyweight&&!w&&w!==0){toast('Enter weight and reps first');return;}
+  if(!r&&!isFailure){toast('Enter reps first');return;}
   if(!workoutSets[exName])workoutSets[exName]={sets:[],note:''};
   workoutSets[exName].sets.push({w,r,note:''});
   saveSession();
@@ -2296,7 +2346,9 @@ async function logSet(exIdx,exName){
   const setIdx=workoutSets[exName].sets.length-1;
   const rowUpdated=updateSetRowUI(exName,setIdx,w,r);
   const isPR=await autoPRCheck(exName,w,r);
-  if(!isPR)toast('Set '+(setIdx+1)+' logged: '+w+'lbs \xd7 '+r);
+  const wLabel=w===0?'BW':w+'lbs';
+  const rLabel=r===999?'failure':r;
+  if(!isPR)toast('Set '+(setIdx+1)+' logged: '+wLabel+' \xd7 '+rLabel);
   if(isPR||!rowUpdated)renderWorkoutContent(); // full render on PR or surgical fallback
   // Push live sets so friends can follow along
   if(Object.values(workoutSets).some(ex=>ex?.sets?.length>0)){
@@ -2429,7 +2481,9 @@ async function finishWorkout(){
     notes
   });
   if(!saveOk){toastError('Save workout','Could not save — please try again');setSaving('workout',false);return;}
+  // Clear this session so a second workout today starts fresh
   localStorage.removeItem(`it_session_${currentUser.id}_${currentWorkoutDay}_${today()}`);
+  workoutSets={};  // reset in-memory state
   invalidateDashboard();
   toast(`\u2705 ${dayName} saved! Next up: Day ${((currentWorkoutDay+1)%split.days.length)+1}`);
   // Publish to social feed
@@ -2680,7 +2734,8 @@ function calcBF(){
 async function buildToolsCheckin(){
   try{
     const _td=await dbGetToolsPageData(currentUser.id);
-    const weekStart=getWeekStart();const thisWeek=(_td.logs||[]).filter(l=>l.date>=weekStart);const uniqueDays=[...new Set(thisWeek.map(l=>l.date))];const totalVol=thisWeek.reduce((s,l)=>s+(l.volume||0),0);
+    const weekStart=getWeekStart();const thisWeek=(_td.logs||[]).filter(l=>l.date>=weekStart);
+  // Note: multiple sessions per day are all countedconst uniqueDays=[...new Set(thisWeek.map(l=>l.date))];const totalVol=thisWeek.reduce((s,l)=>s+(l.volume||0),0);
     const w=_td.weights||[];let wc=null;if(w.length>=2)wc=(w[w.length-1].weight_lbs-w[w.length-2].weight_lbs).toFixed(1);
     const weekPRs=(prs.data||[]).filter(p=>p.date>=weekStart);
     const el=document.getElementById('tools-checkin-content');if(!el)return;

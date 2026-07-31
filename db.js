@@ -386,10 +386,10 @@ async function dbGetCustomExercises(userId, dow) {
   return data || [];
 }
 
-async function dbAddCustomExercise(dow, name, target) {
+async function dbAddCustomExercise(dow, name, target, sets) {
   const user = requireUser();
   const { error } = await sb.from('custom_exercises')
-    .insert({ user_id: user.id, dow, name, target });
+    .insert({ user_id: user.id, dow, name, target_reps: target, sets: sets || 3 });
   if (error) { dbError(error, 'Add exercise'); return false; }
   return true;
 }
