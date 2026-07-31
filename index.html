@@ -2358,12 +2358,11 @@ async function logSet(exIdx,exName){
   }
   // Surgical DOM update — only re-render full page if PR detected
   const setIdx=workoutSets[exName].sets.length-1;
-  const rowUpdated=updateSetRowUI(exName,setIdx,w,r);
   const isPR=await autoPRCheck(exName,w,r);
   const wLabel=w===0?'BW':w+'lbs';
   const rLabel=r===999?'failure':r;
   if(!isPR)toast('Set '+(setIdx+1)+' logged: '+wLabel+' \xd7 '+rLabel);
-  if(isPR||!rowUpdated)renderWorkoutContent(); // full render on PR or surgical fallback
+  renderWorkoutContent(); // always full re-render — surgical update was placing rows incorrectly
   // Push live sets so friends can follow along
   if(Object.values(workoutSets).some(ex=>ex?.sets?.length>0)){
     dbUpdateLiveSets(currentUser.id,workoutSets);
@@ -3501,45 +3500,46 @@ async function markNotificationsRead(){
 // Updates a single logged set row without re-rendering the whole workout.
 // Returns true if successful, false if row not found (triggers full render).
 function updateSetRowUI(exName, setIdx, weight, reps) {
-  // Sets are tracked by exercise card — find the card for this exercise
   const cards = document.querySelectorAll('.ex-drag-card');
   let targetCard = null;
-  cards.forEach(c => {
-    if (c.dataset.exName === exName) targetCard = c;
-  });
+  cards.forEach(c => { if (c.dataset.exName === exName) targetCard = c; });
   if (!targetCard) return false;
 
-  // Find or create the sets-logged section inside the card
+  // Find or create the sets-logged section
   let setsLogged = targetCard.querySelector('.sets-logged');
   if (!setsLogged) {
-    // First set — create the container
     setsLogged = document.createElement('div');
     setsLogged.className = 'sets-logged';
     setsLogged.style.cssText = 'margin-bottom:8px';
-    // Insert before the input row
-    const inputRow = targetCard.querySelector('.ex-input');
-    if (inputRow) inputRow.closest('div').before(setsLogged);
-    else return false; // can't find anchor — fall back
+    // Insert before the surface2 input box (the container that holds weight/reps/buttons)
+    // Find it by looking for the direct child div with background:var(--surface2)
+    const inputBox = [...targetCard.children].find(el =>
+      el.style?.background?.includes('surface2') || el.querySelector?.('.ex-input')
+    );
+    if (inputBox) {
+      targetCard.insertBefore(setsLogged, inputBox);
+    } else {
+      // Fallback — append to card
+      targetCard.appendChild(setsLogged);
+    }
   }
 
-  // Check if this set row already exists
   const rowId = 'set-logged-' + exName.replace(/[^a-zA-Z0-9]/g, '-') + '-' + setIdx;
   let row = document.getElementById(rowId);
-  
   if (!row) {
-    // New set — append a row
     row = document.createElement('div');
     row.id = rowId;
     row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface2);border-radius:8px;margin-bottom:4px;border:1px solid var(--accent);transition:border-color 0.5s';
     setsLogged.appendChild(row);
   }
 
-  // Update content
-  row.innerHTML = '<span style="font-size:11px;color:var(--text3);min-width:16px">' + (setIdx + 1) + '</span>' +
-    '<span style="font-size:13px;font-weight:700;color:var(--text);font-family:var(--mono)">' + weight + ' lbs × ' + reps + '</span>' +
+  const wLabel = weight === 0 ? 'BW' : weight + ' lbs';
+  const rLabel = reps === 999 ? 'failure' : reps;
+  row.innerHTML =
+    '<span style="font-size:11px;color:var(--text3);min-width:16px">' + (setIdx + 1) + '</span>' +
+    '<span style="font-size:13px;font-weight:700;color:var(--text);font-family:var(--mono)">' + wLabel + ' × ' + rLabel + '</span>' +
     '<span style="font-size:11px;color:var(--accent);margin-left:auto">✓</span>';
 
-  // Flash accent border to confirm
   row.style.borderColor = 'var(--accent)';
   setTimeout(() => { if (row) row.style.borderColor = 'var(--border)'; }, 800);
 
