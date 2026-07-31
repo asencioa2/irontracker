@@ -2176,8 +2176,9 @@ function buildExerciseHTML(ex, i, exData, pr, last) {
       '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Reps</div>' +
       '<input class="ex-input" type="text" inputmode="numeric" id="ex-r-' + i + '" placeholder="' + (last && last.r && last.r!==999 ? last.r : 'reps') + '" style="width:100%"></div>' +
       '<button class="btn btn-primary btn-sm" style="align-self:end;height:42px;padding:0 14px;white-space:nowrap" onclick="' + logBtnOnclick + '">+ Log set</button></div>') +
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">' +
     '<button id="ex-fail-' + i + '" onclick="toggleFailure(' + i + ',\'' + n + '\')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px;border-color:var(--border);color:var(--text3)">💀 Till failure</button>' +
+    (isBodyweight ? '' : '<button id="ex-bw-' + i + '" onclick="toggleBodyweight(' + i + ')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px;border-color:var(--border);color:var(--text3)">🏋️ Bodyweight</button>') +
     '<span id="ex-fail-label-' + i + '" style="font-size:11px;color:var(--text3);display:none">Failure selected — tap Log set</span>' +
     '</div>' +
     '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Exercise notes</div>' +
@@ -5061,6 +5062,38 @@ async function createChallenge() {
   openChallengesTab();
 }
 
+
+// ── Bodyweight toggle — hides weight field and sets w=0 ──────────────────
+function toggleBodyweight(exIdx) {
+  const wInput = document.getElementById('ex-w-' + exIdx);
+  const wLabel = wInput?.previousElementSibling; // the label div
+  const btn = document.getElementById('ex-bw-' + exIdx);
+  if (!wInput || !btn) return;
+  const isOn = wInput.dataset.bodyweight === 'true';
+  if (isOn) {
+    // Turn off — restore weight field
+    wInput.dataset.bodyweight = 'false';
+    wInput.type = 'number';
+    wInput.disabled = false;
+    wInput.value = '';
+    wInput.placeholder = 'lbs';
+    wInput.style.display = '';
+    if (wLabel) wLabel.style.display = '';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    btn.textContent = '🏋️ Bodyweight';
+  } else {
+    // Turn on — hide weight field, set to 0
+    wInput.dataset.bodyweight = 'true';
+    wInput.value = '0';
+    wInput.disabled = true;
+    wInput.style.display = 'none';
+    if (wLabel) wLabel.style.display = 'none';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.color = 'var(--accent)';
+    btn.textContent = '🏋️ Bodyweight ✓';
+  }
+}
 
 // ── Till failure toggle ───────────────────────────────────────────────────
 function toggleFailure(exIdx, exName) {
