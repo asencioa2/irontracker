@@ -2167,16 +2167,19 @@ function buildExerciseHTML(ex, i, exData, pr, last) {
       '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:4px">' +
       '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Reps <span style="color:var(--accent)">· bodyweight</span></div>' +
       '<div style="display:flex;gap:6px">' +
-      '<input class="ex-input" type="text" inputmode="numeric" id="ex-r-' + i + '" placeholder="reps or &apos;f&apos; for failure" style="width:100%;flex:1" data-bodyweight="true">' +
+      '<input class="ex-input" type="number" inputmode="numeric" id="ex-r-' + i + '" placeholder="reps" style="width:100%;flex:1" data-bodyweight="true">' +
       '<input type="hidden" id="ex-w-' + i + '" value="0" data-bodyweight="true"></div></div>' +
       '<button class="btn btn-primary btn-sm" style="align-self:end;height:42px;padding:0 14px;white-space:nowrap" onclick="' + logBtnOnclick + '">+ Log set</button></div>' :
       '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:4px">' +
       '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Weight (lbs)</div>' +
       '<input class="ex-input" type="number" inputmode="decimal" step="2.5" id="ex-w-' + i + '" placeholder="' + (last && last.w ? last.w : 'lbs') + '" style="width:100%"></div>' +
       '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Reps</div>' +
-      '<input class="ex-input" type="text" inputmode="numeric" id="ex-r-' + i + '" placeholder="' + (last && last.r && last.r!==999 ? last.r : 'reps or f') + '" style="width:100%"></div>' +
+      '<input class="ex-input" type="text" inputmode="numeric" id="ex-r-' + i + '" placeholder="' + (last && last.r && last.r!==999 ? last.r : 'reps') + '" style="width:100%"></div>' +
       '<button class="btn btn-primary btn-sm" style="align-self:end;height:42px;padding:0 14px;white-space:nowrap" onclick="' + logBtnOnclick + '">+ Log set</button></div>') +
-    '<div style="font-size:11px;color:var(--text3);margin-bottom:10px">Enter \'f\' for till failure</div>' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
+    '<button id="ex-fail-' + i + '" onclick="toggleFailure(' + i + ',\'' + n + '\')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px;border-color:var(--border);color:var(--text3)">💀 Till failure</button>' +
+    '<span id="ex-fail-label-' + i + '" style="font-size:11px;color:var(--text3);display:none">Failure selected — tap Log set</span>' +
+    '</div>' +
     '<div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Exercise notes</div>' +
     '<textarea style="width:100%;resize:none;font-size:13px;padding:8px;border-radius:var(--radius);background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font)" rows="2" placeholder="Warmup sets, form notes, bands, tempo..." onchange="' + noteOnchange + '">' + (exData.note || '') + '</textarea>' +
     '</div></div>'
@@ -2325,7 +2328,7 @@ async function logSet(exIdx,exName){
   const wRaw=parseFloat(wInput?.value);
   const w=isBodyweight&&!wRaw?0:wRaw; // 0 = bodyweight
   const rRaw=rInput?.value?.trim();
-  const isFailure=rRaw==='f'||rRaw==='F'||rRaw==='fail'||rRaw==='failure';
+  const isFailure=rInput?.dataset.failure==='true';
   const r=isFailure?999:parseInt(rRaw);
   if(w===undefined||w===null||(w<0)){toast('Enter weight first');return;}
   if(!isBodyweight&&!w&&w!==0){toast('Enter weight and reps first');return;}
@@ -2335,6 +2338,13 @@ async function logSet(exIdx,exName){
   saveSession();
   document.getElementById('ex-w-'+exIdx).value='';
   document.getElementById('ex-r-'+exIdx).value='';
+  // Clear failure flag
+  const rEl2=document.getElementById('ex-r-'+exIdx);
+  if(rEl2)rEl2.dataset.failure='false';
+  const failBtn=document.getElementById('ex-fail-'+exIdx);
+  if(failBtn){failBtn.style.borderColor='';failBtn.style.color='';}
+  const failLabel=document.getElementById('ex-fail-label-'+exIdx);
+  if(failLabel)failLabel.style.display='none';
   // Go live on first set logged in this session
   const totalSetsLogged=Object.values(workoutSets).reduce((t,ex)=>t+(ex.sets?.length||0),0);
   if(totalSetsLogged===1){
@@ -5049,6 +5059,37 @@ async function createChallenge() {
   document.getElementById('create-challenge-wrap')?.remove();
   toast('⚡ Challenge sent to @'+oppUsername+'!');
   openChallengesTab();
+}
+
+
+// ── Till failure toggle ───────────────────────────────────────────────────
+function toggleFailure(exIdx, exName) {
+  const rInput = document.getElementById('ex-r-' + exIdx);
+  const btn = document.getElementById('ex-fail-' + exIdx);
+  const label = document.getElementById('ex-fail-label-' + exIdx);
+  if (!rInput || !btn) return;
+  const isOn = rInput.dataset.failure === 'true';
+  if (isOn) {
+    // Turn off
+    rInput.dataset.failure = 'false';
+    rInput.disabled = false;
+    rInput.value = '';
+    rInput.placeholder = 'reps';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    btn.textContent = '💀 Till failure';
+    if (label) label.style.display = 'none';
+  } else {
+    // Turn on
+    rInput.dataset.failure = 'true';
+    rInput.disabled = true;
+    rInput.value = '';
+    rInput.placeholder = 'failure';
+    btn.style.borderColor = 'var(--red)';
+    btn.style.color = 'var(--red)';
+    btn.textContent = '💀 Till failure ✓';
+    if (label) label.style.display = 'inline';
+  }
 }
 
 // ── Online/offline status ─────────────────────────────────────
