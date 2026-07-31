@@ -1551,6 +1551,7 @@ async function refreshDashboard(){
     let weights, logs, prs, restDays;
     if(_dashCache.valid()){
       ({weights,logs,prs,restDays}=_dashCache.data);
+      if(weights.length) window._latestWeight=weights[weights.length-1].weight_lbs;
     } else {
       const[wRes,lRes,pRes,rRes]=await Promise.all([
         sb.from('weight_logs').select('*').eq('user_id',currentUser.id).order('date').limit(30), // TODO: dbGetProgressData
@@ -1563,6 +1564,8 @@ async function refreshDashboard(){
       prs=pRes.data||[];
       restDays=rRes.data||[];
       _dashCache.set({weights,logs,prs,restDays});
+      // Cache latest bodyweight for toggleBodyweight()
+      if(weights.length) window._latestWeight=weights[weights.length-1].weight_lbs;
     }
 
     // Weight stat
@@ -5069,7 +5072,7 @@ async function createChallenge() {
 // ── Bodyweight toggle — hides weight field and sets w=0 ──────────────────
 function toggleBodyweight(exIdx) {
   const wInput = document.getElementById('ex-w-' + exIdx);
-  const wLabel = wInput?.previousElementSibling; // the label div
+  const wLabel = wInput?.previousElementSibling;
   const btn = document.getElementById('ex-bw-' + exIdx);
   if (!wInput || !btn) return;
   const isOn = wInput.dataset.bodyweight === 'true';
@@ -5086,15 +5089,16 @@ function toggleBodyweight(exIdx) {
     btn.style.color = '';
     btn.textContent = '🏋️ Bodyweight';
   } else {
-    // Turn on — hide weight field, set to 0
+    // Turn on — fill with user's bodyweight from profile/weight logs
+    const userBW = window._latestWeight || parseFloat(userProfile.start_weight) || 0;
     wInput.dataset.bodyweight = 'true';
-    wInput.value = '0';
-    wInput.disabled = true;
-    wInput.style.display = 'none';
-    if (wLabel) wLabel.style.display = 'none';
+    wInput.type = 'number';
+    wInput.disabled = false;
+    wInput.value = userBW || '';
+    wInput.placeholder = userBW ? userBW + ' lbs' : 'your weight';
     btn.style.borderColor = 'var(--accent)';
     btn.style.color = 'var(--accent)';
-    btn.textContent = '🏋️ Bodyweight ✓';
+    btn.textContent = '🏋️ BW' + (userBW ? ' (' + userBW + ' lbs)' : '') + ' ✓';
   }
 }
 
