@@ -2166,6 +2166,16 @@ function buildExerciseHTML(ex, i, exData, pr, last) {
     buildLoggedSetsHTML(n, exData.sets) +
     (!exData.sets?.length ? '<div style="font-size:12px;color:var(--text3);margin-bottom:8px;padding:4px 0">No sets logged yet.</div>' : '') +
     buildOverloadHintHTML(i, n, last) +
+    // Repeat last set button — only shows if sets have been logged
+    (exData.sets?.length ? (()=>{
+      const lastSet=exData.sets[exData.sets.length-1];
+      const wDisp=lastSet.w===0?'BW':lastSet.w+'lbs';
+      const rDisp=lastSet.r;
+      return '<button onclick="repeatLastSet('+i+','+lastSet.w+','+lastSet.r+')" '+
+        'style="width:100%;padding:7px;border-radius:var(--radius);border:1px dashed var(--accent);background:var(--accent-dim);'+
+        'color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;margin-bottom:8px;text-align:center">'+
+        '↩ Repeat last: '+wDisp+' × '+rDisp+'</button>';
+    })() : '') +
     '<div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:10px">' +
     (isBodyweight ?
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
@@ -2265,6 +2275,7 @@ function saveSession(){localStorage.setItem(getSessionKey(),JSON.stringify(worko
 let workoutRestDuration=90;
 let workoutRestRemaining=90;
 let workoutRestInterval=null;
+let _lastLoggedExIdx=null; // which exercise card to show inline timer on
 
 function setWorkoutRestTime(seconds){
   workoutRestDuration=seconds;
@@ -2272,27 +2283,57 @@ function setWorkoutRestTime(seconds){
 }
 
 function startWorkoutRestTimer(){
-  const timerEl=document.getElementById('workout-rest-timer');
-  if(timerEl)timerEl.style.display='block';
-  const sel=document.getElementById('workout-rest-preset');
-  if(sel)sel.value=workoutRestDuration;
   workoutRestRemaining=workoutRestDuration;
-  updateWorkoutTimerDisplay();
+  // Remove any existing inline timer
+  document.querySelectorAll('.inline-rest-timer').forEach(el=>el.remove());
+  // Inject inline timer into the last logged exercise card
+  if(_lastLoggedExIdx!==null){
+    const card=document.getElementById('workout-content')?.querySelectorAll('.ex-drag-card')[_lastLoggedExIdx];
+    if(card){
+      const timerDiv=document.createElement('div');
+      timerDiv.className='inline-rest-timer';
+      timerDiv.style.cssText='background:var(--surface2);border:1px solid var(--accent);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px';
+      timerDiv.innerHTML=
+        '<div style="font-size:20px;font-weight:800;font-family:var(--mono);color:var(--accent);min-width:44px" id="inline-timer-display">'+formatTimerVal(workoutRestRemaining)+'</div>'+
+        '<div style="flex:1"><div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div id="inline-timer-bar" style="height:100%;background:var(--accent);border-radius:2px;transition:width 1s linear;width:100%"></div></div>'+
+        '<div style="font-size:11px;color:var(--text3);margin-top:4px" id="inline-timer-status">Rest — next set in '+workoutRestRemaining+'s</div></div>'+
+        '<div style="display:flex;gap:6px">'+
+        '<select onchange="setWorkoutRestTime(parseInt(this.value))" style="font-size:11px;padding:3px 6px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px">'+
+        '<option value="30">30s</option><option value="60">60s</option><option value="90"'+(workoutRestDuration===90?' selected':'')+'>90s</option>'+
+        '<option value="120"'+(workoutRestDuration===120?' selected':'')+'>2m</option><option value="180"'+(workoutRestDuration===180?' selected':'')+'>3m</option></select>'+
+        '<button onclick="skipRestTimer()" style="padding:4px 10px;border-radius:var(--radius);border:1px solid var(--border);background:none;color:var(--text3);font-size:11px;cursor:pointer">Skip</button>'+
+        '</div>';
+      // Insert at top of card (after the header row)
+      const header=card.querySelector('[style*="justify-content:space-between"]');
+      if(header)header.after(timerDiv);
+      else card.prepend(timerDiv);
+    }
+  }
   if(workoutRestInterval)clearInterval(workoutRestInterval);
   workoutRestInterval=setInterval(()=>{
     workoutRestRemaining--;
+    // Update inline timer
+    const disp=document.getElementById('inline-timer-display');
+    if(disp)disp.textContent=formatTimerVal(workoutRestRemaining);
+    const bar=document.getElementById('inline-timer-bar');
+    if(bar)bar.style.width=Math.round(workoutRestRemaining/workoutRestDuration*100)+'%';
+    const status=document.getElementById('inline-timer-status');
+    if(workoutRestRemaining>0&&status)status.textContent='Rest — next set in '+workoutRestRemaining+'s';
+    // Also update legacy timer if visible
     updateWorkoutTimerDisplay();
     if(workoutRestRemaining<=0){
       clearInterval(workoutRestInterval);workoutRestInterval=null;
       timerBeep();
       if(navigator.vibrate)navigator.vibrate([200,100,200]);
-      const statusEl=document.getElementById('workout-timer-status');
-      if(statusEl)statusEl.textContent='\u2705 Go time!';
-      const bar=document.getElementById('workout-timer-bar');
-      if(bar)bar.style.width='0%';
-      setTimeout(()=>{const el=document.getElementById('workout-rest-timer');if(el)el.style.display='none';},3000);
+      if(status)status.textContent='✅ Go!';
+      if(disp)disp.textContent='Go!';
+      setTimeout(()=>document.querySelectorAll('.inline-rest-timer').forEach(el=>el.remove()),2500);
     }
   },1000);
+}
+
+function formatTimerVal(s){
+  return Math.floor(s/60).toString().padStart(2,'0')+':'+(s%60).toString().padStart(2,'0');
 }
 
 function updateWorkoutTimerDisplay(){
@@ -2307,6 +2348,7 @@ function updateWorkoutTimerDisplay(){
 
 function skipRestTimer(){
   if(workoutRestInterval){clearInterval(workoutRestInterval);workoutRestInterval=null;}
+  document.querySelectorAll('.inline-rest-timer').forEach(el=>el.remove());
   const timerEl=document.getElementById('workout-rest-timer');if(timerEl)timerEl.style.display='none';
 }
 
@@ -2347,6 +2389,7 @@ async function logSet(exIdx,exName){
   if(!r){toast('Enter reps first');return;}
   if(!workoutSets[exName])workoutSets[exName]={sets:[],note:''};
   workoutSets[exName].sets.push({w,r,note:''});
+  _lastLoggedExIdx=exIdx; // track for inline timer + repeat button
   saveSession();
   document.getElementById('ex-w-'+exIdx).value='';
   document.getElementById('ex-r-'+exIdx).value='';
@@ -5073,6 +5116,20 @@ async function createChallenge() {
 
 
 // ── Bodyweight toggle — hides weight field and sets w=0 ──────────────────
+// ── Repeat last set — pre-fills inputs with last logged weight/reps ────────
+function repeatLastSet(exIdx, w, r) {
+  const wInput = document.getElementById('ex-w-' + exIdx);
+  const rInput = document.getElementById('ex-r-' + exIdx);
+  if (wInput && w !== 0) { wInput.value = w; wInput.dataset.bodyweight = 'false'; }
+  else if (wInput && w === 0) {
+    // bodyweight — trigger BW toggle
+    toggleBodyweight(exIdx);
+  }
+  if (rInput) rInput.value = r;
+  // Scroll into view and focus reps for quick edit
+  rInput?.focus();
+}
+
 function toggleBodyweight(exIdx) {
   const wInput = document.getElementById('ex-w-' + exIdx);
   const wLabel = wInput?.previousElementSibling;
