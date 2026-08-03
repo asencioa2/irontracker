@@ -2286,46 +2286,49 @@ function startWorkoutRestTimer(){
   workoutRestRemaining=workoutRestDuration;
   // Remove any existing inline timer
   document.querySelectorAll('.inline-rest-timer').forEach(el=>el.remove());
-  // Inject inline timer into the last logged exercise card
-  if(_lastLoggedExIdx!==null){
-    const card=document.getElementById('workout-content')?.querySelectorAll('.ex-drag-card')[_lastLoggedExIdx];
-    if(card){
-      const timerDiv=document.createElement('div');
-      timerDiv.className='inline-rest-timer';
-      timerDiv.style.cssText='background:var(--surface2);border:1px solid var(--accent);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px';
-      timerDiv.innerHTML=
-        '<div style="font-size:20px;font-weight:800;font-family:var(--mono);color:var(--accent);min-width:44px" id="inline-timer-display">'+formatTimerVal(workoutRestRemaining)+'</div>'+
-        '<div style="flex:1"><div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div id="inline-timer-bar" style="height:100%;background:var(--accent);border-radius:2px;transition:width 1s linear;width:100%"></div></div>'+
-        '<div style="font-size:11px;color:var(--text3);margin-top:4px" id="inline-timer-status">Rest — next set in '+workoutRestRemaining+'s</div></div>'+
-        '<div style="display:flex;gap:6px">'+
-        '<select onchange="setWorkoutRestTime(parseInt(this.value))" style="font-size:11px;padding:3px 6px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px">'+
-        '<option value="30">30s</option><option value="60">60s</option><option value="90"'+(workoutRestDuration===90?' selected':'')+'>90s</option>'+
-        '<option value="120"'+(workoutRestDuration===120?' selected':'')+'>2m</option><option value="180"'+(workoutRestDuration===180?' selected':'')+'>3m</option></select>'+
-        '<button onclick="skipRestTimer()" style="padding:4px 10px;border-radius:var(--radius);border:1px solid var(--border);background:none;color:var(--text3);font-size:11px;cursor:pointer">Skip</button>'+
-        '</div>';
-      // Insert at top of card (after the header row)
-      const header=card.querySelector('[style*="justify-content:space-between"]');
-      if(header)header.after(timerDiv);
-      else card.prepend(timerDiv);
+  // Use requestAnimationFrame so DOM is fully painted before we inject
+  requestAnimationFrame(()=>{
+    if(_lastLoggedExIdx!==null){
+      const cards=document.getElementById('workout-content')?.querySelectorAll('.ex-drag-card');
+      const card=cards?.[_lastLoggedExIdx];
+      if(card){
+        const timerDiv=document.createElement('div');
+        timerDiv.className='inline-rest-timer';
+        timerDiv.style.cssText='background:var(--surface2);border:1px solid var(--accent);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px';
+        timerDiv.innerHTML=
+          '<div style="font-size:20px;font-weight:800;font-family:var(--mono);color:var(--accent);min-width:44px" id="inline-timer-display">'+formatTimerVal(workoutRestRemaining)+'</div>'+
+          '<div style="flex:1"><div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div id="inline-timer-bar" style="height:100%;background:var(--accent);border-radius:2px;transition:width 1s linear;width:100%"></div></div>'+
+          '<div style="font-size:11px;color:var(--text3);margin-top:4px" id="inline-timer-status">Rest — next set in '+workoutRestRemaining+'s</div></div>'+
+          '<div style="display:flex;gap:6px">'+
+          '<select onchange="setWorkoutRestTime(parseInt(this.value))" style="font-size:11px;padding:3px 6px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px">'+
+          '<option value="30">30s</option><option value="60">60s</option><option value="90"'+(workoutRestDuration===90?' selected':'')+'>90s</option>'+
+          '<option value="120"'+(workoutRestDuration===120?' selected':'')+'>2m</option><option value="180"'+(workoutRestDuration===180?' selected':'')+'>3m</option></select>'+
+          '<button onclick="skipRestTimer()" style="padding:4px 10px;border-radius:var(--radius);border:1px solid var(--border);background:none;color:var(--text3);font-size:11px;cursor:pointer">Skip</button>'+
+          '</div>';
+        // Insert right after the header row (exercise name + remove button)
+        const header=card.querySelector('[style*="justify-content:space-between"]');
+        if(header)header.after(timerDiv);
+        else card.prepend(timerDiv);
+        // Scroll timer into view smoothly
+        timerDiv.scrollIntoView({behavior:'smooth',block:'nearest'});
+      }
     }
-  }
+  });
   if(workoutRestInterval)clearInterval(workoutRestInterval);
   workoutRestInterval=setInterval(()=>{
     workoutRestRemaining--;
-    // Update inline timer
     const disp=document.getElementById('inline-timer-display');
     if(disp)disp.textContent=formatTimerVal(workoutRestRemaining);
     const bar=document.getElementById('inline-timer-bar');
     if(bar)bar.style.width=Math.round(workoutRestRemaining/workoutRestDuration*100)+'%';
     const status=document.getElementById('inline-timer-status');
     if(workoutRestRemaining>0&&status)status.textContent='Rest — next set in '+workoutRestRemaining+'s';
-    // Also update legacy timer if visible
     updateWorkoutTimerDisplay();
     if(workoutRestRemaining<=0){
       clearInterval(workoutRestInterval);workoutRestInterval=null;
       timerBeep();
       if(navigator.vibrate)navigator.vibrate([200,100,200]);
-      if(status)status.textContent='✅ Go!';
+      if(status)status.textContent='\u2705 Go!';
       if(disp)disp.textContent='Go!';
       setTimeout(()=>document.querySelectorAll('.inline-rest-timer').forEach(el=>el.remove()),2500);
     }
@@ -2411,7 +2414,7 @@ async function logSet(exIdx,exName){
   const isPR=await autoPRCheck(exName,w,r);
   const wLabel=w===0?'BW':w+'lbs';
   if(!isPR)toast('Set '+(setIdx+1)+' logged: '+wLabel+' \xd7 '+r);
-  renderWorkoutContent(); // always full re-render — surgical update was placing rows incorrectly
+  await renderWorkoutContent(); // await so timer injects into the finished DOM
   // Push live sets so friends can follow along
   if(Object.values(workoutSets).some(ex=>ex?.sets?.length>0)){
     dbUpdateLiveSets(currentUser.id,workoutSets);
@@ -5222,7 +5225,7 @@ async function logDropSet(exIdx, exName) {
   document.getElementById('ex-w-' + exIdx).value = '';
   document.getElementById('ex-r-' + exIdx).value = '';
   const isPR = drops.some(async d => await autoPRCheck(exName, d.w, d.r));
-  renderWorkoutContent();
+  await renderWorkoutContent();
   startWorkoutRestTimer();
 }
 
