@@ -2325,7 +2325,7 @@ async function autoPRCheck(exName,w,r){
   }
   const isPR=!existing||w>existing.weight_lbs||(w===existing.weight_lbs&&r>existing.reps);
   if(isPR){
-    const newPR={user_id:currentUser.id,exercise:exName,weight_lbs:w,reps:r,estimated_orm:orm,date:today()};
+    const newPR={user_id:currentUser.id,exercise:exName,weight_lbs:w,reps:r,w,r,estimated_orm:orm,date:today()};
     await dbUpsertPRRecord(newPR.exercise,newPR.weight_lbs,newPR.reps,newPR.date,newPR.estimated_orm);
     sessionPRCache[exName]=newPR;
     toast('\ud83c\udfc6 NEW PR \u2014 '+exName+': '+w+'lbs \xd7 '+r);
@@ -4921,7 +4921,7 @@ function openShareCard(dayName, sets, volume) {
       prsEl.style.display='block';
       prsEl.innerHTML='<div style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:10px;padding:12px">' +
         '<div style="font-size:11px;font-weight:700;color:#c9a84c;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">🏆 New PRs today</div>' +
-        prList.map(([ex,pr])=>'<div style="font-size:13px;color:#eef0f5">'+ex+': <strong style="color:#c9a84c">'+pr.w+'lbs × '+pr.r+' reps</strong></div>').join('')+'</div>';
+        prList.map(([ex,pr])=>'<div style="font-size:13px;color:#eef0f5">'+ex+': <strong style="color:#c9a84c">'+(pr.weight_lbs||pr.w)+'lbs × '+(pr.reps||pr.r)+' reps</strong></div>').join('')+'</div>';
     } else { prsEl.style.display='none'; }
   }
   openModal('share-card-modal');
