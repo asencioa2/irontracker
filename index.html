@@ -299,6 +299,24 @@
   <div class="grid-2 mb5">
     <div class="card"><div class="section-hd"><div class="section-title">Body weight (lbs)</div></div><div class="chart-wrap"><canvas id="weight-chart"></canvas></div></div>
     <div class="card"><div class="section-hd"><div class="section-title">Weekly volume (sets × reps × weight)</div></div><div class="chart-wrap"><canvas id="volume-chart"></canvas></div></div>
+
+    <div class="card mt4">
+      <div class="section-hd">
+        <div class="section-title">💪 Muscle heatmap</div>
+        <div class="f g1">
+          <button class="btn btn-ghost btn-sm" id="hm-week-btn" onclick="renderMuscleHeatmap('week')">This week</button>
+          <button class="btn btn-ghost btn-sm" id="hm-month-btn" onclick="renderMuscleHeatmap('month')">This month</button>
+        </div>
+      </div>
+      <div class="t-sm c-mute mb4">Sets logged per muscle group — brighter means more volume.</div>
+      <div id="muscle-heatmap-grid" class="grid-2"></div>
+      <div class="f-center g3 mt3 t-xs c-mute f-wrap">
+        <span><span class="inline-block" style="width:10px;height:10px;border-radius:2px;background:var(--surface3);margin-right:4px;vertical-align:middle"></span>None</span>
+        <span><span class="inline-block" style="width:10px;height:10px;border-radius:2px;background:rgba(201,168,76,0.3);margin-right:4px;vertical-align:middle"></span>Low</span>
+        <span><span class="inline-block" style="width:10px;height:10px;border-radius:2px;background:rgba(201,168,76,0.65);margin-right:4px;vertical-align:middle"></span>Medium</span>
+        <span><span class="inline-block" style="width:10px;height:10px;border-radius:2px;background:var(--accent);margin-right:4px;vertical-align:middle"></span>High</span>
+      </div>
+    </div>
   </div>
   <div class="card mb5">
     <div class="section-hd"><div class="section-title">Personal records 🏆</div></div>
@@ -586,6 +604,7 @@
         <div id="height-hint" class="text-xs text-muted">Enter as feet/inches (5'10") or total inches (70)</div>
       </div>
       <div class="form-group"><label>Age</label><input type="number" id="set-age" placeholder="e.g. 26" min="13" max="100"></div>
+      <div class="form-group"><label>Birthday <span class="t-xs c-mute" style="text-transform:none;letter-spacing:0">— optional, keeps your age current</span></label><input type="date" id="set-dob" style="color-scheme:dark" onchange="localStorage.setItem('it_dob_'+(currentUser?.id||''),this.value)"></div>
       <div class="form-group"><label>Gender</label>
         <select id="set-gender" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px">
           <option value="">Select...</option>
@@ -1390,29 +1409,42 @@ async function confirmDeleteAccount(){
 async function onSignedIn(user,showFullLoading){
   currentUser=user;
   if(showFullLoading)loading(true,'Loading your data...');
-  document.getElementById('auth-screen').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('nav-user-email').textContent=user.email;
-  document.getElementById('settings-email').textContent=user.email;
-  document.getElementById('nav-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-  await loadProfile();
-  loadCustomSplits();
-  checkAndUpdateAge();  // auto-increment age on birthday
-  await refreshDashboard();
-  showPage('dashboard'); // Always land on dashboard on sign in
-  checkNotifications();
-  // Clear any stuck live status from a previous session that wasn't properly cleaned up
-  setLiveStatus(false,'');
-  // Handle invite link — if URL has ?invite=username auto-navigate to social+friends
-  const inviteParam=new URLSearchParams(window.location.search).get('invite');
-  if(inviteParam){
-    document.getElementById('friend-search-input').value=inviteParam;
-    showPage('social');
-    switchSocialTab('friends');
-    searchFriends();
-    window.history.replaceState({},'',window.location.pathname);
+  try {
+    // Null-guarded: not every element exists on every layout, and a missing
+    // one must never abort boot and strand the user on the loading screen.
+    const setTxt=(id,txt)=>{const e=document.getElementById(id);if(e)e.textContent=txt;};
+    const authEl=document.getElementById('auth-screen'); if(authEl)authEl.style.display='none';
+    const appEl=document.getElementById('app');          if(appEl)appEl.style.display='block';
+    setTxt('nav-user-email',user.email);
+    setTxt('settings-email',user.email);
+    setTxt('nav-date',new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
+
+    await loadProfile();
+    loadCustomSplits();
+    checkAndUpdateAge();  // auto-increment age on birthday
+    await refreshDashboard();
+    showPage('dashboard'); // Always land on dashboard on sign in
+    checkNotifications();
+    // Clear any stuck live status from a previous session
+    setLiveStatus(false,'');
+
+    // Invite link — ?invite=username jumps to Social > Friends
+    const inviteParam=new URLSearchParams(window.location.search).get('invite');
+    if(inviteParam){
+      const fs=document.getElementById('friend-search-input');
+      if(fs)fs.value=inviteParam;
+      showPage('social');
+      switchSocialTab('friends');
+      searchFriends();
+      window.history.replaceState({},'',window.location.pathname);
+    }
+  } catch(err) {
+    console.error('[onSignedIn]',err);
+    toast('Some data could not load \u2014 try refreshing');
+  } finally {
+    // Always clear the overlay, even if something above threw.
+    loading(false);
   }
-  loading(false);
 }
 
 // ============================================================
@@ -4906,13 +4938,6 @@ async function saveNotificationSettings(){
 
 
 
-function toggleObMuscle(muscle){
-  const idx=obMuscles.indexOf(muscle);
-  if(idx>-1)obMuscles.splice(idx,1);else obMuscles.push(muscle);
-  const chip=document.getElementById('ob-muscle-'+muscle.replace('/','_'));
-  if(chip)chip.classList.toggle('selected',obMuscles.includes(muscle));
-  document.getElementById('ob-muscles-next').disabled=obMuscles.length===0;
-}
 
 // Plan suggestion replaced by onboarding step 4 (Switch plan / Nevermind buttons)
 
