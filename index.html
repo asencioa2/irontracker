@@ -2322,6 +2322,45 @@ function wireWorkoutEvents() {
   });
 }
 
+// ── loadWorkoutData — all DB reads for the workout page, in parallel ─────
+async function loadWorkoutData(splitKey, dow) {
+  try {
+    const [customExercises, hiddenSet, prsRes, recentLogsRes] = await Promise.all([
+      getCustomExercises(dow),
+      getHiddenPresetExercises(splitKey, dow),
+      sb.from('personal_records').select('*').eq('user_id', currentUser.id),
+      sb.from('workout_logs').select('date,sets_data').eq('user_id', currentUser.id)
+        .eq('split_index', dow).neq('date', today())
+        .order('date', { ascending: false }).limit(1),
+    ]);
+    // A PR fetch failure should degrade the page, not blank it.
+    const prMap = {};
+    if (prsRes.error) console.warn('[loadWorkoutData PRs]', prsRes.error.message);
+    else (prsRes.data || []).forEach(p => { prMap[p.exercise] = p; });
+
+    const lastMap = {};
+    if (recentLogsRes.error) console.warn('[loadWorkoutData last]', recentLogsRes.error.message);
+    else if (recentLogsRes.data && recentLogsRes.data.length) {
+      Object.entries(recentLogsRes.data[0].sets_data || {}).forEach(([name, exData]) => {
+        if (name === '__order') return;
+        if (exData && exData.sets && exData.sets.length) {
+          const best = exData.sets.reduce((b, s) => (s.w || 0) > (b.w || 0) ? s : b, exData.sets[0]);
+          lastMap[name] = { w: best.w, r: best.r };
+        }
+      });
+    }
+    return {
+      customExercises: customExercises || [],
+      hiddenSet: hiddenSet || new Set(),
+      prMap, lastMap,
+    };
+  } catch (err) {
+    console.error('[loadWorkoutData]', err);
+    // Return empty structures so the page still renders the split.
+    return { customExercises: [], hiddenSet: new Set(), prMap: {}, lastMap: {} };
+  }
+}
+
 async function renderWorkoutContent(){
   const split = getActiveSplit();
   const sched = split.days[currentWorkoutDay];
@@ -2900,10 +2939,13 @@ function calcBF(){
 async function buildToolsCheckin(){
   try{
     const _td=await dbGetToolsPageData(currentUser.id);
-    const weekStart=getWeekStart();const thisWeek=(_td.logs||[]).filter(l=>l.date>=weekStart);
-  // Note: multiple sessions per day are all countedconst uniqueDays=[...new Set(thisWeek.map(l=>l.date))];const totalVol=thisWeek.reduce((s,l)=>s+(l.volume||0),0);
+    const weekStart=getWeekStart();
+    const thisWeek=(_td.logs||[]).filter(l=>l.date>=weekStart);
+    // Multiple sessions on one day count once toward the weekly day target.
+    const uniqueDays=[...new Set(thisWeek.map(l=>l.date))];
+    const totalVol=thisWeek.reduce((s,l)=>s+(l.volume||0),0);
     const w=_td.weights||[];let wc=null;if(w.length>=2)wc=(w[w.length-1].weight_lbs-w[w.length-2].weight_lbs).toFixed(1);
-    const weekPRs=(prs.data||[]).filter(p=>p.date>=weekStart);
+    const weekPRs=(_td.prs||[]).filter(p=>p.date>=weekStart);
     const el=document.getElementById('tools-checkin-content');if(!el)return;
     el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px"><div class="card-sm"><div class="stat-label">Sessions</div><div style="font-size:22px;font-weight:700;font-family:var(--mono)">${uniqueDays.length}<span class="t-base c-dim">/5</span></div></div><div class="card-sm"><div class="stat-label">Volume</div><div style="font-size:22px;font-weight:700;font-family:var(--mono)">${totalVol>0?(totalVol/1000).toFixed(1)+'k':'0'}<span class="t-base c-dim"> lbs</span></div></div><div class="card-sm"><div class="stat-label">Weight change</div><div style="font-size:22px;font-weight:700;font-family:var(--mono);color:${wc<=0?'var(--accent)':'var(--red)'}">${wc!==null?(wc>0?'+':'')+wc:'--'}<span class="t-base"> lbs</span></div></div><div class="card-sm"><div class="stat-label">New PRs</div><div style="font-size:22px;font-weight:700;font-family:var(--mono);color:var(--amber)">${weekPRs.length}</div></div></div>${weekPRs.length?'<div class="t-sm c-dim"><strong class="c-amber">PRs this week:</strong> '+weekPRs.map(p=>`${p.exercise} -- ${p.weight_lbs}lbs x ${p.reps}`).join(', ')+'</div>':''}`;
 
@@ -3638,9 +3680,9 @@ async function sendWorkoutNotificationToFriends(friends,type){
 
 async function checkNotifications(){
   if(!currentUser)return;
-  const _notifCount=await dbGetNotifCount(currentUser.id);
+  const count=await dbGetNotifCount(currentUser.id);
   const badge=document.getElementById('feed-badge');
-  if(badge){badge.style.display=(data&&data.length)?'block':'none';}
+  if(badge)badge.style.display=count>0?'block':'none';
 }
 
 async function markNotificationsRead(){
@@ -4126,7 +4168,7 @@ function buildSupplementCardHTML(s) {
 
 
 function renderSupplementRecs(goal, activity, weight, proteinTarget) {
-  const relevant = (SUPPLEMENT_DATABASE || [])
+  const relevant = getSupplementDatabase(proteinTarget, activity)
     .filter(s => s.goals.includes(goal) || s.goals.includes('maintain'))
     .sort((a, b) => ({ essential:0, recommended:1, optional:2 }[a.priority]||2) - ({ essential:0, recommended:1, optional:2 }[b.priority]||2));
   const el = document.getElementById('plan-supplements');
@@ -5342,38 +5384,44 @@ document.addEventListener('DOMContentLoaded',()=>{
     navigator.serviceWorker.register('/sw.js').then(reg=>{
       console.log('[IronTracker] SW registered:', reg.scope);
 
-      // When a new SW installs, it calls skipWaiting() itself.
-      // This listener is a fallback in case it needs a nudge.
+      // ── ONE reload path, guarded ──────────────────────────────────────
+      // Previously both the SW_UPDATED message AND controllerchange each
+      // triggered a reload, so every update reloaded the page twice — the
+      // second one often landing mid-load. Both now funnel through this.
+      let _reloading = false;
+      function reloadOnce(reason){
+        if(_reloading) return;
+        // A page with no controller is a first install, not an update —
+        // there is nothing stale to reload for.
+        if(!navigator.serviceWorker.controller) return;
+        _reloading = true;
+        console.log('[IronTracker] reloading for new version:', reason);
+        window.location.reload();
+      }
+
       reg.addEventListener('updatefound',()=>{
         const newWorker=reg.installing;
         if(!newWorker)return;
         newWorker.addEventListener('statechange',()=>{
           if(newWorker.state==='installed'&&navigator.serviceWorker.controller){
-            console.log('[IronTracker] New SW installed, activating...');
             newWorker.postMessage({type:'SKIP_WAITING'});
           }
         });
       });
 
-      // SW sends SW_UPDATED after it takes control of all tabs — reload to get new files
       navigator.serviceWorker.addEventListener('message',event=>{
-        if(event.data?.type==='SW_UPDATED'){
-          console.log('[IronTracker] Updated to',event.data.version,'— reloading in 1s');
-          setTimeout(()=>window.location.reload(),1000);
-        }
+        if(event.data&&event.data.type==='SW_UPDATED') reloadOnce('sw message');
       });
+      navigator.serviceWorker.addEventListener('controllerchange',()=>reloadOnce('controllerchange'));
 
-      // Also handle controllerchange (belt-and-suspenders)
-      let _swRefreshing=false;
-      navigator.serviceWorker.addEventListener('controllerchange',()=>{
-        if(_swRefreshing)return;
-        _swRefreshing=true;
-        window.location.reload();
-      });
-
-      // Check for SW updates every time app comes back to foreground
+      // Check for updates when the app returns to the foreground, but at most
+      // once every 5 minutes — this fired on every single tab focus before.
+      let _lastUpdateCheck = Date.now();
       document.addEventListener('visibilitychange',()=>{
-        if(document.visibilityState==='visible')reg.update();
+        if(document.visibilityState!=='visible') return;
+        if(Date.now()-_lastUpdateCheck < 300000) return;
+        _lastUpdateCheck = Date.now();
+        reg.update();
       },{passive:true});
 
     }).catch(err=>{
@@ -5385,12 +5433,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   const mobileNav=document.getElementById('mobile-nav');
   if(mobileNav){
     mobileNav.addEventListener('touchstart',()=>{}, {passive:true});
-    // Also periodically nudge the nav to keep GPU layer alive
-    setInterval(()=>{
-      if(mobileNav){
-        mobileNav.style.transform='translateZ(0)';
-      }
-    }, 10000);
+    // (Removed a 10s interval that re-applied translateZ(0) forever — the CSS
+    // already sets transform + will-change statically, so it only forced a
+    // needless style recalc on a fixed element every 10 seconds.)
   }
 });
 
