@@ -2422,12 +2422,18 @@ function setWorkoutRestTime(seconds){
   if(workoutRestInterval){clearInterval(workoutRestInterval);workoutRestInterval=null;startWorkoutRestTimer();}
 }
 
+let _restTimerRaf=null;
 function startWorkoutRestTimer(){
   workoutRestRemaining=workoutRestDuration;
-  // Remove any existing inline timer
-  document.querySelectorAll('.inline-rest-timer').forEach(el=>el.remove());
+  // Cancel a pending injection from a previous call. Without this, rapid
+  // calls each queue their own rAF and every one injects a timer, because
+  // the cleanup below had already run before any of them fired.
+  if(_restTimerRaf!==null){cancelAnimationFrame(_restTimerRaf);_restTimerRaf=null;}
   // Use requestAnimationFrame so DOM is fully painted before we inject
-  requestAnimationFrame(()=>{
+  _restTimerRaf=requestAnimationFrame(()=>{
+    _restTimerRaf=null;
+    // Clear inside the callback so it is always the last thing before insert
+    document.querySelectorAll('.inline-rest-timer').forEach(el=>el.remove());
     if(_lastLoggedExIdx!==null){
       const cards=document.getElementById('workout-content')?.querySelectorAll('.ex-drag-card');
       const card=cards?.[_lastLoggedExIdx];
@@ -2490,6 +2496,7 @@ function updateWorkoutTimerDisplay(){
 }
 
 function skipRestTimer(){
+  if(_restTimerRaf!==null){cancelAnimationFrame(_restTimerRaf);_restTimerRaf=null;}
   if(workoutRestInterval){clearInterval(workoutRestInterval);workoutRestInterval=null;}
   document.querySelectorAll('.inline-rest-timer').forEach(el=>el.remove());
   const timerEl=document.getElementById('workout-rest-timer');if(timerEl)timerEl.style.display='none';
@@ -5272,56 +5279,53 @@ function repeatLastSet(exIdx, w, r) {
 function toggleBodyweight(exIdx) {
   const wInput = document.getElementById('ex-w-' + exIdx);
   const wLabel = wInput?.previousElementSibling;
-  const btn = document.getElementById('ex-bw-' + exIdx);
+  const btn    = document.getElementById('ex-bw-' + exIdx);
   if (!wInput || !btn) return;
   const isOn = wInput.dataset.bodyweight === 'true';
   if (isOn) {
-    // Turn off — restore weight field
     wInput.dataset.bodyweight = 'false';
-    wInput.type = 'number';
     wInput.disabled = false;
     wInput.value = '';
     wInput.placeholder = 'lbs';
     wInput.style.display = '';
     if (wLabel) wLabel.style.display = '';
-    btn.style.borderColor = '';
-    btn.style.color = '';
-    btn.textContent = '🏋️ Bodyweight';
+    btn.classList.remove('on');
+    btn.textContent = '\ud83c\udfcb\ufe0f Bodyweight';
   } else {
-    // Turn on — fill with user's bodyweight from profile/weight logs
+    // Seed with the user's most recent logged bodyweight
     const userBW = window._latestWeight || parseFloat(userProfile.start_weight) || 0;
     wInput.dataset.bodyweight = 'true';
-    wInput.type = 'number';
     wInput.disabled = false;
     wInput.value = userBW || '';
     wInput.placeholder = userBW ? userBW + ' lbs' : 'your weight';
-    btn.style.borderColor = 'var(--accent)';
-    btn.style.color = 'var(--accent)';
-    btn.textContent = '🏋️ BW' + (userBW ? ' (' + userBW + ' lbs)' : '') + ' ✓';
+    btn.classList.add('on');
+    btn.textContent = '\ud83c\udfcb\ufe0f BW' + (userBW ? ' ' + userBW + ' lbs' : '') + ' \u2713';
   }
 }
 
 // ── Drop set toggle ───────────────────────────────────────────────────────
 function toggleDropSet(exIdx, exName) {
-  const ui = document.getElementById('ex-dropset-ui-' + exIdx);
+  const ui  = document.getElementById('ex-dropset-ui-' + exIdx);
   const btn = document.getElementById('ex-drop-' + exIdx);
   if (!ui || !btn) return;
-  const isOn = !ui.classList.contains('hidden');
-  if (isOn) {
-    ui.style.display = 'none';
-    btn.style.borderColor = '';
-    btn.style.color = '';
-    btn.textContent = '📉 Drop set';
-    document.getElementById('ex-drops-' + exIdx).innerHTML = '';
+  // Read AND write the same source of truth (the .hidden class). Previously
+  // this read the class but wrote inline style.display, so isOn was always
+  // false — the panel could never be closed and each tap appended a drop row.
+  const isOpen = !ui.classList.contains('hidden');
+  if (isOpen) {
+    ui.classList.add('hidden');
+    btn.classList.remove('on');
+    btn.textContent = '\ud83d\udcc9 Drop set';
+    const drops = document.getElementById('ex-drops-' + exIdx);
+    if (drops) drops.innerHTML = '';
   } else {
-    ui.style.display = 'block';
-    btn.style.borderColor = 'var(--accent)';
-    btn.style.color = 'var(--accent)';
-    btn.textContent = '📉 Drop set ✓';
-    // Pre-fill first drop with current inputs
-    const w = document.getElementById('ex-w-' + exIdx)?.value || '';
-    const r = document.getElementById('ex-r-' + exIdx)?.value || '';
-    addDrop(exIdx, w, r);
+    ui.classList.remove('hidden');
+    btn.classList.add('on');
+    btn.textContent = '\ud83d\udcc9 Drop set \u2713';
+    // Seed the first drop from whatever is currently typed in
+    const wv = document.getElementById('ex-w-' + exIdx)?.value || '';
+    const rv = document.getElementById('ex-r-' + exIdx)?.value || '';
+    addDrop(exIdx, wv, rv);
   }
 }
 
