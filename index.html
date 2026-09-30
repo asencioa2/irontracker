@@ -135,10 +135,10 @@
     </div>
   </div>
   <div class="grid-4 mb5">
-    <div class="stat-card"><div class="stat-label">Body weight</div><div class="stat-value" id="stat-weight">—<span class="stat-unit">lbs</span></div><div class="stat-delta" id="stat-weight-delta"></div></div>
-    <div class="stat-card"><div class="stat-label">Workouts this week</div><div class="stat-value text-mono" id="stat-weekly">0<span class="stat-unit">/5</span></div><div class="t-sm c-mute mt1" id="stat-weekly-sub"></div></div>
-    <div class="stat-card"><div class="stat-label">Current streak</div><div class="stat-value text-mono" id="stat-streak">0<span class="stat-unit">days</span></div></div>
-    <div class="stat-card"><div class="stat-label">Total sessions</div><div class="stat-value text-mono" id="stat-total">0</div></div>
+    <div class="stat-card"><div class="stat-label">Body weight</div><div class="stat-value" id="stat-weight">—<span class="stat-unit">lbs</span></div><div class="stat-delta" id="stat-weight-delta"></div><div class="spark" id="spark-weight"></div></div>
+    <div class="stat-card"><div class="stat-label">Workouts this week</div><div class="stat-value text-mono" id="stat-weekly">0<span class="stat-unit">/5</span></div><div class="stat-delta c-mute" id="stat-weekly-sub"></div><div class="spark" id="spark-week"></div></div>
+    <div class="stat-card"><div class="stat-label">Current streak</div><div class="stat-value text-mono" id="stat-streak">0<span class="stat-unit">days</span></div><div class="stat-delta" id="stat-streak-sub"></div><div class="spark" id="spark-streak"></div></div>
+    <div class="stat-card"><div class="stat-label">Total sessions</div><div class="stat-value text-mono" id="stat-total">0</div><div class="stat-delta" id="stat-total-sub"></div><div class="spark" id="spark-total"></div></div>
   </div>
   <div class="grid-2 mb5">
     <div class="card">
@@ -1536,6 +1536,35 @@ const _dashCache = {
 // Call this after any write that affects dashboard numbers
 function invalidateDashboard() { _dashCache.invalidate(); }
 
+// ── Sparkline renderer ───────────────────────────────────────────────────
+// vals: array of numbers. Last bar is highlighted. Flat/empty data renders
+// as low stubs rather than a misleading full-height bar.
+function renderSpark(elId, vals) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!vals || !vals.length) { el.innerHTML = ''; return; }
+  const max = Math.max(...vals);
+  const min = Math.min(...vals);
+  const range = max - min;
+  el.innerHTML = vals.map((v, i) => {
+    // when all values are equal, show a consistent mid bar
+    const pct = range === 0 ? (max > 0 ? 55 : 8) : 12 + ((v - min) / range) * 88;
+    const now = i === vals.length - 1 ? ' class="now"' : '';
+    return '<i' + now + ' style="height:' + pct.toFixed(0) + '%"></i>';
+  }).join('');
+}
+
+// Last 7 calendar dates ending today, as YYYY-MM-DD
+function last7Dates() {
+  const out = [];
+  for (let d = 6; d >= 0; d--) {
+    const dt = new Date();
+    dt.setDate(dt.getDate() - d);
+    out.push(dt.toISOString().split('T')[0]);
+  }
+  return out;
+}
+
 async function refreshDashboard(){
   try{
     const hour=new Date().getHours();
@@ -1568,27 +1597,65 @@ async function refreshDashboard(){
       if(weights.length) window._latestWeight=weights[weights.length-1].weight_lbs;
     }
 
-    // Weight stat
+    const setEl=(id,html)=>{const e=document.getElementById(id);if(e)e.innerHTML=html;};
+    const days7=last7Dates();
+    const trainedDates=new Set(logs.map(l=>l.date));
+
+    // ── Body weight ──
     if(weights.length){
       const last=weights[weights.length-1];
-      document.getElementById('stat-weight')&&(document.getElementById('stat-weight').innerHTML=`${last.weight_lbs}<span class="stat-unit">lbs</span>`);
+      setEl('stat-weight',`${last.weight_lbs}<span class="stat-unit">lbs</span>`);
       if(weights.length>1){
-        const diff=(last.weight_lbs-weights[weights.length-2].weight_lbs).toFixed(1);
-        document.getElementById('stat-weight-delta')&&(document.getElementById('stat-weight-delta').innerHTML=`<span class="${diff<=0?'delta-pos':'delta-neg'}">${diff>0?'+':''}${diff} lbs</span>`);
+        const diff=+(last.weight_lbs-weights[0].weight_lbs).toFixed(1);
+        const arrow=diff<0?'\u2193':diff>0?'\u2191':'\u2192';
+        const cls=diff<0?'c-green':diff>0?'c-red':'c-mute';
+        const span=weights.length>=2?' over last '+weights.length+' entries':'';
+        setEl('stat-weight-delta',`<span class="${cls}">${arrow} ${Math.abs(diff)} lbs${span}</span>`);
       }
+      renderSpark('spark-weight',weights.slice(-7).map(w=>w.weight_lbs));
     }
 
-    // Weekly workouts
+    // ── Workouts this week ──
     const weekStart=getWeekStart();
     const thisWeek=logs.filter(l=>l.date>=weekStart);
     const uniqueDays=[...new Set(thisWeek.map(l=>l.date))];
-    document.getElementById('stat-weekly')&&(document.getElementById('stat-weekly').innerHTML=`${uniqueDays.length}<span class="stat-unit">/5</span>`);
-    document.getElementById('stat-weekly-sub').textContent=`${Math.max(0,5-uniqueDays.length)} remaining this week`;
+    setEl('stat-weekly',`${uniqueDays.length}<span class="stat-unit">/ 5</span>`);
+    const left=Math.max(0,5-uniqueDays.length);
+    setEl('stat-weekly-sub',left===0?'<span class="c-green">\u2713 week complete</span>':`${left} session${left!==1?'s':''} left`);
+    renderSpark('spark-week',days7.map(d=>trainedDates.has(d)?1:0));
 
-    // Streak & total
+    // ── Streak ──
     const streak=calcStreak(logs,restDays);
-    document.getElementById('stat-streak')&&(document.getElementById('stat-streak').innerHTML=`${streak}<span class="stat-unit">days</span>`);
-    document.getElementById('stat-total').textContent=[...new Set(logs.map(l=>l.date))].length;
+    setEl('stat-streak',`${streak}<span class="stat-unit">days</span>`);
+    // longest streak seen, for context
+    const sortedDates=[...trainedDates].sort();
+    let best=0,run=0,prev=null;
+    sortedDates.forEach(d=>{
+      if(prev&&(new Date(d)-new Date(prev))/86400000<=1.5)run++;else run=1;
+      if(run>best)best=run;prev=d;
+    });
+    setEl('stat-streak-sub',streak>0&&streak>=best?'<span class="c-accent">\u2191 personal best</span>':best>0?`best: ${best} days`:'');
+    // trailing 7-day cumulative streak shape
+    let acc=0;
+    renderSpark('spark-streak',days7.map(d=>{acc=trainedDates.has(d)?acc+1:0;return acc;}));
+
+    // ── Total sessions ──
+    const totalSessions=trainedDates.size;
+    setEl('stat-total',String(totalSessions));
+    // sessions per week over the last 7 weeks
+    const weekly=[];
+    for(let w=6;w>=0;w--){
+      const s=new Date();s.setDate(s.getDate()-(w*7)-6);
+      const e=new Date();e.setDate(e.getDate()-(w*7));
+      const ss=s.toISOString().split('T')[0],es=e.toISOString().split('T')[0];
+      weekly.push([...trainedDates].filter(d=>d>=ss&&d<=es).length);
+    }
+    const thisW=weekly[6],lastW=weekly[5];
+    setEl('stat-total-sub',
+      lastW>0&&thisW>lastW?`<span class="c-green">\u2191 ${thisW-lastW} vs last week</span>`:
+      lastW>0&&thisW<lastW?`<span class="c-red">\u2193 ${lastW-thisW} vs last week</span>`:
+      `${thisW} this week`);
+    renderSpark('spark-total',weekly);
 
     // Split progress badge
     const nextIdx2=await getNextSplitIndex();
