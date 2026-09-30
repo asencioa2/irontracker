@@ -252,23 +252,20 @@ canvas{width:100%!important;}
   display:flex;
   align-items:stretch;
   width:100%;
-  overflow-x:auto;
-  overflow-y:hidden;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none; /* Firefox */
-  scroll-snap-type:x proximity;
+  /* exactly 5 items now — no horizontal scrolling needed */
+  overflow:hidden;
 }
 .mobile-nav-inner::-webkit-scrollbar{display:none;} /* Chrome/Safari */
 .mobile-nav-btn{
-  flex:0 0 calc(100% / 5); /* show 5 at a time */
-  min-width:56px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  flex:1 1 0;
+  min-width:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
   border:none;background:none;color:var(--text3);cursor:pointer;
-  font-family:var(--font);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;
+  font-family:var(--font);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;
   transition:color 0.15s;padding:6px 2px;
   touch-action:manipulation;
   min-height:48px;
-  scroll-snap-align:start;
+  white-space:nowrap;
 }
 .mobile-nav-btn.active{color:var(--accent);}
 .mobile-nav-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
@@ -699,3 +696,30 @@ canvas{width:100%!important;}
 .timer-bar{height:3px;background:rgba(201,168,76,0.2);border-radius:2px;overflow:hidden;margin-bottom:5px;}
 .timer-fill{height:100%;background:var(--accent);border-radius:2px;transition:width 1s linear;}
 .sep{border-top:1px solid var(--border);padding-top:var(--s5);margin-bottom:var(--s5);}
+
+
+/* ── Settings gear (replaces the Settings nav tab) ───────────────── */
+.nav-gear{
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  border-radius:8px;border:1px solid transparent;background:none;
+  color:var(--text3);cursor:pointer;transition:color .15s,background .15s,border-color .15s;
+  flex-shrink:0;
+}
+.nav-gear svg{width:18px;height:18px;}
+.nav-gear:hover{color:var(--text);background:var(--surface2);}
+.nav-gear.active{color:var(--accent);background:var(--accent-dim);border-color:rgba(201,168,76,0.25);}
+
+/* ── Sub-tab bar inside Progress / History / Tools ───────────────── */
+.subnav{
+  display:flex;gap:var(--s1);background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:var(--s1);margin-bottom:var(--s5);
+}
+.subnav-btn{
+  flex:1;padding:8px 0;border-radius:7px;border:none;background:none;
+  color:var(--text3);font-family:var(--font);font-size:var(--t-xs);
+  font-weight:700;text-transform:uppercase;letter-spacing:0.05em;
+  cursor:pointer;transition:color .15s,background .15s;
+}
+.subnav-btn:hover{color:var(--text);}
+.subnav-btn.active{color:var(--accent);background:var(--accent-dim);}

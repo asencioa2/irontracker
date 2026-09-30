@@ -88,18 +88,17 @@
 <nav class="nav">
   <div class="nav-logo"><div class="nav-logo-icon">IT</div><span>Iron</span>Tracker</div>
   <div class="nav-tabs">
-    <button class="nav-tab active" onclick="showPage('dashboard')" data-page="dashboard">Dashboard</button>
-    <button class="nav-tab" onclick="showPage('workout')" data-page="workout">Workout</button>
-    <button class="nav-tab" onclick="showPage('social')" data-page="social">Social</button>
+    <button class="nav-tab active" onclick="showPage('dashboard')" data-page="dashboard">Home</button>
+    <button class="nav-tab" onclick="showPage('workout')" data-page="workout">Train</button>
     <button class="nav-tab" onclick="showPage('nutrition')" data-page="nutrition">Nutrition</button>
     <button class="nav-tab" onclick="showPage('progress')" data-page="progress">Progress</button>
-    <button class="nav-tab" onclick="showPage('tools')" data-page="tools">Tools</button>
-    <button class="nav-tab" onclick="showPage('settings')" data-page="settings">Settings</button>
-    <button class="nav-tab" onclick="showPage('history')" data-page="history">History</button>
+    <button class="nav-tab" onclick="showPage('social')" data-page="social">Social</button>
   </div>
   <div class="nav-right">
-    <span class="nav-user" id="nav-user-email"></span>
     <span class="nav-user" id="nav-date"></span>
+    <button class="nav-gear" onclick="showPage('settings')" data-page="settings" title="Settings" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.35.4.64.73.83H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
     <button class="btn-signout" onclick="signOut()">Sign out</button>
   </div>
 </nav>
@@ -117,7 +116,12 @@
     <div class="mobile-header-logo-icon">IT</div>
     <span>Iron</span>Tracker
   </div>
-  <button class="btn-signout" onclick="signOut()">Sign out</button>
+  <div class="f-center g2">
+    <button class="nav-gear" onclick="showPage('settings')" data-page="settings" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.35.4.64.73.83H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+    <button class="btn-signout" onclick="signOut()">Sign out</button>
+  </div>
 </div>
 
 
@@ -282,6 +286,12 @@
 
 <!-- PROGRESS -->
 <div id="page-progress" class="page">
+  <div class="subnav">
+    <button class="subnav-btn active" onclick="showPage('progress')">Overview</button>
+    <button class="subnav-btn" onclick="showPage('history')">History</button>
+    <button class="subnav-btn" onclick="showPage('tools')">Tools</button>
+  </div>
+
   <div class="f-between mb5">
     <div class="t-lg w8">Progress tracker</div>
     <button class="btn btn-primary" onclick="openWeightModal()">+ Log weight</button>
@@ -408,6 +418,12 @@
 </div>
 
 <div id="page-tools" class="page">
+  <div class="subnav">
+    <button class="subnav-btn" onclick="showPage('progress')">Overview</button>
+    <button class="subnav-btn" onclick="showPage('history')">History</button>
+    <button class="subnav-btn active" onclick="showPage('tools')">Tools</button>
+  </div>
+
   <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Tools</div>
   <div style="font-size:26px;font-weight:800;letter-spacing:-0.01em;margin-bottom:24px">Training tools</div>
   <div class="grid-2 mb5">
@@ -505,6 +521,12 @@
 
 <!-- HISTORY -->
 <div id="page-history" class="page">
+  <div class="subnav">
+    <button class="subnav-btn" onclick="showPage('progress')">Overview</button>
+    <button class="subnav-btn active" onclick="showPage('history')">History</button>
+    <button class="subnav-btn" onclick="showPage('tools')">Tools</button>
+  </div>
+
   <div class="f-between mb5">
     <div class="t-lg w8">Workout history</div>
     <div class="f g2">
@@ -721,11 +743,7 @@
   </button>
   <button class="mobile-nav-btn" onclick="showPage('workout')" data-mob="workout">
     <svg viewBox="0 0 24 24"><path d="M6.5 6.5h11M6.5 17.5h11M4 12h16M2 9l2 3-2 3M22 9l-2 3 2 3"/></svg>
-    Workout
-  </button>
-  <button class="mobile-nav-btn" onclick="showPage('history')" data-mob="history">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/><path d="M3.5 5.5L6 8M3.5 18.5L6 16"/></svg>
-    History
+    Train
   </button>
   <button class="mobile-nav-btn" onclick="showPage('nutrition')" data-mob="nutrition">
     <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 4-3 6.5-7 13C8 15.5 5 13 5 9a7 7 0 0 1 7-7z"/></svg>
@@ -738,14 +756,6 @@
   <button class="mobile-nav-btn" onclick="showPage('social')" data-mob="social" style="position:relative">
     <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
     Social<span id="feed-badge" style="display:none;position:absolute;top:4px;right:8px;background:var(--red);color:#fff;font-size:9px;border-radius:99px;padding:1px 5px">●</span>
-  </button>
-  <button class="mobile-nav-btn" onclick="showPage('tools')" data-mob="tools">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-    Tools
-  </button>
-  <button class="mobile-nav-btn" onclick="showPage('settings')" data-mob="settings">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
-    Settings
   </button>
   </div>
 </nav>
@@ -1497,9 +1507,13 @@ function showPage(id){
   var pg=document.getElementById('page-'+id);
   if(!pg)return;
   pg.classList.add('active');
-  var dt=document.querySelector('[data-page="'+id+'"]');if(dt)dt.classList.add('active');
-  var mb=document.querySelector('[data-mob="'+id+'"]');
+  // History and Tools live under the Progress nav item
+  var navId = (id==='history'||id==='tools') ? 'progress' : id;
+  var dt=document.querySelector('[data-page="'+navId+'"]');if(dt)dt.classList.add('active');
+  var mb=document.querySelector('[data-mob="'+navId+'"]');
   if(mb){mb.classList.add('active');mb.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}
+  // Settings gear lives outside the tab row — highlight it separately
+  document.querySelectorAll('.nav-gear').forEach(g=>g.classList.toggle('active', id==='settings'));
   window.scrollTo({top:0,behavior:'smooth'});
   // Stop live poll unless going to social
   if(id!=='social')stopLivePoll();
