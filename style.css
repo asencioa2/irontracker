@@ -70,12 +70,29 @@ body{
 .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
 
 /* STAT CARDS */
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden;}
-.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent);}
-.stat-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;}
-.stat-value{font-size:28px;font-weight:700;color:var(--text);letter-spacing:-0.02em;font-family:var(--mono);}
-.stat-unit{font-size:13px;color:var(--text2);margin-left:3px;font-family:var(--font);font-weight:400;}
-.stat-delta{font-size:12px;margin-top:4px;}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:var(--s4);
+  display:flex;flex-direction:column;gap:var(--s1);
+  transition:border-color 0.15s;
+}
+.stat-card:hover{border-color:var(--border2);}
+.stat-label{
+  font-size:10px;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:0.09em;
+  display:flex;align-items:center;gap:5px;
+}
+.stat-value{
+  font-size:var(--t-xl);font-weight:800;color:var(--text);
+  letter-spacing:-0.03em;font-family:var(--mono);line-height:1.1;
+}
+.stat-unit{font-size:var(--t-sm);color:var(--text3);margin-left:2px;font-family:var(--font);font-weight:400;}
+.stat-delta{font-size:var(--t-xs);font-weight:600;display:flex;align-items:center;gap:4px;}
+
+/* 7-day sparkline inside a stat card */
+.spark{height:22px;display:flex;align-items:flex-end;gap:2px;margin-top:var(--s1);}
+.spark i{flex:1;background:var(--accent);opacity:0.3;border-radius:1px;min-height:2px;}
+.spark i.now{opacity:1;}
 .delta-pos{color:var(--accent);}
 .delta-neg{color:var(--red);}
 
@@ -439,3 +456,246 @@ canvas{width:100%!important;}
 /* Error/warning banner */
 .banner-warn{padding:12px;background:var(--amber-dim);border:1px solid rgba(232,148,74,0.3);border-radius:var(--radius);font-size:13px;color:var(--amber);line-height:1.5;}
 .banner-info{padding:12px;background:var(--blue-dim);border:1px solid rgba(77,143,212,0.25);border-radius:var(--radius);font-size:13px;color:var(--blue);line-height:1.5;}
+
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN SYSTEM — added during redesign
+   Scales replace the ad-hoc values that were scattered inline.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Spacing scale — 4px base, no arbitrary values */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+
+  /* Type scale — 1.125 ratio, rounded to whole px */
+  --t-xs:11px;   /* labels, meta */
+  --t-sm:12px;   /* secondary text */
+  --t-base:14px; /* body */
+  --t-md:16px;   /* emphasis */
+  --t-lg:20px;   /* section values */
+  --t-xl:26px;   /* stat values */
+  --t-2xl:34px;  /* hero numbers */
+
+  /* Line heights */
+  --lh-tight:1.2; --lh-base:1.5;
+
+  /* Elevation */
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.35);
+}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+.f{display:flex;}
+.f-col{display:flex;flex-direction:column;}
+.f-center{display:flex;align-items:center;}
+.f-between{display:flex;align-items:center;justify-content:space-between;}
+.f-start{display:flex;align-items:flex-start;}
+.f-wrap{flex-wrap:wrap;}
+.flex1{flex:1;min-width:0;}
+.f-noshrink{flex-shrink:0;}
+.hidden{display:none;}
+.w-full{width:100%;}
+
+/* ── Gap ────────────────────────────────────────────────────── */
+.g1{gap:var(--s1);} .g2{gap:var(--s2);} .g3{gap:var(--s3);} .g4{gap:var(--s4);}
+
+/* ── Margin bottom ──────────────────────────────────────────── */
+.mb1{margin-bottom:var(--s1);} .mb2{margin-bottom:var(--s2);}
+.mb3{margin-bottom:var(--s3);} .mb4{margin-bottom:var(--s4);}
+.mb5{margin-bottom:var(--s5);} .mb6{margin-bottom:var(--s6);}
+.mb0{margin-bottom:0;}
+
+/* ── Margin top ─────────────────────────────────────────────── */
+.mt1{margin-top:var(--s1);} .mt2{margin-top:var(--s2);}
+.mt3{margin-top:var(--s3);} .mt4{margin-top:var(--s4);}
+.mt5{margin-top:var(--s5);}
+
+/* ── Padding ────────────────────────────────────────────────── */
+.p2{padding:var(--s2);} .p3{padding:var(--s3);}
+.p4{padding:var(--s4);} .p5{padding:var(--s5);}
+
+/* ── Type size ──────────────────────────────────────────────── */
+.t-xs{font-size:var(--t-xs);} .t-sm{font-size:var(--t-sm);}
+.t-base{font-size:var(--t-base);} .t-md{font-size:var(--t-md);}
+.t-lg{font-size:var(--t-lg);} .t-xl{font-size:var(--t-xl);}
+.t-2xl{font-size:var(--t-2xl);}
+
+/* ── Type weight ────────────────────────────────────────────── */
+.w6{font-weight:600;} .w7{font-weight:700;} .w8{font-weight:800;}
+
+/* ── Type color ─────────────────────────────────────────────── */
+.c-text{color:var(--text);}   .c-dim{color:var(--text2);}
+.c-mute{color:var(--text3);}  .c-accent{color:var(--accent);}
+.c-red{color:var(--red);}     .c-green{color:var(--green);}
+.c-amber{color:var(--amber);} .c-blue{color:var(--blue);}
+
+/* ── Type treatment ─────────────────────────────────────────── */
+.mono{font-family:var(--mono);}
+.center{text-align:center;}
+.nowrap{white-space:nowrap;}
+.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* Small caps label — used everywhere for field labels and section meta */
+.label{
+  font-size:var(--t-xs);font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:0.07em;
+}
+
+/* ── Surfaces ───────────────────────────────────────────────── */
+.surf{background:var(--surface2);}
+.surf3{background:var(--surface3);}
+.bare{background:none;border:none;}
+.bordered{border:1px solid var(--border);}
+.rounded{border-radius:var(--radius);}
+.rounded-lg{border-radius:var(--radius-lg);}
+
+/* Tinted callout boxes — replaces hand-rolled accent-dim divs */
+.tint{background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--radius);padding:var(--s3);}
+.tint-red{background:var(--red-dim);border:1px solid var(--red);border-radius:var(--radius);padding:var(--s3);}
+.tint-blue{background:var(--blue-dim);border:1px solid var(--blue);border-radius:var(--radius);padding:var(--s3);}
+
+/* ── Interaction ────────────────────────────────────────────── */
+.clickable{cursor:pointer;}
+.clickable:active{transform:scale(0.985);}
+
+/* ── Composed blocks ────────────────────────────────────────── */
+
+/* Empty state — was 6 different hand-written versions */
+.empty{
+  text-align:center;color:var(--text3);
+  font-size:var(--t-base);padding:var(--s6) var(--s4);line-height:var(--lh-base);
+}
+
+/* A row of key/value data, e.g. a logged set */
+.data-row{
+  display:flex;align-items:center;gap:var(--s2);
+  padding:var(--s2) var(--s3);background:var(--surface2);
+  border:1px solid var(--border);border-radius:var(--radius);
+  margin-bottom:var(--s1);
+}
+
+/* Toggle button used for Bodyweight / Drop set etc */
+.toggle-btn{
+  flex:1;padding:var(--s2) 0;border-radius:var(--radius);
+  border:1px solid var(--border);background:none;color:var(--text3);
+  font-size:var(--t-xs);font-weight:600;cursor:pointer;
+  font-family:var(--font);transition:border-color 0.15s,color 0.15s;
+}
+.toggle-btn:active{transform:scale(0.98);}
+.toggle-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+.toggle-btn.on-red{border-color:var(--red);color:var(--red);background:var(--red-dim);}
+
+/* ── Added in conversion pass 2 ──────────────────────────────── */
+.text-right{text-align:right;}
+.inline-block{display:inline-block;}
+.pbar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.pbar-fill{height:100%;background:var(--accent);border-radius:2px;transition:width 1s linear;width:100%;}
+
+
+/* ═══ EXERCISE CARD — structured sections instead of floating margins ═══ */
+.ex-drag-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);overflow:hidden;
+  padding:0 !important;            /* sections own their own padding */
+  margin-bottom:var(--s3);
+  transition:border-color 0.15s;
+}
+.ex-drag-card.dragging{opacity:0.4;border-color:var(--accent);}
+
+/* header: grip, name, meta, remove */
+.ex-hd{
+  display:flex;align-items:flex-start;gap:var(--s2);
+  padding:var(--s4);border-bottom:1px solid var(--border);
+}
+.ex-name{font-size:var(--t-md);font-weight:700;letter-spacing:-0.01em;color:var(--text);margin-bottom:3px;}
+.ex-meta{
+  font-size:var(--t-xs);color:var(--text3);
+  display:flex;gap:var(--s2);flex-wrap:wrap;align-items:center;
+}
+.drag-handle{
+  color:var(--text3);font-size:var(--t-md);cursor:grab;
+  line-height:1.3;user-select:none;flex-shrink:0;touch-action:none;
+}
+.drag-handle:active{cursor:grabbing;}
+
+/* pills replace the old inline badges */
+.pill{
+  display:inline-flex;align-items:center;padding:2px 7px;border-radius:5px;
+  font-size:10px;font-weight:700;font-family:var(--mono);letter-spacing:0.03em;
+}
+.pill-pr{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(201,168,76,0.25);}
+.pill-custom{background:var(--amber-dim);color:var(--amber);}
+
+/* logged sets list */
+.ex-sets{padding:var(--s3) var(--s4) 0;}
+.set-row{
+  display:flex;align-items:center;gap:var(--s3);
+  padding:var(--s2) var(--s3);background:var(--surface2);
+  border-radius:8px;margin-bottom:var(--s1);
+  border:1px solid transparent;transition:border-color 0.4s;
+}
+.set-row.flash{border-color:var(--accent);}
+.set-n{font-family:var(--mono);font-size:var(--t-xs);color:var(--text3);min-width:14px;}
+.set-v{font-family:var(--mono);font-weight:700;font-size:var(--t-base);color:var(--text);letter-spacing:-0.01em;}
+.set-tag{
+  font-size:10px;padding:1px 6px;border-radius:4px;background:var(--blue-dim);
+  color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;
+}
+.set-x{margin-left:auto;color:var(--text3);cursor:pointer;font-size:var(--t-base);background:none;border:none;padding:0 4px;}
+.set-x:hover{color:var(--red);}
+
+/* overload hint */
+.ex-hint{
+  display:flex;align-items:center;gap:var(--s2);
+  margin:var(--s3) var(--s4);padding:var(--s2) var(--s3);
+  background:var(--accent-dim);border:1px solid rgba(201,168,76,0.3);
+  border-radius:var(--radius);font-size:var(--t-sm);
+}
+.ex-hint b{color:var(--text);font-family:var(--mono);}
+
+/* input footer — sits on its own surface, separated by a border */
+.ex-input-box{
+  padding:var(--s4);background:var(--surface2);
+  border-top:1px solid var(--border);
+}
+.ex-in-row{display:grid;grid-template-columns:1fr 1fr auto;gap:var(--s2);align-items:end;margin-bottom:var(--s2);}
+.ex-in-row.bw{grid-template-columns:1fr auto;}
+.ex-in-f label{
+  display:block;font-size:10px;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;
+}
+.ex-in-f input{
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);color:var(--text);
+  font-family:var(--mono);font-size:var(--t-md);padding:10px 12px;outline:none;
+}
+.ex-in-f input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim);}
+.ex-log-btn{
+  height:42px;padding:0 var(--s4);border-radius:var(--radius);
+  background:var(--accent);color:#080c14;font-weight:800;font-size:var(--t-sm);
+  border:none;cursor:pointer;text-transform:uppercase;letter-spacing:0.04em;
+  white-space:nowrap;font-family:var(--font);touch-action:manipulation;
+}
+.ex-log-btn:active{transform:scale(0.98);}
+
+/* repeat-last-set button */
+.repeat-btn{
+  width:100%;padding:7px;border-radius:var(--radius);
+  border:1px dashed rgba(201,168,76,0.4);background:var(--accent-dim);
+  color:var(--accent);font-size:var(--t-sm);font-weight:600;
+  cursor:pointer;margin-bottom:var(--s2);font-family:var(--font);
+}
+.repeat-btn:active{transform:scale(0.99);}
+
+/* inline rest timer — top of the card it belongs to */
+.inline-rest-timer{
+  display:flex;align-items:center;gap:var(--s3);
+  padding:var(--s3) var(--s4);background:var(--accent-dim);
+  border-bottom:1px solid rgba(201,168,76,0.3);
+}
+.timer-n{
+  font-family:var(--mono);font-size:var(--t-lg);font-weight:800;
+  color:var(--accent);min-width:52px;letter-spacing:-0.02em;
+}
+.timer-bar{height:3px;background:rgba(201,168,76,0.2);border-radius:2px;overflow:hidden;margin-bottom:5px;}
+.timer-fill{height:100%;background:var(--accent);border-radius:2px;transition:width 1s linear;}
+.sep{border-top:1px solid var(--border);padding-top:var(--s5);margin-bottom:var(--s5);}
